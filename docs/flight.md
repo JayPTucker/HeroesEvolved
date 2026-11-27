@@ -4,7 +4,7 @@ Flight is an aerial momentum kit. Build airspeed in cruise, brake and redirect i
 Skyburst, catch someone with Skyhook, or spend your speed on a Meteor Drop or Tempest.
 Double-tap Jump toggles Flight and the mouse wheel sets cruise speed. The highest setting
 cruises at 3 blocks a tick by default. The pilot banks into turns, and releasing Forward
-brakes toward a hover. Double-tap Strafe Left or Right in the air to **Barrel Roll** that way. Tempest slows your incoming motion gradually, gathers its cloud from a small funnel, and eases you into the banked orbit. Its twin condensation trails follow your boots through the turn.
+brakes toward a hover. Double-tap Strafe Left or Right in the air to **Barrel Roll** that way. Tempest slows your incoming motion gradually, then your laps form its funnel before it ever pulls. Its twin condensation trails follow your boots through the turn.
 
 Unlocking Flight grants fall-damage immunity, even with flying toggled off or during an Eclipse.
 
@@ -50,7 +50,7 @@ Keys below are the default slots; learned optional skills can replace them as be
 | H | 1 | **Skyburst** | **Tap:** burst forward immediately, angling upward from the ground. **Hold:** brake as wind coils around you, then release along your new aim for a faster, longer dash. Fully coils in 1.5 seconds and automatically releases at 2 seconds. Momentum increases thrust and duration. Your selected speed carries into the next cruise. **Shift + H** cancels the charge without spending Momentum. |
 | Z | 3 | **Meteor Drop** | Requires being airborne. Hang inside a collapsing wind disc for 0.5 seconds, then accelerate downward. Aim to curve your descent. Hitting solid ground or a wall releases a pressure wave. More Momentum means a wider, harder impact. **Shift + Z** aborts. |
 | X | 4 | **Skyhook** | Seize someone in sight within 7 blocks; grabbing from the ground starts a quick takeoff. Press again to hurl them along your aim, faster with Momentum. Allied throws receive Slow Falling. **Shift + X** releases them gently with Slow Falling, for free. |
-| V | 5 | **Tempest** | A tornado touches down on the ground ahead and gathers for one second. Then you descend or climb to the funnel and bank around it. It pulls exposed foes from within 20 blocks and carries them up the wall. The finale hurls captives out of the funnel. Look to steer it across the terrain. The camera pulls back to frame the storm. Momentum strengthens the storm's damage and final throw. **Shift + V** cancels. |
+| V | 5 | **Tempest** | Gather the wind for one second, then descend or climb to 8 blocks over the spot ahead and **circle it tight**, about 4.5 blocks out. Your laps form the funnel: it takes **three seconds of laps** (about three and a half) before it stands, and nothing is pulled until then. **If you run into anything while it forms** (a tree, a wall, a roof) the wind breaks up and the Tempest is over, so circle somewhere open. Once formed it pulls exposed foes from within 20 blocks and carries them up the wall for five seconds, while you keep whipping round just outside it; look to steer it across the terrain. The finale hurls captives out of the funnel. From the moment you start your view glides back out of your eyes to frame the whole storm (about 34 blocks back and 15 up, pulled in if a wall is in the way), turns when you turn, and glides back to you after the finale or a cancel. Momentum strengthens the storm's damage and final throw. **Shift + V** cancels. |
 
 A useful sequence: **Free Flight → wheel up → Forward → hold Skyburst → turn and release →
 Skyhook → hurl → Meteor Drop.** For crowd control, bank Momentum, then steer a Tempest
@@ -69,8 +69,12 @@ through a group and follow its finale with another pass.
   Carrying keeps the normal horizontal flying pose above speed level 1; the load follows your body's pitch and bank
   while your arms hold it securely. Iron golems are too heavy for Skyhook.
 - Meteor Drop starts in an upright brace, tips into the plunge and fans pressure fronts along
-  the surface it strikes. Tempest draws its 20-block reach on the ground as bands spiral
-  inward. Its warning gives targets one second to escape before the pull begins.
+  the surface it strikes. While a Tempest forms, a faint outline of the whole funnel stands over the eye and lights
+  ring by ring from the bottom as your laps build the wind up to it; a wake runs round your orbit, strands of
+  condensation are dragged down from you to the ground, a skirt of cloud gathers and its 20-block reach is warned on
+  the ground as bands spiral inward. When it forms, a bright seam runs round its foot, a ring of air bursts out and
+  the funnel rises inside the outline. If a lap is blocked, all of it blows apart. Targets get the whole forming
+  time to escape before the pull begins.
 - Rescue Rush traces a winding path to the catch. Wind Sanctuary raises a shallow wind dome
   and marks hostile shots as it deflects them. Jetstream draws moving crests down a lane.
   Thermal Lance tightens a ground ring and opens it into a column. Vacuum Clap sweeps the

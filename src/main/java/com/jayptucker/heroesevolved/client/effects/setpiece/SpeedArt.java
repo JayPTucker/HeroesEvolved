@@ -88,6 +88,7 @@ public final class SpeedArt {
         for (SpeedCyclone.View v : SpeedCyclone.views()) {
             if (v.center.distanceToSqr(eye) > 200 * 200) continue;
             if (v.rose()) tornado(c, v, now);
+            else if (v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.FLIGHT) tempestForming(c, v, now);
             ring(c, v, now);
             if (v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.CONTAIN && !v.ended()) containment(c, v, now);
         }
@@ -100,7 +101,7 @@ public final class SpeedArt {
 
     /** A band along the ring behind angle {@code theta}, {@code len} radians long, brightest at its head. */
     private static void trail(Canvas c, Vec3 o, float r, float theta, double h, float len, float width, float[] col, float alpha) {
-        int n = 20;
+        int n = Math.max(20, (int) (len * 8));
         double[] x = new double[n + 1], y = new double[n + 1], z = new double[n + 1];
         float[] a = new float[n + 1], w = new float[n + 1];
         for (int i = 0; i <= n; i++) {
@@ -139,7 +140,32 @@ public final class SpeedArt {
     // Cyclone
     // ------------------------------------------------------------------
 
-    /** The ring: a gold trail behind the runner with lightning off it, wind bands dragged round after them, dust and grit. */
+    /**
+     * A Tempest still forming from its flyer's laps, or breaking up because a lap was blocked (or it was cancelled
+     * before it formed). Drawn by Flight's own art; the funnel itself is {@link #tornado} once it has formed.
+     */
+    private static void tempestForming(Canvas c, SpeedCyclone.View v, long now) {
+        float gone = v.gone(now, c.partial), broke = v.ended() ? Mth.clamp(gone / SpeedCyclone.RING_FADE, 0, 1) : -1;
+        if (broke >= 1) return;
+        float age = v.age(now, c.partial), progress = Math.max(0, v.forming(now, c.partial));
+        Entity flyer = v.formStart == Long.MIN_VALUE || v.ended() ? null : c.level.getEntity(v.entity);
+        FlightArt.forming(c, v.at(c.partial), flyer == null ? null : flyer.getPosition(c.partial), progress, age,
+                smooth(0, 10, age), broke, v.radius);
+    }
+
+    /** Is the player's particle setting Minimal (so only the main cues are drawn)? */
+    private static boolean minimal() {
+        return net.minecraft.client.Minecraft.getInstance().options.particles().get() == net.minecraft.client.ParticleStatus.MINIMAL;
+    }
+
+    /**
+     * The ring: a gold trail behind the runner with lightning off it, wind bands dragged round after them, dust and
+     * grit. All of it follows how fast they are running. At the slowest settings it is a short trail and a few bolts;
+     * faster, the trail reaches further round and fills a body's height with streaks of gold, torn air whips past, and
+     * a bow of pressed air rides ahead of the runner; at the top settings the trail all but closes into a ring of
+     * light, lightning crawls over the runner and the track under them glows hot and scorches. Each step up in pace
+     * leaves a boom ring hanging in the air where it broke; each step down, a skid of dust.
+     */
     private static void ring(Canvas c, SpeedCyclone.View v, long now) {
         // No one on the ring: a tornado left standing alone, or a Tempest (its flyer is seen as they are).
         if (v.free) return;
@@ -151,46 +177,143 @@ public final class SpeedArt {
         if (f <= 0.003F) return;
         Vec3 o = v.center;
         float r = v.radius, theta = v.angle(age);
-        boolean running = !v.ended();
+        boolean running = !v.ended(), minimal = minimal();
         int seed = v.entity * 31;
+        // How fast: 0 at the slowest setting, 1 at the fastest; stretch is the lap speed against the old fixed pace.
+        float pace = v.pace(age), stretch = v.omega(age) / com.jayptucker.heroesevolved.speed.CycloneGeometry.LAP_SPEED;
+        float fast = smooth(0.3F, 1, pace), blazing = smooth(0.62F, 1, pace);
+        Vec3 at = v.scheduled() ? v.runner(age) : o.add(cos(theta) * r, 0, sin(theta) * r);
+        Vec3 fwd = new Vec3(-sin(theta), 0, cos(theta)), out = new Vec3(cos(theta), 0, sin(theta));
         if (c.glow()) {
             if (running) {
-                trail(c, o, r, theta, 0.95, 2.6F, 0.34F, GOLD, 0.85F * f);
-                trail(c, o, r, theta, 0.95, 1.2F, 0.1F, HOT, 0.9F * f);
-                trail(c, o, r, theta, 1.55, 1.7F, 0.08F, AMBER, 0.6F * f);
-                trail(c, o, r, theta, 0.25, 1.4F, 0.12F, GOLD, 0.5F * f);
-                int flick = (int) (age / 2);
-                for (int k = 0; k < 3; k++) {
-                    float a0 = theta - 0.3F - hash(seed + flick, k) * 1.9F;
-                    Vec3 p0 = o.add(cos(a0) * r, 0.5 + hash(seed + flick, k + 5) * 1.1, sin(a0) * r);
-                    Vec3 p1 = p0.add((hash(seed + flick, k + 9) - 0.5) * 1.8, (hash(seed + flick, k + 11) - 0.3) * 1.2, (hash(seed + flick, k + 13) - 0.5) * 1.8);
-                    c.bolt(p0, p1, seed + flick * 7 + k, 0.25F, 0.035F, HOT, 0.8F * f);
+                trail(c, o, r, theta, 0.95, Math.min(5.9F, 2.6F * stretch), 0.34F * (0.85F + 0.35F * pace), GOLD, 0.85F * f);
+                trail(c, o, r, theta, 0.95, Math.min(5.2F, 1.2F * stretch), 0.1F + 0.04F * pace, HOT, 0.9F * f);
+                trail(c, o, r, theta, 1.55, Math.min(5.0F, 1.7F * stretch), 0.08F, AMBER, 0.6F * f);
+                trail(c, o, r, theta, 0.25, Math.min(5.0F, 1.4F * stretch), 0.12F, GOLD, 0.5F * f);
+                // Faster, the blur fills a body's height: a wall of gold streaks round the ring.
+                if (fast > 0) for (int k = 0; k < (minimal ? 1 : 3); k++)
+                    trail(c, o, r + (k - 1) * 0.14F, theta - 0.06F * k, 0.5 + k * 0.5, Math.min(5.5F, (1.6F + 0.45F * k) * stretch),
+                            0.15F, k == 1 ? HOT : GOLD, 0.45F * fast * f);
+                int flick = (int) (age / 2), bolts = (minimal ? 2 : 3) + Math.round((minimal ? 2 : 5) * pace);
+                float spread = Math.min(5F, 1.9F * stretch);
+                for (int k = 0; k < bolts; k++) {
+                    int h0 = k * 7;
+                    float a0 = theta - 0.3F - hash(seed + flick, h0) * spread;
+                    Vec3 p0 = o.add(cos(a0) * r, 0.5 + hash(seed + flick, h0 + 1) * 1.1, sin(a0) * r);
+                    Vec3 p1 = p0.add((hash(seed + flick, h0 + 2) - 0.5) * 1.8, (hash(seed + flick, h0 + 3) - 0.3) * 1.2, (hash(seed + flick, h0 + 4) - 0.5) * 1.8);
+                    c.bolt(p0, p1, seed + flick * 7 + k, 0.25F, 0.035F + 0.015F * pace, HOT, 0.8F * f);
                 }
+                // Torn air: thin pale streaks whipping round the ring, more and longer the faster it runs.
+                if (!minimal) {
+                    int lines = 3 + Math.round(9 * pace), beat = (int) (age / 2);
+                    float drift = v.omega(age) * 0.8F * (age - beat * 2);
+                    for (int k = 0; k < lines; k++) {
+                        int h0 = 60 + k * 3;
+                        float rr = r + (hash(seed + beat, h0 + 1) - 0.5F) * 2.6F;
+                        float a0 = theta - 0.2F - hash(seed + beat, h0) * Math.min(5.5F, 2.2F * stretch) + drift;
+                        float len = (0.9F + 1.3F * pace) * stretch / Math.max(3, rr);
+                        trail(c, o, rr, a0, 0.2 + hash(seed + beat, h0 + 2) * 2.3, len, 0.035F, WIND, (0.22F + 0.3F * pace) * f);
+                    }
+                }
+                // Heat at the top settings: the runner glows and lightning crawls over them.
+                if (blazing > 0) {
+                    c.glow(at.add(0, 0.95, 0), 1.0F + 0.8F * blazing, AMBER, 0.22F * blazing * f);
+                    int tick = (int) age;
+                    for (int k = 0; k < (minimal ? 1 : 3); k++) {
+                        int h0 = 40 + k * 5;
+                        Vec3 p0 = at.add((hash(seed + tick, h0) - 0.5) * 0.5, 0.2 + hash(seed + tick, h0 + 1) * 1.5, (hash(seed + tick, h0 + 2) - 0.5) * 0.5);
+                        Vec3 p1 = p0.add(fwd.scale(-0.5 - hash(seed + tick, h0 + 3) * 0.9)).add(0, (hash(seed + tick, h0 + 4) - 0.5) * 0.6, 0);
+                        c.bolt(p0, p1, seed + tick * 11 + k, 0.12F, 0.025F, HOT, 0.85F * blazing * f);
+                    }
+                    c.ring(o.add(0, 0.05, 0), r, 0.08F, HOT, 0.55F * blazing * f);
+                }
+                // The bow of pressed air ahead of the runner: its lip burns white at the top settings.
+                if (fast > 0) bow(c, at, fwd, out, fast, blazing, minimal, f, false);
             } else if (!v.rose()) {
                 // The ring breaks: a shock of wind runs out from it.
                 float k = Mth.clamp(gone / SpeedCyclone.RING_FADE, 0, 1);
                 c.ring(o.add(0, 0.4, 0), r + k * 5, 0.5F, WIND, 0.5F * (1 - k));
             }
-            c.ring(o.add(0, 0.06, 0), r, 0.45F, GOLD, 0.22F * f);
+            c.ring(o.add(0, 0.06, 0), r, 0.45F, GOLD, (0.22F + 0.3F * pace) * f);
+            surge(c, v, now, f, true);
         }
         if (c.soft()) {
             for (int b = 0; b < 6; b++) {
-                float h = 0.35F + b * 0.48F, head = theta * 0.75F + b * 1.1F, len = 1.4F + hash(seed, b) * 0.9F;
+                float h = 0.35F + b * 0.48F, head = theta * 0.75F + b * 1.1F;
+                float len = Math.min(4.5F, (1.4F + hash(seed, b) * 0.9F) * (0.75F + 0.45F * stretch));
                 float rr = r + (b % 2 == 0 ? 0.45F : -0.35F);
-                arc(c, o, rr, h, head - len, head, 0.24F, WIND, 0.3F * f);
+                arc(c, o, rr, h, head - len, head, 0.24F, WIND, (0.3F + 0.12F * pace) * f);
             }
             CloudMesh.Shade dust = Shades.smoke(c, DUST, 0);
             for (int j = 0; j < 12; j++) {
-                float a = j * TWO_PI / 12 + age * 0.22F + hash(seed, j + 30);
-                float rr = r + (hash(seed, j + 40) - 0.5F) * 1.2F, s = 0.45F + hash(seed, j + 50) * 0.4F;
-                c.cloud(o.add(cos(a) * rr, 0.15 + s * 0.2, sin(a) * rr), s * 1.5F, s * 0.32F, s * 1.5F, j, a, 0.15F * f, dust);
+                // The dust is dragged round after the runner, as fast as they go.
+                float a = j * TWO_PI / 12 + theta * 0.5F + hash(seed, j + 30);
+                float rr = r + (hash(seed, j + 40) - 0.5F) * 1.2F, s = (0.45F + hash(seed, j + 50) * 0.4F) * (1 + 0.4F * pace);
+                c.cloud(o.add(cos(a) * rr, 0.15 + s * 0.2, sin(a) * rr), s * 1.5F, s * 0.32F, s * 1.5F, j, a, (0.15F + 0.1F * pace) * f, dust);
             }
+            // The track scorched by the friction at the top settings (dark, so drawn with ordinary blending).
+            if (blazing > 0) c.ring(o.add(0, 0.03, 0), r, 0.5F, SOOT, 0.35F * blazing * f);
+            if (running && fast > 0) bow(c, at, fwd, out, fast, blazing, minimal, f, true);
+            surge(c, v, now, f, false);
         }
         if (c.solid() && running) {
             for (int i = 0; i < 12; i++) {
-                float a = hash(seed, i + 60) * TWO_PI + age * (0.3F + hash(seed, i + 70) * 0.2F);
-                float h = 0.3F + ((age * 0.03F + hash(seed, i + 80)) % 1) * 2.6F, rr = r + (hash(seed, i + 90) - 0.5F) * 1.4F;
+                float a = hash(seed, i + 60) * TWO_PI + theta * (0.7F + hash(seed, i + 70) * 0.5F);
+                float h = 0.3F + ((age * (0.03F + 0.03F * pace) + hash(seed, i + 80)) % 1) * 2.6F, rr = r + (hash(seed, i + 90) - 0.5F) * 1.4F;
                 c.box(o.add(cos(a) * rr, h, sin(a) * rr), 0.07F, 0.02F, 0.06F, a * 2, age * 0.4F + i, i, DEBRIS[i % DEBRIS.length], 1);
+            }
+        }
+    }
+
+    /**
+     * A bow of pressed air riding ahead of a fast runner: curved bands round the front of the body at three heights,
+     * swept back at their ends. Pale wind in the soft pass; in the glow pass only its lip, burning white at the top.
+     */
+    private static void bow(Canvas c, Vec3 at, Vec3 fwd, Vec3 out, float fast, float blazing, boolean minimal, float f, boolean soft) {
+        if (!soft && blazing <= 0) return;
+        int n = 9;
+        for (int layer = 0; layer < (minimal ? 1 : 3); layer++) {
+            double h = minimal ? 1.0 : 0.45 + layer * 0.55;
+            Vec3[] p = new Vec3[n];
+            float[] w = new float[n], al = new float[n];
+            for (int i = 0; i < n; i++) {
+                float u = i / (float) (n - 1) * 2 - 1, nose = 1 - u * u;
+                p[i] = at.add(fwd.scale((0.55 + 0.35 * fast) * nose + 0.25 - 0.4 * u * u)).add(out.scale(u * 0.8)).add(0, h, 0);
+                w[i] = soft ? 0.14F : 0.04F;
+                al[i] = (soft ? 0.32F * fast : 0.7F * blazing) * nose * f;
+            }
+            c.ribbon(p, w, soft ? WIND : HOT, al);
+        }
+    }
+
+    /**
+     * A step up in pace leaves a boom ring hanging in the air where the runner broke into it, opening across their
+     * path; a step down leaves a skid of dust thrown ahead of their feet.
+     */
+    private static void surge(Canvas c, SpeedCyclone.View v, long now, float f, boolean glow) {
+        float since = v.surgeAt == Long.MIN_VALUE ? -1 : now - v.surgeAt + c.partial;
+        if (since >= 0 && since < 12) {
+            float k = since / 12, open = 1 - (1 - k) * (1 - k) * (1 - k), al = (1 - k) * (1 - k) * f;
+            float a = v.angle(v.surgeAge);
+            Vec3 at = v.runner(v.surgeAge).add(0, 0.95, 0), path = new Vec3(-sin(a), 0, cos(a));
+            float rad = 0.5F + 2.2F * open;
+            if (glow) {
+                c.ring(at, path, rad, 0.35F, 0, TWO_PI, AMBER, 0.35F * al);
+                c.ring(at, path, rad, 0.12F, 0, TWO_PI, GOLD, 0.8F * al);
+                c.ring(at, path, rad, 0.04F, 0, TWO_PI, HOT, al);
+                c.glow(at, 0.4F + 1.1F * (1 - k), HOT, 0.5F * al);
+            } else c.ring(at, path, rad * 1.45F, 0.3F, 0, TWO_PI, WIND, 0.4F * al);
+        }
+        float braked = v.brakeAt == Long.MIN_VALUE ? -1 : now - v.brakeAt + c.partial;
+        if (!glow && braked >= 0 && braked < 16) {
+            float k = braked / 16, a = v.angle(v.brakeAge);
+            Vec3 at = v.runner(v.brakeAge), path = new Vec3(-sin(a), 0, cos(a)), side = new Vec3(cos(a), 0, sin(a));
+            CloudMesh.Shade dust = Shades.smoke(c, DUST, 0);
+            int seed = v.entity * 13 + (int) v.brakeAt;
+            for (int j = 0; j < 5; j++) {
+                float s = 0.35F + hash(seed, j) * 0.3F + k * 0.5F;
+                Vec3 p = at.add(path.scale(0.3 + k * 1.8 + j * 0.35)).add(side.scale((hash(seed, j + 5) - 0.5) * 0.9)).add(0, 0.12 + k * 0.45, 0);
+                c.cloud(p, s, s * 0.55F, s, j, a, 0.38F * (1 - k) * f, dust);
             }
         }
     }
@@ -214,12 +337,13 @@ public final class SpeedArt {
         int seed = v.entity * 17;
         // A speedster winds lightning through the funnel. A flyer winds strips of condensation.
         boolean sky = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.FLIGHT;
-        if (sky) f *= smooth(0, com.jayptucker.heroesevolved.flight.FlightService.TEMPEST_WINDUP_TICKS, built);
+        // A Tempest has formed from its flyer's laps: a seam runs round its foot and its plan fades as it rises.
+        if (sky) FlightArt.formed(c, o, ring, built, 1 - collapse);
         // A hydrokinetic's Maelstrom is a waterspout: a funnel of spinning water and spray over its whirlpool.
         boolean water = v.style == com.jayptucker.heroesevolved.network.SpeedCyclonePayload.HYDRO;
         float[] strand = sky ? TEMPEST_WIND : water ? SPOUT_SPRAY : storm ? SUPERCELL_WIND : GOLD;
         float[] skin = sky ? TEMPEST_CLOUD : water ? SPOUT_WATER : storm ? SUPERCELL_FUNNEL : FUNNEL;
-        if (sky) FlightArt.tempest(c, o, built, f);
+        if (sky) FlightArt.tempest(c, o, built, f, 1 - smooth(0, 8, built));
         if (water) HydroArt.waterspout(c, o, built, f, ring, height, collapse);
         if (c.soft()) {
             // The funnel's skin: see-through, streaked in spirals that wind up it as it turns.

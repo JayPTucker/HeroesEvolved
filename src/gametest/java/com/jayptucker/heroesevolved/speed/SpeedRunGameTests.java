@@ -69,6 +69,8 @@ public final class SpeedRunGameTests {
     public static void heldCycloneRisesIntoATornadoAndLetsGoOnRelease(GameTestHelper h) {
         var p = runner(h, 4, false);
         p.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(16, 2, 16))));
+        // The tornado stands where the runner started; the runner is out on its ring when it comes down.
+        Vec3 eye = p.position();
         // A mob without AI is never moved by its velocity, so this one has its AI.
         var caught = mob(h, EntityType.VINDICATOR, p, 5, 0, true);
         double ground = caught.getY();
@@ -84,7 +86,7 @@ public final class SpeedRunGameTests {
                     h.assertTrue(PlayerEnergyService.getEnergy(p) < PlayerEnergyService.getMaximumEnergy(p), "Holding it costs stamina");
                     SpeedKit.releaseCyclone(p);
                     h.assertTrue(!SpeedKit.cycloning(p), "Letting go before it is anchored brings it down at once");
-                    Vec3 out = caught.getDeltaMovement(), away = caught.position().subtract(p.position()).multiply(1, 0, 1).normalize();
+                    Vec3 out = caught.getDeltaMovement(), away = caught.position().subtract(eye).multiply(1, 0, 1).normalize();
                     h.assertTrue(out.dot(away) > 0.5, "And throws what it carried out of it: " + out);
                     h.succeed();
                 } finally { caught.discard(); done(p, false); }

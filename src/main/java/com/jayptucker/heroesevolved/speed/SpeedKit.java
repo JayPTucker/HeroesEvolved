@@ -83,7 +83,8 @@ public final class SpeedKit {
     private record Hits(ServerPlayer player, LivingEntity target, float damage, int left, long next) {}
     private static final class Cyclone {
         final ServerPlayer player; final ServerLevel level; final Vec3 center; long start; final int tier;
-        final float phase;
+        /** When the run began (never reset, unlike {@code start}), and the laps the body is carried round from then. */
+        final long born; CycloneGeometry.Laps laps;
         final Set<UUID> caught = new HashSet<>();
         /** The key is still down; the tick its tornado began to rise, or -1; the runner has left it standing alone. */
         boolean held, free; long tornado = -1;
@@ -91,8 +92,10 @@ public final class SpeedKit {
         int speed = 1, sentMode = -1; boolean reactor;
         Cyclone(ServerPlayer player, ServerLevel level, Vec3 center, long start, int tier) {
             this.player = player; this.level = level; this.center = center; this.start = start; this.tier = tier;
-            phase = (player.getYRot() + 90) * (float) Math.PI / 180;
+            born = start;
         }
+        /** Ticks since the run began, on the laps' clock. */
+        float lapAge(long now) { return now - born; }
     }
 
     private static final Map<UUID, Chain> CHAINS = new HashMap<>();
@@ -270,6 +273,8 @@ public final class SpeedKit {
         Cyclone c = new Cyclone(p, p.serverLevel(), p.position(), now(p), tier);
         c.held = held;
         c.speed = SpeedService.speedStep(p);
+        // The runner sets off from where they faced, as fast as the setting they start at.
+        c.laps = CycloneGeometry.Laps.start((p.getYRot() + 90) * (float) Math.PI / 180, c.speed);
         CYCLONES.put(p.getUUID(), c);
         if (held) com.jayptucker.heroesevolved.energy.StaminaDrain.start(p, "speed_cyclone",
                 com.jayptucker.heroesevolved.ability.PowerBalance.drain("speed_cyclone", TORNADO_ENERGY), false,
@@ -300,14 +305,21 @@ public final class SpeedKit {
         c.speed = Math.clamp(c.speed + Integer.signum(direction), 1, SpeedService.maximumSpeedStep(p));
         if (c.speed == before) return;
         long now = now(p);
+        // The runner speeds up or eases off from wherever they are on the ring; everyone is told the new laps at once.
+        c.laps = c.laps.toward(c.lapAge(now), CycloneGeometry.lapSpeed(c.speed));
         if (c.tornado >= 0 && c.speed <= VACUUM_UP_TO && now - c.tornado < TORNADO_ANCHOR) {
             // The wind slows under it: the funnel falls back into the ring, and the ring empties of air.
             c.tornado = -1;
             c.start = now;
-            sync(c, now, false);
         }
+        sync(c, now, false);
+        Vec3 at = p.position();
         p.serverLevel().playSound(null, c.center.x, c.center.y, c.center.z, SoundEvents.BREEZE_IDLE_AIR, SoundSource.PLAYERS,
                 1.0F, 0.6F + 0.2F * c.speed);
+        // Faster: the air cracks round the runner as they break into the next pace. Slower: their feet skid.
+        if (c.speed > before) p.serverLevel().playSound(null, at.x, at.y, at.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(),
+                SoundSource.PLAYERS, 0.5F + 0.1F * c.speed, 1.1F + 0.12F * c.speed);
+        else p.serverLevel().playSound(null, at.x, at.y, at.z, SoundEvents.SAND_STEP, SoundSource.PLAYERS, 0.9F, 0.7F);
         status(c);
     }
 
@@ -361,8 +373,9 @@ public final class SpeedKit {
     }
 
     private static void sync(Cyclone c, long now, boolean ended) {
-        SpeedCyclonePayload.send(c.level, c.player, c.center, (float) CYCLONE_RADIUS, (int) (now - c.start),
-                c.tornado < 0 ? -1 : (int) (now - c.tornado), ended, c.free, SpeedCyclonePayload.SPEED);
+        // Its age is the laps' clock, which a tornado falling back into a vacuum does not restart.
+        SpeedCyclonePayload.send(c.level, c.player, c.center, (float) CYCLONE_RADIUS, (int) (now - c.born),
+                c.tornado < 0 ? -1 : (int) (now - c.tornado), ended, c.free, SpeedCyclonePayload.SPEED, c.laps);
     }
 
     private static void tickCyclones(long now) {
@@ -391,7 +404,7 @@ public final class SpeedKit {
             if (built == TORNADO_ANCHOR) anchor(c);
             if (!c.free) {
                 // The visible runner is also the body enemies can hit.
-                Vec3 next = CycloneGeometry.runner(c.center, CYCLONE_RADIUS, c.phase, age);
+                Vec3 next = CycloneGeometry.runner(c.center, CYCLONE_RADIUS, c.laps, c.lapAge(now));
                 Vec3 swept = SpeedService.swept(p, next.subtract(p.position()));
                 if (swept.distanceToSqr(next) > .04) {
                     CYCLONES.remove(entry.getKey()); release(c, now); continue;
@@ -405,8 +418,10 @@ public final class SpeedKit {
             if (c.tornado >= 0) twister(c, now); else if (vacuum(c)) vacuumRing(c, age); else ring(c, age);
             if (mode(c) != c.sentMode) status(c);
             if (age % 20 == 0 && age > 0) sync(c, now, false);
-            if (age % 8 == 0) c.level.playSound(null, c.center.x, c.center.y, c.center.z, SoundEvents.BREEZE_IDLE_AIR, SoundSource.PLAYERS,
-                    c.tornado >= 0 ? 1.6F : 0.9F, c.tornado >= 0 ? 0.7F : 1.4F);
+            // The rush of the laps: quicker, louder and higher the faster they run.
+            int beat = Math.max(4, 10 - c.speed);
+            if (age % beat == 0) c.level.playSound(null, c.center.x, c.center.y, c.center.z, SoundEvents.BREEZE_IDLE_AIR, SoundSource.PLAYERS,
+                    c.tornado >= 0 ? 1.6F : 0.7F + 0.08F * c.speed, c.tornado >= 0 ? 0.7F : 1.0F + 0.13F * c.speed);
         }
     }
 

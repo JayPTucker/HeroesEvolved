@@ -583,6 +583,54 @@ public final class FlightReworkGameTests {
         } finally { target.discard(); forget(p); }
     }
 
+    /** A test flyer hovering at the height Tempest's laps circle, 8 blocks over the floor; returns where it will touch down. */
+    private static Vec3 tempestReady(GameTestHelper h, ServerPlayer p) {
+        Vec3 floor = FlightService.ground(h.getLevel(), p.position(), 0, 200);
+        p.setPos(p.getX(), floor.y + 8, p.getZ());
+        return FlightService.ground(h.getLevel(), p.position().add(0, 0, com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON.flightCycloneOrbitRadius.get()), 4, 200);
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.tempest.forms")
+    public static void tempestFormsFromLapsBeforeItPulls(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        Vec3 center = tempestReady(h, p);
+        LivingEntity target = target(h, center.add(3, 0, 0));
+        try {
+            FlightService.startCyclone(p);
+            int laps = FlightService.TEMPEST_WINDUP_TICKS + 8 + FlightService.TEMPEST_FORM_TICKS - 10;
+            for (int i = 0; i < laps; i++) FlightService.tick(p);
+            h.assertTrue(FlightService.isCycloneActive(p), "The flyer is still lapping the eye");
+            h.assertTrue(!FlightService.tempestFormed(p), "Three seconds of laps have not yet formed the funnel");
+            h.assertTrue(target.getDeltaMovement().equals(Vec3.ZERO) && target.getHealth() == target.getMaxHealth(),
+                    "Nothing is pulled or hurt while it forms");
+            for (int i = 0; i < 15; i++) FlightService.tick(p);
+            h.assertTrue(FlightService.tempestFormed(p), "The laps have formed the funnel");
+            h.assertTrue(target.getDeltaMovement().lengthSqr() > 1.0E-4, "Once formed, it pulls: " + target.getDeltaMovement());
+            h.succeed();
+        } finally { target.discard(); forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "flight.tempest.blocked")
+    public static void aBlockedLapBreaksTheTempestUpBeforeItForms(GameTestHelper h) {
+        ServerPlayer p = player(h);
+        tempestReady(h, p);
+        // A cage round the flyer: whichever way the first lap goes, it runs into something.
+        net.minecraft.core.BlockPos at = p.blockPosition();
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) for (int dy = 0; dy <= 1; dy++)
+            if (dx != 0 || dz != 0) h.getLevel().setBlock(at.offset(dx, dy, dz), net.minecraft.world.level.block.Blocks.GLASS.defaultBlockState(), 3);
+        try {
+            FlightService.startCyclone(p);
+            for (int i = 0; i < FlightService.TEMPEST_WINDUP_TICKS + 8 + 6; i++) FlightService.tick(p);
+            h.assertTrue(!FlightService.isCycloneActive(p), "A lap that runs into something breaks the wind up");
+            h.assertTrue(!com.jayptucker.heroesevolved.energy.StaminaDrain.active(p, "flight_cyclone"), "And stops its stamina drain");
+            h.succeed();
+        } finally {
+            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) for (int dy = 0; dy <= 1; dy++)
+                h.getLevel().setBlock(at.offset(dx, dy, dz), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+            forget(p);
+        }
+    }
+
     /** Why a test flyer can't fly right now: every gate {@code FlightDynamicsService.eligible} reads. */
     static String why(net.minecraft.server.level.ServerPlayer p) {
         return " [canAct=" + com.jayptucker.heroesevolved.ability.service.PowerRules.canAct(p)

@@ -84,6 +84,59 @@ public final class CycloneSpeedGameTests {
         });
     }
 
+    /** The shared lap schedule: faster settings lap faster, and a change of setting carries on from where the runner is. */
+    @GameTest(template = "cryo_rework_arena", timeoutTicks = 40, batch = "speed.cyclone.laps")
+    public static void theLapScheduleFollowsTheSetting(GameTestHelper h) {
+        var slow = CycloneGeometry.Laps.start(0, 1);
+        var fast = CycloneGeometry.Laps.start(0, 6);
+        h.assertTrue(CycloneGeometry.lapSpeed(1) < CycloneGeometry.LAP_SPEED && CycloneGeometry.lapSpeed(3) == CycloneGeometry.LAP_SPEED
+                && CycloneGeometry.lapSpeed(6) > 2 * CycloneGeometry.LAP_SPEED, "Setting 3 keeps the old pace; 1 is slower, 6 more than twice as fast");
+        h.assertTrue(fast.angle(60) - fast.angle(40) > 3 * (slow.angle(60) - slow.angle(40)), "Flat out, the top setting laps over three times as fast");
+        var changed = slow.toward(20, CycloneGeometry.lapSpeed(6));
+        h.assertTrue(Math.abs(changed.angle(20) - slow.angle(20)) < 1e-4 && Math.abs(changed.omega(20) - slow.omega(20)) < 1e-4,
+                "A change of setting starts from where the runner is and how fast they are going");
+        h.assertTrue(changed.omega(21) - changed.omega(20) <= CycloneGeometry.ACCEL + 1e-4, "And speeds up at the shared rate, not at once");
+        h.assertTrue(Math.abs(changed.omega(40) - CycloneGeometry.lapSpeed(6)) < 1e-4, "Until it reaches the new pace");
+        h.succeed();
+    }
+
+    /** In play: the body really laps faster once the setting is scrolled up, on the schedule, without a jump. */
+    @GameTest(template = "cryo_rework_arena", timeoutTicks = 120, batch = "speed.cyclone.laps")
+    public static void scrollingUpRunsTheBodyFaster(GameTestHelper h) {
+        ServerPlayer p = runner(h);
+        Vec3 center = p.position();
+        double[] last = {Double.NaN}, slowRun = {0}, fastRun = {0}, biggest = {0};
+        try {
+            h.assertTrue(SpeedKit.cyclone(p, 5, true), "The Cyclone starts");
+            slowTo(p, 1);
+        } catch (RuntimeException e) { done(p); throw e; }
+        long[] tick = {0};
+        h.onEachTick(() -> {
+            tick[0]++;
+            double angle = Math.atan2(p.getZ() - center.z, p.getX() - center.x);
+            if (!Double.isNaN(last[0]) && tick[0] > 8) {
+                double step = ((angle - last[0]) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                biggest[0] = Math.max(biggest[0], step);
+                if (tick[0] > 10 && tick[0] <= 20) slowRun[0] += step;
+                if (tick[0] > 45 && tick[0] <= 55) fastRun[0] += step;
+            }
+            last[0] = angle;
+            if (tick[0] == 22) for (int i = 0; i < 8; i++) SpeedKit.cycloneSpeed(p, 1);
+        });
+        h.runAfterDelay(60, () -> {
+            try {
+                h.assertTrue(SpeedKit.cycloneSpeed(p) == SpeedService.maximumSpeedStep(p), "Scrolled up to their fastest");
+                h.assertTrue(SpeedKit.cycloneSpeed(p) > 0, "The laps were never blocked");
+                h.assertTrue(slowRun[0] > 2.0 && slowRun[0] < 3.2, "At setting 1 the body laps slowly: " + slowRun[0] + " radians in ten ticks");
+                h.assertTrue(fastRun[0] > 2.5 * slowRun[0], "Scrolled up, the body laps far faster: " + fastRun[0] + " against " + slowRun[0]);
+                h.assertTrue(biggest[0] < 1.0, "Never more than the top pace in a tick, so it never jumps: " + biggest[0]);
+                h.assertTrue(Math.abs(p.position().subtract(center).horizontalDistance() - SpeedKit.CYCLONE_RADIUS) < 0.05,
+                        "And the body is on the ring, where it is drawn");
+                h.succeed();
+            } finally { done(p); }
+        });
+    }
+
     @GameTest(template = "cryo_rework_arena", timeoutTicks = 240, batch = "speed.cyclone.reactor")
     public static void noTornadoRoundAReactor(GameTestHelper h) {
         ServerPlayer p = runner(h);

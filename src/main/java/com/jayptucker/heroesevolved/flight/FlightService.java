@@ -46,8 +46,15 @@ public final class FlightService {
     public static final double TEMPEST_PULL = 20.0D;
     /** Fastest the flyer whips round their Tempest, in blocks a tick. */
     private static final double TEMPEST_ORBIT_SPEED = 3.6D;
-    private static final int CYCLONE_ASCENT_TICKS = 15;
+    private static final int CYCLONE_ASCENT_TICKS = 8;
     public static final int TEMPEST_WINDUP_TICKS = 20;
+    /**
+     * Ticks of laps it takes the flyer's wind to form the funnel (three seconds: about three and a half laps), and the tightest
+     * they circle the eye while it forms and after. Nothing is pulled, and it is not steered, until it has formed; a lap
+     * that runs into something before then breaks the wind up.
+     */
+    public static final int TEMPEST_FORM_TICKS = 60;
+    public static final double TEMPEST_TIGHT_ORBIT = 4.5D;
     private static final int SKYBURST_ASCENT_TICKS = 12;
 
     // Cyclones are short-lived combat effects. Keeping their active state in
@@ -172,8 +179,6 @@ public final class FlightService {
         syncTempest(player, ACTIVE_CYCLONES.get(player.getUUID()), false);
         player.serverLevel().playSound(null, player.blockPosition(),
                 SoundEvents.BREEZE_CHARGE, SoundSource.PLAYERS, 1.0F, 0.75F);
-        player.serverLevel().playSound(null, center.x, center.y, center.z,
-                SoundEvents.ELYTRA_FLYING, SoundSource.PLAYERS, 1.4F, 0.6F);
         MasteryService.markPowerUse(player, ModAbilities.FLIGHT_ID);
         FlightVisualSyncService.syncToTrackingPlayers(player);
     }
@@ -430,6 +435,19 @@ public final class FlightService {
         setPlayerVelocity(player, currentVelocity.lerp(lookDirection.scale(desiredCruiseSpeed), steering));
     }
 
+    /** True once a Tempest's funnel has formed from the flyer's laps (and is pulling). */
+    public static boolean tempestFormed(ServerPlayer player) {
+        CycloneState cyclone = ACTIVE_CYCLONES.get(player.getUUID());
+        return cyclone != null && cyclone.formedAt >= 0;
+    }
+
+    /** How far out the flyer circles: tight round the eye, never inside the funnel's wall at their height. */
+    private static double orbitRadius(double ring) {
+        double tight = Math.min(HeroesEvolvedConfig.COMMON.flightCycloneOrbitRadius.get(), TEMPEST_TIGHT_ORBIT);
+        return Math.max(tight, com.jayptucker.heroesevolved.speed.TornadoShape.radius((float) CYCLONE_ORBIT_HEIGHT,
+                com.jayptucker.heroesevolved.speed.TornadoShape.HEIGHT, (float) ring) + 1.6D);
+    }
+
     private static boolean tickCyclone(ServerPlayer player) {
         CycloneState cyclone = ACTIVE_CYCLONES.get(player.getUUID());
         if (cyclone == null) return false;
@@ -438,37 +456,39 @@ public final class FlightService {
         cyclone.age++;
         if (cyclone.age % 2 == 0) syncTempest(player, cyclone, false);
         if (cyclone.windupTicks > 0) {
-            // The funnel touches down and starts to rise while the flyer gathers the wind.
+            // The flyer gathers the wind where the eye will be.
             setPlayerVelocity(player, player.getDeltaMovement().scale(.72));
             player.resetFallDistance();
             cyclone.windupTicks--;
             return true;
         }
-        // Looking steers it across the ground; forward input and wheel speed never override its orbit.
-        Vec3 candidate = cyclone.center.add(horizontalLookDirection(player).scale(0.16D));
-        Vec3 landed = ground(player.serverLevel(), candidate, 3, 12);
-        if (landed != null) cyclone.center = cyclone.center.lerp(landed, .25);
+        boolean formed = cyclone.formedAt >= 0;
+        if (formed) {
+            // Once it has formed, looking steers it across the ground; forward input and wheel speed never override its orbit.
+            Vec3 candidate = cyclone.center.add(horizontalLookDirection(player).scale(0.16D));
+            Vec3 landed = ground(player.serverLevel(), candidate, 3, 12);
+            if (landed != null) cyclone.center = cyclone.center.lerp(landed, .25);
+        }
         if (cyclone.ascentTicksRemaining > 0 || !cyclone.orbiting && Math.abs(cyclone.center.y + CYCLONE_ORBIT_HEIGHT - player.getY()) > 1.5) {
             double ascent = cyclone.center.y + CYCLONE_ORBIT_HEIGHT - player.getY();
             Vec3 approach = new Vec3(0, Math.clamp(ascent * .35, -3, 1.4), 0);
             setPlayerVelocity(player, SpeedService.swept(player, approach).subtract(player.position()));
             if (cyclone.ascentTicksRemaining > 0) cyclone.ascentTicksRemaining--;
         } else {
-            // Whip round the funnel partway up, just outside its wall there, as fast as the wind itself: about three
-            // and a half blocks a tick, a lap in well under a second. An ideal point runs round the circle and the
-            // flyer is carried along with it, nudged gently back toward it: aiming straight at it from a position the
-            // client reported a tick ago overshoots at this speed.
-            float height = com.jayptucker.heroesevolved.speed.TornadoShape.height(cyclone.age);
-            double orbitRadius = Math.max(HeroesEvolvedConfig.COMMON.flightCycloneOrbitRadius.get(),
-                    com.jayptucker.heroesevolved.speed.TornadoShape.radius((float) CYCLONE_ORBIT_HEIGHT, height, (float) radius) + 4.0D);
+            // Whip round the eye partway up where the funnel will stand, tight to it, at the configured turn rate
+            // (never over three and a half blocks a tick): a lap about every two-thirds of a second once up to speed.
+            // An ideal point runs round the circle and the flyer is carried along with it, nudged gently back toward
+            // it: aiming straight at it from a position the client reported a tick ago overshoots at this speed.
+            double orbitRadius = orbitRadius(radius);
             if (!cyclone.orbiting) {
                 Vec3 offset = player.position().subtract(cyclone.center).multiply(1, 0, 1);
                 if (offset.lengthSqr() > 0.01D) cyclone.angleRadians = Math.atan2(offset.z, offset.x);
                 cyclone.orbiting = true;
             }
             double speed = Math.min(orbitRadius * HeroesEvolvedConfig.COMMON.flightCycloneOrbitSpeed.get() * 3.0D, TEMPEST_ORBIT_SPEED);
-            double entry = Math.clamp(++cyclone.orbitTicks / 24D, 0, 1);
-            speed *= .15 + .85 * entry * entry * (3 - 2 * entry);
+            // The laps spin up over the first two seconds of forming, from a quarter of full speed.
+            double entry = Math.clamp(++cyclone.orbitTicks / 40D, 0, 1);
+            speed *= .25 + .75 * entry * entry * (3 - 2 * entry);
             double angle = cyclone.angleRadians, next = angle + speed / orbitRadius;
             Vec3 ideal = cyclone.center.add(Math.cos(angle) * orbitRadius, CYCLONE_ORBIT_HEIGHT, Math.sin(angle) * orbitRadius);
             Vec3 ahead = cyclone.center.add(Math.cos(next) * orbitRadius, CYCLONE_ORBIT_HEIGHT, Math.sin(next) * orbitRadius);
@@ -476,20 +496,30 @@ public final class FlightService {
             if (correction.length() > 1.2D) correction = correction.normalize().scale(1.2D);
             Vec3 orbit = ahead.subtract(ideal).add(correction);
             Vec3 smoothOrbit = player.getDeltaMovement().lerp(orbit, .28);
-            setPlayerVelocity(player, SpeedService.swept(player, smoothOrbit).subtract(player.position()));
+            Vec3 reached = SpeedService.swept(player, smoothOrbit);
+            // Before the funnel has formed, a lap that runs into anything breaks the wind up.
+            if (!formed && reached.distanceToSqr(player.position().add(smoothOrbit)) > .09D) {
+                breakUp(player, cyclone);
+                return true;
+            }
+            setPlayerVelocity(player, reached.subtract(player.position()));
             cyclone.angleRadians = next;
+            if (!formed && ++cyclone.formTicks >= TEMPEST_FORM_TICKS) form(player, cyclone);
         }
         PlayerFlightData flightData = player.getData(ModDataAttachments.PLAYER_FLIGHT.get());
         if (!flightData.visualPoseActive()) {
             player.setData(ModDataAttachments.PLAYER_FLIGHT.get(), flightData.withVisualPoseActive(true));
             FlightVisualSyncService.syncToTrackingPlayers(player);
         }
-        com.jayptucker.heroesevolved.speed.TornadoWind.blowTempest(player, player.serverLevel(), cyclone.center, cyclone.age,
+        player.resetFallDistance();
+        // Until it has formed it pulls nothing, and its time has not begun.
+        if (cyclone.formedAt < 0) return true;
+        int built = cyclone.age - cyclone.formedAt;
+        com.jayptucker.heroesevolved.speed.TornadoWind.blowTempest(player, player.serverLevel(), cyclone.center, built,
                 (float) radius, TEMPEST_PULL, (float) cyclone.strength * 1.5F, false, cyclone.caught, time);
         if (time % 20L == 0L)
             player.serverLevel().playSound(null, cyclone.center.x, cyclone.center.y, cyclone.center.z,
                     SoundEvents.BREEZE_WHIRL, SoundSource.PLAYERS, 1.2F, 0.8F);
-        player.resetFallDistance();
         if (--cyclone.remainingTicks > 0) return true;
         launchCycloneTargets(player, cyclone);
         com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "flight_cyclone");
@@ -502,6 +532,31 @@ public final class FlightService {
         return true;
     }
 
+    /** The laps have whipped up enough wind: the funnel forms, and its pull and its time begin. */
+    private static void form(ServerPlayer player, CycloneState cyclone) {
+        cyclone.formedAt = cyclone.age;
+        syncTempest(player, cyclone, false);
+        Vec3 o = cyclone.center;
+        player.serverLevel().playSound(null, o.x, o.y, o.z, SoundEvents.ELYTRA_FLYING, SoundSource.PLAYERS, 1.4F, 0.6F);
+        player.serverLevel().playSound(null, o.x, o.y, o.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.3F, 0.55F);
+        com.jayptucker.heroesevolved.network.CameraShakePayload.sendAround(player.serverLevel(), o, 24, 0.3F, 18);
+    }
+
+    /** A lap ran into something before the funnel formed: the wind breaks up and the Tempest is over. */
+    private static void breakUp(ServerPlayer player, CycloneState cyclone) {
+        com.jayptucker.heroesevolved.energy.StaminaDrain.stop(player, "flight_cyclone");
+        ACTIVE_CYCLONES.remove(player.getUUID());
+        syncTempest(player, cyclone, true);
+        setPlayerVelocity(player, player.getDeltaMovement().scale(0.2D));
+        player.setData(ModDataAttachments.PLAYER_FLIGHT.get(),
+                player.getData(ModDataAttachments.PLAYER_FLIGHT.get()).withVisualPoseActive(false));
+        FlightVisualSyncService.syncToTrackingPlayers(player);
+        Vec3 at = player.position();
+        player.serverLevel().playSound(null, at.x, at.y, at.z, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 0.9F, 1.3F);
+        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.heroesevolved.tempest_broke")
+                .withStyle(net.minecraft.ChatFormatting.GOLD), true);
+    }
+
     private static boolean cycloneTarget(ServerPlayer player, Entity target, CycloneState cyclone, double radius) {
         if (!(target instanceof net.minecraft.world.entity.LivingEntity living)
                 || !FlightSkillService.hostile(player, living)) return false;
@@ -511,12 +566,15 @@ public final class FlightService {
                 && com.jayptucker.heroesevolved.speed.TornadoWind.exposed(player, center, target);
     }
 
-    /** Tells everyone near enough what the Tempest's tornado is doing: where it stands, how far it has risen. */
+    /**
+     * Tells everyone near enough what the Tempest is doing: where it stands, how long the flyer has been lapping to
+     * form it, and how long ago its funnel formed (-1 until it has).
+     */
     private static void syncTempest(ServerPlayer player, CycloneState cyclone, boolean ended) {
         if (cyclone == null) return;
-        com.jayptucker.heroesevolved.network.SpeedCyclonePayload.send(player.serverLevel(), player, cyclone.center,
-                HeroesEvolvedConfig.COMMON.flightCycloneRadius.get().floatValue(), cyclone.age, cyclone.age, ended, true,
-                com.jayptucker.heroesevolved.network.SpeedCyclonePayload.FLIGHT);
+        com.jayptucker.heroesevolved.network.SpeedCyclonePayload.sendTempest(player.serverLevel(), player, cyclone.center,
+                HeroesEvolvedConfig.COMMON.flightCycloneRadius.get().floatValue(), cyclone.age,
+                cyclone.formedAt < 0 ? -1 : cyclone.age - cyclone.formedAt, ended, cyclone.orbiting ? cyclone.formTicks : -1);
     }
 
     /**
@@ -770,6 +828,8 @@ public final class FlightService {
         /** The flyer has started circling (the ideal point round the funnel is now theirs to follow). */
         boolean orbiting;
         int orbitTicks;
+        /** Ticks of laps toward forming the funnel, and the age it formed at (-1 until it has). */
+        int formTicks, formedAt = -1;
         final java.util.Set<UUID> caught = new java.util.HashSet<>();
         final double strength;
         CycloneState(Vec3 center, double angleRadians, int remainingTicks,

@@ -25,7 +25,8 @@ abilities will meet. Reuse these instead of starting again. What the player sees
     `EntityCarryService.canTravelTo`, so an overhead load must fit too.
   - If the swept move comes back near zero, the dash has hit something: end it there (`applySkyburst` returns
     false and zeroes the push).
-- **Fast orbits follow an ideal point.** Tempest's flyer circles at about 3.6 blocks a tick. Aiming straight at a
+- **Fast orbits follow an ideal point.** Tempest's flyer circles at the configured turn rate (never over 3.6 blocks
+  a tick). Aiming straight at a
   target from the position the client reported a tick ago oscillates and flings the player off.
   - Instead, an ideal point runs round the circle. The velocity is that point's step forward plus a gentle
     correction toward it (×0.3, capped at 1.2 blocks), and the result is swept.
@@ -73,8 +74,14 @@ abilities will meet. Reuse these instead of starting again. What the player sees
   Drop and the skills all use these two, so a rule changes in one place.
 - **Respect cover.** `TornadoWind.exposed(owner, center, target)` raycasts from the effect to the target.
   Tempest's wind (`TornadoWind.blowTempest`) only grabs targets that are hostile and exposed.
-- **Give a warning before the pull.** Tempest's one-second wind-up no longer pulls anything; it gives targets
-  time to escape before the storm takes hold.
+- **Give a warning before the pull, and earn the storm.** A Tempest that stood up the moment it was cast, before
+  the flyer had made a single lap, read as unearned. Now the flyer gathers for a second, then laps a tight circle
+  (`orbitRadius`: at most `TEMPEST_TIGHT_ORBIT` 4.5, never inside the funnel's wall at its height) for
+  `TEMPEST_FORM_TICKS` (three seconds, about three and a half laps) before `form` stands the funnel. Until then it pulls
+  nothing, is not steered and its five seconds have not begun, and the payload's `tornadoAge` stays -1 while
+  `forming` counts the laps. A lap whose swept move comes up short (anything in the way) calls `breakUp`: the
+  Tempest ends with an action-bar line saying why. Use the same shape for anything a player builds up by moving:
+  time it on the server, send the progress, and let an obstacle undo it.
 
 ### The shared tornado
 
@@ -93,6 +100,11 @@ abilities will meet. Reuse these instead of starting again. What the player sees
 
 ### Drawing it
 
+- **A forming storm shows its plan.** `FlightArt.forming` draws the funnel's full outline (`plan`) from the first
+  lap and lights it ring by ring from the bottom with the server's forming progress, so the player watches the laps
+  build it (the Matter Assembly bar: plan, then build). `FlightArt.formed` runs a seam round the foot and fades the
+  plan as the real funnel rises inside it. Strands spiral from the flyer down to the ground with their top end on
+  the flyer, a strand a lap.
 - **One art class, one shape language.** Every Flight set piece is drawn by
   `client/effects/setpiece/FlightArt`. `PieceArt` sends all twelve Flight pieces (`FLIGHT_RELEASE`,
   `FLIGHT_SKYBURST`, `FLIGHT_IMPACT`, `FLIGHT_RESCUE`, `FLIGHT_SHELTER`, `FLIGHT_CURRENT`,
@@ -151,14 +163,19 @@ abilities will meet. Reuse these instead of starting again. What the player sees
   `attenuation_distance` in `sounds.json` matches. Keep the two equal.
 - **Feel it as well as see it.** `CameraShakePayload.sendAround(level, at, 64, strength, ticks)` gives a
   tremor that weakens with distance. Skyburst and impacts scale it with charge and Momentum.
-- **The camera for watching a big effect** (`TempestCamera` + `mixin/TornadoCameraMixin`) pulls back and holds
-  still: 26 back and 12 up for a speedster's tornado; 34 back and 15 up for Tempest, raycast in front of walls.
+- **The camera for watching a big effect** (`TempestCamera` + `mixin/TornadoCameraMixin`) pulls back for the
+  whole of your own run: 2.4 ring radii back and 1.15 up for any speedster ring (vacuum and containment too),
+  growing with the funnel's height to 26 back and 12 up for their tornado; 34 back and 15 up for Tempest. Every
+  spot is raycast in front of walls. It glides out from wherever your camera was and back home afterwards on a
+  critically damped follow (velocity keeps half of itself, gains `(1 - sqrt keep)^2` of the gap), which eases in
+  and out without overshooting; a plain lerp started with a jolt, and the old tornado-only camera cut. Into first
+  person it stops 2.5 blocks behind the head and cuts the last step, so the view never passes through the skull.
   It moves only the camera at the end of `Camera.setup`. **Never use `Minecraft.setCameraEntity(otherEntity)`**:
   it stops the local player moving and reporting their position.
 - **Speed tuning lives in one place.** `FlightSpeedControl.speed(step, max)` maps wheel steps to cruise speed;
   Skyburst's numbers are constants at the top of `FlightDynamicsService`.
 
 - **Ease both ends of Tempest's entry.** Zeroing velocity in `startCyclone` defeated gradual windup deceleration.
-  Keep incoming velocity, damp it during gathering, then ease angular speed and blend swept orbit motion over
-  24 ticks. `FlightVaporClient` samples boot anchors from `FlightPoseRenderer.frame`, including pitch and bank;
+  Keep incoming velocity, damp it during gathering, then ease angular speed (from a quarter, over 40 ticks of the
+  forming laps) and blend swept orbit motion. `FlightVaporClient` samples boot anchors from `FlightPoseRenderer.frame`, including pitch and bank;
   look-only offsets detached the trails from a turning body.

@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * While you are watching your own tornado, the view is moved to a still spot well back from it. Only the camera
+ * While you run a Cyclone or Tempest of your own, the view is moved to a spot well back from it. Only the camera
  * moves: your player stays the camera's entity, so it keeps moving, reporting its position, and being drawn.
  */
 @Mixin(Camera.class)

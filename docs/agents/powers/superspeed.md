@@ -40,9 +40,31 @@ the core's standard in November 2026. What the player sees is in [docs/superspee
 
 - **A visible runner must be hittable there.** Cyclone formerly drew a puppet on the rim while leaving the body
   at the eye. `CycloneGeometry` now supplies its eased opening and laps to the server; the player is swept round
-  that path, and `SpeedCyclone` draws at the actual body. A blocked lap ends safely. Tornado windup is 190 ticks;
+  that path, and `SpeedCyclone` draws on that same path (see below). A blocked lap ends safely. A runner carried round
+  the ring in first person sees nothing useful, so `TempestCamera` pulls the view back for every run, not only once
+  a tornado has risen ([flight.md](flight.md), "Sound and feel"). Tornado windup is 190 ticks;
   tap duration stays 60, and the longer windup does not add eight seconds of ring damage. Test inflow with horizontal
   distance: measuring 3D distance counted the funnel's successful lift as failed pulling (`SpeedRunGameTests`).
+- **A speed you set must be a speed you see.** The Cyclone's scroll setting once changed only the wind's drag and
+  heat: the laps ran at a fixed 0.42 radians a tick at every setting, so scrolling up looked like nothing.
+  `CycloneGeometry.lapSpeed(setting)` now runs 0.26 to 0.9 (setting 3 keeps the old pace), and the run is a
+  `CycloneGeometry.Laps` schedule (from-age, angle, current and target lap speed, changing at `ACCEL`), so a change
+  carries on from where the runner is instead of jumping. `SpeedKit` re-plans it with `toward(...)` on every
+  scroll and sends it at once in `SpeedCyclonePayload.laps`; the client integrates the same schedule and fades the
+  small difference its latency makes over six ticks (`SpeedCyclone.laps`). Keep the run's clock separate from any
+  timer you reset: a tornado falling back into a vacuum resets `start`, but the laps keep `born`.
+- **Draw a teleported body on its schedule, not where the client has it.** The server carries the runner with
+  `teleportTo` every tick, and the client's `handleMovePlayer` sets `xo = x` on an absolute teleport, so the local
+  player's body jumps a whole stride a tick with no smoothing (and other players see it every second tick through
+  tracking). `SpeedCyclone` hides the body and draws the stand-in at `View.runner(age)` every frame; the afterimages
+  are the same schedule `GHOST_TICKS` apart in the past, so they reach further round the faster it runs.
+- **Scale the whole effect by one pace number.** `View.pace(age)` (0 at the slowest setting, 1 at the fastest, from
+  the eased lap speed) drives everything in `SpeedArt.ring`: trail lengths (as `omega / LAP_SPEED`), the gold wall,
+  torn-air streaks, the bow of pressed air, body lightning and the scorched track past 0.62, the lean
+  (`SpeedCyclone.lean(angle, pace)`), the leg cycle and the ghost count. Because it reads the eased speed, the
+  effects build up and die down with the runner, not with the key. A one-off on a change (a boom ring on a step up,
+  a skid on a step down) is stamped when the new schedule arrives (`surgeAt`, `brakeAt`) and placed where the runner
+  was then, so it hangs in the air behind them.
 - **Scripted movement is not a run for friction.** Once the body really laps the ring, `SpeedFriction` measured the
   laps (a fixed 2.7 blocks a tick at every setting, over `FRICTION_PACE`) and burned even a vacuum in under two
   seconds. While a Cyclone holds the runner, heat comes from `SpeedFriction.cycloneHeat(setting, fastest)` instead
