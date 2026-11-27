@@ -1,110 +1,133 @@
 # Telekinesis
 
-See [ranged attack distances](projectile-ranges.md) for the current projectile and beam ranges.
+See [ranged attack distances](projectile-ranges.md) for how far each power reaches.
 
-Telekinesis is a physical force kit built around acquiring, suspending, redirecting and
-releasing objects. Damage from launched fragments happens when their traveling paths hit
-something. Bodies thrown into walls or slammed onto ground produce a separate impact.
+**The far hand.** A telekinetic's power is a hand of bent air that does at a distance whatever their own hand does.
+Shove, and a palm flies along your aim; grip, and fingers close over what you hold; raise your hands, and shots stop
+in front of them. A ripple leaves your hand first, then the far hand appears where the force lands, glassy and clear with
+an orchid rim, sized to what it holds.
 
-## Base controls
+It moves only **real things**: creatures, dropped items, arrows and bullets, primed TNT, minecarts, boats and falling
+blocks. It never conjures anything. Other powers build matter (Matter Assembly), raise force walls (Invisibility) or tear
+up the ground (Density); a telekinetic uses what is already there.
 
-The default action slots retain their saved IDs and unlock levels.
+## Core keys
 
-| Default key | Action | Interaction |
+| Default key | Action | What it does |
 | --- | --- | --- |
-| G | Telekinetic Push | A directional pressure front shoves visible enemies and loose objects. An available orbit fragment fires along the crosshair. Shift while gripping slams the held enemy downward. |
-| H | Grip | Seize a visible creature, holding it beside the forward view. Press again to throw toward the crosshair. Shift + H attempts a checked placement on an aimed upper surface, otherwise releases gently. |
-| Z | Bullet Catch | Catch up to twelve approaching hostile projectiles within six blocks, arranged in two peripheral banks. Press again to converge them on the crosshair. Shift cancels safely. |
-| X | Disarm | Tear a mob's weapon into the world and draw visible loose items toward you. Players retain their equipment. |
-| V | Telekinetic Storm | Mark up to sixteen visible enemies within twelve blocks. Gather for twenty ticks, then lift and swirl for forty-five ticks before slamming. Press again after gathering to slam early; Shift cancels. |
+| G | **Shove** | A palm of bent air flies along your aim (16 blocks, a 35° cone). Everything in it is shoved **as the palm reaches it**, so nearer foes are hit first. Walls stop it. **Shift while gripping** slams what you hold into the ground. |
+| H | **Grip** | The far hand closes on a creature, an item, primed TNT, a cart, a boat or a falling block (32 blocks) and holds it beside your view. **Turn quickly to swing it**: whatever it sweeps through is batted aside and hurt, and so is the club. **Press again** to throw it where you aim, harder the faster you were swinging. **Shift + press** sets it down gently where you look. |
+| Z | **Bullet Catch** | Raise cupped hands: shots coming at you within 6 blocks stop dead in the air in two arcs before you (up to twelve), leaving the middle of your view clear. **Press again** to send them all where you aim (free). **Shift** lets them drop. |
+| X | **Disarm** | The far hand plucks the weapon out of a mob's hand and carries it home, and draws loose items to you. **Press again within three seconds** (free) to **fling** the stolen weapon where you aim: it turns end over end and hits for its own damage. Players keep their gear. |
+| V | **Telekinetic Storm** | Two great hands sweep in along the ground while a ring fills at 12 blocks (nobody is touched yet), then turn palm up under every foe in the ring, lift them and turn them slowly, and slam them down. **Press again** after the gather to slam early; **Shift** lets them down. |
 
-Grip uses yaw-relative placement rather than the camera's vertical angle. Looking straight up
-or down cannot swing the held creature through the player's eye line. Grip no longer deals
-automatic choking damage; throws, slams and follow-up techniques supply the damage.
-
-Bullet Catch and Storm begin their recovery when the active sequence ends. Ending a sequence
-does not require a second stamina payment. Timed-out or interrupted projectile catches drop
-their shots safely, restoring each projectile's original gravity setting.
+Holding someone never hurts them: throws, slams, swings and pins do the damage.
 
 ## Fighting style: Puppeteer
 
-With an empty hand you fight in the Puppeteer style on the shared fighting-style controls (see [fighting-styles.md](fighting-styles.md#puppeteer-telekinesis)): swats that bat the foe in sight sideways (and hurt whoever they hit), a lift and slam, a repulse, self-shoves and a float back, and Grip, which hangs whoever you evaded in the air.
+With an empty hand you fight in the Puppeteer style (see [fighting-styles.md](fighting-styles.md#puppeteer-telekinesis)):
+a flick of the hand and the far hand swats the foe in sight sideways, a claw lifts and slams, a repulse pushes everyone
+round you, and dodges are your own far hand shoving you. A blow you evade is answered with a grip.
 
-## All eighteen purchased nodes
+## Skill tree
 
-Existing node IDs, prerequisites, prices and equipped action IDs remain compatible with saved
-builds. The old six blanket stamina/damage/cooldown nodes now unlock specific interactions.
+Node IDs are kept from the first kit, so old builds and loadouts load; names and what they do are new.
 
-| Branch | Node | What it changes |
+| Branch | Node | What it does |
 | --- | --- | --- |
-| Fine Manipulation | Soft Landing | Gently released friendly creatures gain five seconds of Slow Falling. |
-| Fine Manipulation | Vector Lance | Launch a visible, fast stone lance for ten damage, up to forty blocks. |
-| Fine Manipulation | Thread the Needle | The lance can pierce its first creature and strike a second. |
-| Fine Manipulation | Remote Hand | Pull a visible loose item or operate an eligible switch, door, gate or bell within twenty-four blocks. |
-| Fine Manipulation | Long Reach | Remote Hand reaches forty-eight blocks; Grip reaches eight blocks farther. |
-| Fine Manipulation | Retrieve | Extract one actual stack from an unlocked, editable container. It travels back through the world and can be intercepted. |
-| Kinetic Arsenal | Salvage Orbit | A successful Push or Disarm gathers one temporary fragment beside you. Push launches an available fragment. |
-| Kinetic Arsenal | Gravity Well | Place a five-second pull at the crosshair. Recast to loft gathered enemies upward, or Shift to end safely. |
-| Kinetic Arsenal | Crossfire | A thrown enemy's wall/ground impact spends an orbiting fragment on a different nearby enemy. |
-| Kinetic Arsenal | Kinetic Volley | Gather three fragments, then launch them at the aimed point in sequence. Each physical hit deals four damage. |
-| Kinetic Arsenal | Five Fragments | Increase orbit capacity and volley size to five. |
-| Kinetic Arsenal | Iron Rain | Shift + Volley uses ballistic arcs and small landing pressure waves. Ceilings and walls can stop the barrage. |
-| Bastion | Grounding | Vector Step stores one safe landing for five seconds. |
-| Bastion | Vector Step | Vault forward/up from a visible force foothold; Shift reverses the vault. |
-| Bastion | Counterstep | The first twelve ticks of Vector Step deflect approaching hostile projectiles. |
-| Bastion | Force Bubble | A moving shell deflects approaching hostile projectiles and pushes enemies outside. Recast releases an outward wave; Shift cancels. |
-| Bastion | Forward Bastion | Increase the shell radius from three to four blocks and unlock Shift-casting an anchored shell at the crosshair. |
-| Bastion | Counterbattery | The shell lasts ten seconds and redirects intercepted hostile projectiles toward the current crosshair. |
+| Fine Hands | Soft Landing | Friends you set down float to the ground. Once every twenty seconds the far hand **catches** you or a friend within 16 blocks at the end of a fall of five blocks or more. |
+| Fine Hands | **Pin** (active) | Sylar's pin: the far hand drives the creature in your crosshair (24 blocks) back along your aim until it meets a wall, then holds it there helpless for three seconds (6 damage on the wall, a little more at higher tiers). **Shift** pins it to the ground. A foe that meets nothing hangs in the air for a second and a half. |
+| Fine Hands | Pinned Together | Pin carries up to two more foes standing in its path along with the first. |
+| Fine Hands | **Beckon** (active) | A small far hand works a lever, button, door, trapdoor, gate or bell up to 24 blocks away, or brings a loose item to you. |
+| Fine Hands | Long Reach | Beckon reaches 48 blocks; Grip reaches eight blocks farther. |
+| Fine Hands | Retrieve | Beckon pulls one real stack out of a container you can edit; it flies back to you and can be intercepted. |
+| Collision | Bowling | Anything you shove, throw or swing hurts every creature it runs into for 70% of its own blow, and knocks them on. |
+| Collision | **Round Up** (active) | Two far hands cup the spot you aim at for five seconds, dragging foes into a knot. **Press again** to toss them all up. |
+| Collision | Carom | A body you throw that strikes a wall rebounds once at the nearest other foe and hits it. |
+| Collision | **Juggle** (active) | Up to three foes near where you aim are popped into the air one after another, and popped again each time they come down (three pops, 2 damage each). |
+| Collision | Five at Once | Juggle takes five foes, four pops each. |
+| Collision | Spike | **Press Juggle again** (free) while they're up to drive every juggled foe into the ground. |
+| Collision | **Skyfall** (signature) | See below. |
+| Levitation | Grounding | Vector Step stores one safe landing for five seconds. |
+| Levitation | **Vector Step** (active) | Your own far hand throws you forward and up; Shift throws you back. |
+| Levitation | Second Step | Press Vector Step again in the air within two seconds for a second throw, free. |
+| Levitation | **Levitate** (active) | Lift yourself on the far hand and hover up to six blocks up, drifting where you steer (jump and crouch rise and sink), for as long as you pay (5 stamina a second). Loose items float up round you. Press again, or run dry, to come down gently. |
+| Levitation | Raise the Party | Levitate lifts friends within 3 blocks with you. |
+| Levitation | Still Air | While you levitate, shots that reach you stop in a slow ring round you (up to six). Press Bullet Catch to send them where you aim. |
 
-Normal second presses can release Gravity Well and Force Bubble during their cast cooldown,
-without paying again. Shift + an already active field always cancels it; creating an anchored
-Forward Bastion requires no existing bubble.
+### Signature: Skyfall
 
-## Combinations to try
+The far hand takes the foe in your crosshair (24 blocks), hauls it sixteen blocks into the sky and holds it there,
+trembling, while a ring fills on the ground where it stood. When the ring is full the hand turns over and drives it
+straight down: 12 + tier to it, and 6 + half your tier to everything else within 5 blocks, thrown outward, with a ring
+of pressure and a cloud of dust. **Step out of the ring** if you're near it. A boss is too heavy to lift: the hand drags
+it out of the air instead.
 
-- Push an enemy into cover to salvage a fragment, Grip another enemy, then throw it into a
-  wall: Crossfire spends the fragment on a different target.
-- Gather enemies with Gravity Well, release them upward, then aim a piercing Vector Lance
-  through the airborne group.
-- Place Forward Bastion at a passage while standing to one side; Counterbattery returns the
-  intercepted shots down your own aim line.
-- Use Vector Step to change angle, then lob Iron Rain over low cover. An overhead ceiling
-  remains a physical obstruction.
-- Catch a projectile formation, reposition, and release it deliberately. A timed-out catch
-  will not fire automatically.
+### Combinations to try
 
-## Presentation and limits
+- **Swing, then throw.** Grip a foe, turn hard through the crowd beside you, and throw it mid-swing for the whip.
+- **Round Up, then Juggle.** Knot a crowd together, then pop the whole knot; Spike it before it lands.
+- **Pin a foe behind a doorway** and fight the others; it's out of the fight for three seconds.
+- **Disarm, then fling.** Steal a vindicator's axe and send it into the evoker behind it.
+- **Bowling and Carom** turn every throw into a chain: the body hits a wall, rebounds into a second foe, and knocks it on.
+- **Levitate with Still Air** over a skeleton camp: their arrows hang round you, and Bullet Catch sends them all back.
 
-Nine dedicated effect compositions distinguish gathering, orbit, launch, impact, grip, pressure
-waves, barriers, wells and force footholds. Gathering, holding and releasing also have distinct
-animated hand poses in first and third person. Thin pale refraction collars and moving tension
-threads leave the actual target or fragment visible.
+## Classes
 
-Fragments are small vanilla block displays driven by bounded server-side physics. They never
-remove terrain, create collectible blocks, save into chunks or generate loot. Swept creature
-and block collision prevent fast fragments tunneling through cover. Lance and volley paths
-have finite ranges and lifetimes; Iron Rain follows a ballistic path rather than spawning
-projectiles behind a ceiling.
+| Class | Ability | What it does |
+| --- | --- | --- |
+| Offence | **Clench** | A great far hand over a point (24 blocks) closes slowly into a fist, dragging foes within 6 blocks in, then crushes them (6 + 0.75 per tier) and slams them down. |
+| Defence | **Warding Hands** | Two far hands circle you for 8 seconds, swatting shots away and batting anyone who comes close. |
+| Support | **Gathering Hand** | The far hand scoops every friend within 16 blocks up and sets them at your side, with strong damage resistance for 5 seconds. |
 
-Allied creatures, owned pets, protected players, carried bodies and temporal copies are
-excluded from hostile interactions. Field effects respect solid cover. Death, logout,
-dimension changes, power removal, loss of control, skill reset and server shutdown clean up
-their transient state. A complete single skill branch still fits the level-five point budget.
+## What you see
 
-Dedicated GameTests cover progression persistence, physical travel and interception, timing,
-field recasts, targeting, cleanup and the base interaction controls. The standalone effect
-geometry check includes eighty-four kinetic hand/skin/phase combinations. In-game multiplayer
-playtesting remains the check for animation feel and balance.
+Everything is drawn by one art class, `KineticArt`, in one palette: a plum refraction shadow (`2A1030`), deep orchid
+halo (`8A2C6E`), orchid body (`D65AA8`), blush rim (`FFB3DE`), a pale core (`FFF3FA`) and dust.
+
+- **The far hand**: a palm, four jointed fingers and a thumb, glassy, with a forearm of bent air fading away behind the
+  wrist and refraction lines sliding over the palm. Its fingers curl from open to a fist, and it is always the shape
+  your own hand is making (your arms are posed for every move, in first and third person).
+- **Shove**: the palm leaves your hand fingers up, grows as the cone widens, and rings of pressure open behind it as it
+  passes; it flattens against the end of its reach.
+- **Grip**: a claw of five fingers closes over the held body from above, a thread of bent air bowing back to your hand.
+  Swing it and air streams after it; a throw flings the claw open.
+- **Bullet Catch**: two cupped hands raised before you, a lens of air between them; each caught shot has two thin rings
+  turning slowly round it.
+- **Pin**: an open palm pressing the body into the wall, trembling, rings of pressure spreading over the wall.
+- **Skyfall**: the warning ring fills on the ground; a claw hauls the foe up with its forearm reaching into the sky,
+  then a palm drives it down in a column of streaks; a ring bursts over the ground, dust rolls, grit flies.
+- **Every hit answers**: rings open on the struck face's plane, a flash, and chips thrown off it.
+- **Levitate**: two hands under your feet, palms up, cradling you; a slow ring beneath.
+
+## Admin
+
+`/heroesevolved telekinesis status [targets]` says what each telekinetic is holding and doing;
+`/heroesevolved telekinesis release [targets]` lets everything go gently and lands a hovering caster.
 
 ## Finishers: Cut Strings, Crush, Toss
 
-From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
+From Power Level 3, a foe low enough to finish glistens gold. Press **C** near it (within 4 blocks). Shift + C switches
+finishers off and on; the rules every finisher shares are in [finishers.md](finishers.md).
 
-- **What you see.** You raise a hand and thin strings run from your fingers to the foe's head, hands and feet. You lift it and make it dance (turns, a jerk, a hop) while your fingers play, then draw a finger across: the strings snap one by one and it drops in a heap.
-- **A mob holding a weapon** drops it, and the weapon floats to you. Players keep their gear.
-- **Reward:** Grip is ready again.
+- **Cut Strings.** Thin strings run from your raised fingers to the foe's head, hands and feet. You make it dance, then
+  draw a finger across: the strings snap one by one and it drops. A mob's weapon floats to you. **Reward:** Grip is
+  ready again.
+- **Crush.** The claw closes over the foe from above, bands of pressure tightening round it, until it buckles.
+- **Toss.** The claw lifts the foe three and a half blocks, holds it, trembling, and slams it into a ring on the ground.
 
-Each press of C plays one of three at random, never the one you used last. Cut Strings is described above; the two alternates give the same reward.
+Each press of C plays one of the three at random, never the one you used last.
 
-- **Crush.** You close your fist slowly and the five fingers of air close over the foe from above, trembling, bands of pressure tightening round it, until it buckles.
-- **Toss.** The hand of air lifts the foe three and a half blocks up and holds it a beat, trembling; you pull your arm down hard and it is slammed into the ground in a ripple.
+## Safety and limits
+
+Allied creatures, owned pets, protected players, carried bodies and temporal copies are never grabbed as foes. Held
+things keep their own gravity and AI flags; the hand only steers their motion, and fast moves are swept so nothing is
+pushed through a wall. Death, logout, a dimension change, losing the power, a skill reset and the server stopping let
+everything go and land a levitating caster.
+
+## Verification
+
+`./gradlew runGameTestServer --init-script tools/structure-gametest.init.gradle -PtestPackages=telekinesis` runs
+`TelekinesisBaseGameTests` (the core keys) and `TelekinesisFarHandGameTests` (the tree, Skyfall, swinging and throwing,
+Levitate). `./gradlew runClient --init-script tools/telekinesis-preview.init.gradle` photographs the kit into
+`build/telekinesis-preview/screenshots/`.

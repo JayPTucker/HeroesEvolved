@@ -490,6 +490,69 @@ final class SonicArt {
         }
     }
 
+    /**
+     * Standing Wave ({@code sonic/StandingWave}): a column of sound standing on the spot, rings stacked up it whose
+     * radius swells at the bellies and pinches to nothing at the still nodes, breathing with the note; a note glyph hangs
+     * at each node, a stave circles the foot, and on each beat a rippling front sweeps in from the edge to the column.
+     * The beat (in the seed) swells it. Origin the foot, target the top, scale the radius; re-sent each beat.
+     */
+    static void standing(Canvas c, Active a, float t) {
+        if (SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.SONIC_STANDING, com.jayptucker.heroesevolved.styles.Piece.SONIC_STANDING_BREAK), c.level.getGameTime())) return;
+        int period = com.jayptucker.heroesevolved.sonic.StandingWave.PERIOD, beats = com.jayptucker.heroesevolved.sonic.StandingWave.BEATS;
+        Vec3 foot = a.origin(), top = a.target();
+        float r = Math.max(1, a.scale()), height = (float) (top.y - foot.y), life = a.piece().ticks;
+        int beat = a.seed();
+        float swell = .35F + .65F * beat / (float) (beats - 1), f = fade(t, life, beat == 0 ? 6 : .5F, 1);
+        float clock = (c.level.getGameTime() % 2400 + c.partial) / 20F;
+        float breath = cos(clock * TWO_PI * 1.5F);
+        // The column: stacked rings, three bellies between four nodes.
+        int rings = 22;
+        for (int i = 0; i <= rings; i++) {
+            float u = i / (float) rings, shape = abs(sin(u * PI * 3));
+            float radius = (.2F + r * .4F * swell * shape) * (.75F + .25F * breath);
+            front(c, foot.add(0, u * height, 0), UP, radius, .05F + .04F * shape, u * .8F + clock * .1F, f * (.45F + .55F * shape), 0, 0);
+        }
+        // A note at each still node.
+        for (int n = 0; n <= 3; n++) {
+            float y = n / 3F * height;
+            float ang = clock * 2 + n * 1.7F;
+            glyph(c, foot.add(cos(ang) * .35, y + .1, sin(ang) * .35), .09F, tone(n * .25F), f * .9F, n % 2 == 0);
+        }
+        staff(c, foot.add(0, .05, 0), r, clock * .6F, clock * .6F + 4.4F, clock * .1F, f * .7F);
+        // The beat: a rippling front sweeping in from the edge to the column, the column flashing as it arrives.
+        if (beat > 0 && t < period) {
+            float k = smooth(0, 10, t);
+            front(c, foot.add(0, .1, 0), UP, r * (1 - k) + .3F, .1F, beat * .2F, f * (1 - k * .4F), .05F, t);
+            front(c, foot.add(0, height * .5, 0), UP, r * .9F * (1 - k) + .3F, .07F, beat * .2F + .3F, f * .6F * (1 - k), .05F, t + 2);
+            if (c.glow() && t > 8 && t < 14) c.glow(foot.add(0, height * .5, 0), 1.2F + .4F * beat, CORE, .3F * (1 - (t - 8) / 6));
+        }
+    }
+
+    /** Standing Wave breaking: the column bursts into fronts racing out at each belly and shards of sound flung away. */
+    static void breakWave(Canvas c, Active a, float t) {
+        Vec3 foot = a.origin(), top = a.target();
+        float r = Math.max(1, a.scale()), height = (float) (top.y - foot.y), life = a.piece().ticks, f = fade(t, life, .5F, 10);
+        float k = 1 - (1 - smooth(0, 12, t)) * (1 - smooth(0, 12, t));
+        for (int n = 0; n < 3; n++) {
+            float y = (n + .5F) / 3 * height;
+            front(c, foot.add(0, y, 0), UP, .4F + r * 1.6F * k, .12F, n * .3F, f * (1 - k * .6F), .06F, t + n);
+        }
+        front(c, foot.add(0, .1, 0), UP, .4F + r * 1.9F * k, .15F, .5F, f, .04F, t);
+        if (c.glow()) {
+            if (t < 4) c.glow(foot.add(0, height * .5, 0), 3, CORE, .7F * (1 - t / 4));
+            for (int i = 0; i < 14; i++) {
+                float ang = hash(a.seed() + 31, i) * TWO_PI, up = (hash(a.seed() + 31, i + 20) - .3F);
+                Vec3 d = new Vec3(cos(ang), up, sin(ang)).normalize();
+                Vec3 from = foot.add(0, height * hash(a.seed() + 31, i + 40), 0).add(d.scale(r * 1.4 * k));
+                c.line(from, from.add(d.scale(.6)), .05F, tone(i * .13F), f * (1 - k * .5F), 0);
+            }
+        }
+        for (int i = 0; i < 4; i++) {
+            float ang = i * TWO_PI / 4 + .5F;
+            glyph(c, foot.add(cos(ang) * r * k, height * .6 + k * 1.5 - k * k * 2, sin(ang) * r * k), .12F, tone(i * .25F), f, true);
+        }
+    }
+
     /** Five lines of a stave bent round an arc of radius {@code radius} about {@code center}, from one angle to another. */
     static void staff(Canvas c, Vec3 center, float radius, float from, float to, float k, float alpha) {
         if (alpha < 0.01F) return;

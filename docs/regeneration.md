@@ -18,6 +18,10 @@ lethal blow would keep you down (once down, it counts you up and fills as you ho
   Second Life costs 50.
 - **It shortens everything:** a limb grows back 40% faster for 10 Regrowth, and going down
   spends all of it to cut up to 40% off the time on the ground.
+- **You can see it on her.** Regrowth glows in her veins for everyone to see: dark crimson lines under the skin with a
+  bright line in each, down both arms first, then out across the chest from the heart, then up the neck. The more she
+  carries the further they reach and the brighter they burn, turning gold near 100, and they pulse with a lub-dub every
+  second. Rapid Mending empties them at once.
 
 ## Passive
 
@@ -100,6 +104,15 @@ Node IDs are unchanged, so earlier purchases carry over.
 | **Martyr's Grace** | You take only a quarter. |
 | **Martyr** | Once every two minutes, take a killing blow meant for a teammate within eight blocks. |
 
+### Signature: Last One Standing
+
+Under Adaptation, after Adrenal Rush. Spread your arms and **make yourself the target**: for six seconds every foe within
+12 blocks turns on you (a crimson tether runs from each of them to your chest), and a ring on the ground shows the
+reach. You take every blow at **half strength** and bank all of it, which also feeds your Regrowth. When the six seconds
+end, or when you **press again** (free), you let it go: dark veins burst out over the ground from your feet, a heartbeat
+ring races out, and everyone within 8 blocks takes **4 + tier and up to 16 more** (half of what you banked) and is thrown
+back. Line of sight is needed, so a wall still shelters a foe.
+
 ### Adaptation (a body that learns)
 
 | Node | What it does |
@@ -127,12 +140,14 @@ The three styles keep their effects and have their own poses: **Vital Burst** (a
 
 ## Look and sound
 
-Blood moves the wrong way: drops are drawn back into the body as wounds close, crimson and gold
-strands climb the body during Rapid Mending, a soft thread of blood arcs to whoever you heal, a
-heartbeat pulses out of someone given a Second Life, and coming back from death throws heartbeat
-rings across the ground. Indestructible punches crack white with red sparks, and an ejected arrow
-leaves a glint and a spray. All glows use the same additive ribbons as the lightning.
-Sounds are vanilla: the bone-block snap for broken hands, the Warden's heartbeat for a Second Life.
+Every Regeneration effect is drawn by one art class, `RegenArt`, in one palette: clot `3A060C`, blood `B0101C`, bright
+`FF4050`, life gold `FFD9A0`, bone `EDE3D0` and a warm core `FFF4F0`. Blood moves the wrong way: drops are drawn back into
+the body as wounds close, a gold seam climbs the body during Rapid Mending while bone chips click home, a sagging
+strand of blood arcs to whoever you heal, a Blood Bond is a pair of rings on the ground, a heartbeat pulses out of
+someone given a Second Life, and coming back from death throws heartbeat rings across the ground. Reckless punches
+ring the struck body and spray blood back off the fist; an ejected arrow or bullet is pushed out with a spray.
+Regrowth itself shows as glowing veins (above). Sounds are vanilla: the bone-block snap for broken hands, the
+Warden's heartbeat for a Second Life and Last One Standing.
 
 The rework's pieces are drawn by `client/effects/setpiece/RegenArt` in the same palette, from four primitives:
 a sagging **strand** of blood (Blood Stream), **drops** sliding along it, a lub-dub **beat** ring (Pay It Back, a Freefall
@@ -154,13 +169,16 @@ landing cracks the ground dark red.
 ## Previewing and tests
 
 ```bash
+./gradlew runClient --init-script tools/regenart-preview.init.gradle
 ./gradlew runClient --init-script tools/regen-kit-preview.init.gradle
 ./gradlew runClient --init-script tools/regeneration-preview.init.gradle
 ./gradlew runClient --init-script tools/body-preview.init.gradle
 ```
 
 photograph every power at dusk, and each stage of a limb growing back plus the downed body, in
-`build/regeneration-preview/screenshots/` and `build/body-preview/screenshots/`. `RegenReworkGameTests` checks Mending pushing arrows out, Blood Stream and the tapped gift, Freefall, Pay It Back, Shared Blood, Scar Tissue, Bloodletting, Adrenal Rush, Play Dead and its ambush, and Quick Recovery with Back on Your Feet. The kit preview photographs every action, follow-up, skill and style into `build/regen-kit-preview/screenshots/`. `RegenerationGameTests`
+`build/regeneration-preview/screenshots/` and `build/body-preview/screenshots/`. The first (`uitest/RegenArtPreview`)
+shoots the veins at three levels, Mending, Blood Gift and a Bond, Second Life, a revive, a reckless punch and Last One
+Standing at noon into `build/regenart-preview/screenshots/`; `LastOneStandingGameTests` checks the signature. `RegenReworkGameTests` checks Mending pushing arrows out, Blood Stream and the tapped gift, Freefall, Pay It Back, Shared Blood, Scar Tissue, Bloodletting, Adrenal Rush, Play Dead and its ambush, and Quick Recovery with Back on Your Feet. The kit preview photographs every action, follow-up, skill and style into `build/regen-kit-preview/screenshots/`. `RegenerationGameTests`
 checks that wounds become Regrowth and Mending spends it (with overflow Absorption), that Blood Gift
 reaches eleven blocks and feeds Regrowth, Reckless punches and ejected arrows, Blood Bond's shared
 wounds, that Second Life saves a friend exactly once, and halved falls. It also checks that an axe

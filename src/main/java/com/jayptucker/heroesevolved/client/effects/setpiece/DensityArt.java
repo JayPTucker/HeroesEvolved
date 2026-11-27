@@ -163,6 +163,94 @@ final class DensityArt {
         if (c.glow()) c.ring(o.add(0, .04, 0), UP, .5F, .03F, 0, Mth.TWO_PI, mix(STONE, PALE, weight), .5F * f);
     }
 
+    /** Mountain Armor's plates, in the body's own frame: x across, y up, z forward, then half-sizes. */
+    private static final float[][] MOUNTAIN = {
+            {0, 1.22F, .2F, .3F, .3F, .08F}, {0, 1.22F, -.21F, .3F, .3F, .08F},          // chest and back
+            {.42F, 1.5F, 0, .2F, .12F, .22F}, {-.42F, 1.5F, 0, .2F, .12F, .22F},          // pauldrons
+            {.44F, 1.02F, .03F, .13F, .22F, .14F}, {-.44F, 1.02F, .03F, .13F, .22F, .14F}, // gauntlets
+            {.13F, .55F, .03F, .14F, .22F, .16F}, {-.13F, .55F, .03F, .14F, .22F, .16F},   // greaves
+            {0, .86F, .14F, .26F, .1F, .1F},                                                 // belt
+            {0, 2.02F, -.06F, .3F, .07F, .3F}};                                              // crown
+    /** When each plate lands, as a fraction of the assembly: the legs first, the crown last. */
+    private static final float[] MOUNTAIN_ORDER = {.45F, .5F, .6F, .65F, .75F, .8F, .1F, .2F, .3F, .95F};
+
+    /**
+     * Mountain Armor ({@code phasing/MountainArmor}): plates of stone tear out of the ground round the feet and fly up
+     * along arcs onto the body (legs first, crown last), each snapping into place with a pale seam flash as it lands, a
+     * sheen running over the whole suit at the end; then held on the body, the seams breathing pale light. The first
+     * sending (seed 0) assembles it over {@code ASSEMBLE} ticks. Bound to the wearer; re-sent each second.
+     */
+    static void mountain(Canvas c, Active a, float t) {
+        if (SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.DENSITY_ARMOR, com.jayptucker.heroesevolved.styles.Piece.DENSITY_ARMOR_BURST), c.level.getGameTime())) return;
+        Entity e = a.bound(c);
+        if (e == null) return;
+        Vec3 o = e.getPosition(c.partial);
+        boolean first = a.seed() == 0;
+        int assemble = com.jayptucker.heroesevolved.phasing.MountainArmor.ASSEMBLE;
+        float life = a.piece().ticks, f = Mth.clamp((life - t) / 2 + .5F, 0, 1);
+        float yaw = e instanceof LivingEntity body ? Mth.rotLerp(c.partial, body.yBodyRotO, body.yBodyRot) * Mth.DEG_TO_RAD : 0;
+        float s = Mth.sin(yaw), co = Mth.cos(yaw);
+        float pulse = .5F + .5F * Mth.sin((c.level.getGameTime() + c.partial) * .25F);
+        boolean hidden = firstPerson(e);
+        for (int i = 0; i < MOUNTAIN.length; i++) {
+            float[] p = MOUNTAIN[i];
+            Vec3 seat = o.add(p[0] * co - p[2] * s, p[1], p[0] * s + p[2] * co);
+            float land = first ? MOUNTAIN_ORDER[i] * assemble : -1;
+            float wob = (hash(17, i) - .5F) * .16F;
+            if (first && t < land) {
+                // In flight: torn out of the ground beside the feet, along an arc to its seat.
+                float start = Math.max(0, land - 6), k = smooth(start, land, t);
+                if (k <= 0) {
+                    // Still in the ground: a crack opening where it will come from.
+                    float ang = hash(17, i + 40) * Mth.TWO_PI;
+                    crack(c, o.add(Mth.cos(ang) * 1.4, 0, Mth.sin(ang) * 1.4), ang, .5F, 17 + i, .6F, smooth(0, start + .01F, t));
+                    continue;
+                }
+                float ang = hash(17, i + 40) * Mth.TWO_PI;
+                Vec3 from = o.add(Mth.cos(ang) * 1.4, -.1, Mth.sin(ang) * 1.4);
+                Vec3 at = from.lerp(seat, k).add(0, Mth.sin(k * Mth.PI) * .9, 0);
+                if (!hidden) slab(c, at, p[3], p[4], p[5], yaw + wob + (1 - k) * 3, (1 - k) * 2, wob, i < 2 ? SLATE : STONE, .6F + .4F * k);
+                if (c.glow()) c.line(from.lerp(at, .7), at, .05F, PALE, 0, .6F * f);
+                continue;
+            }
+            if (!hidden) slab(c, seat, p[3], p[4], p[5], yaw + wob, wob * .4F, wob, i < 2 || i == 9 ? SLATE : STONE, 1);
+            if (c.glow()) {
+                float snap = first ? 1 - smooth(land, land + 4, t) : 0;
+                if (snap > 0) c.glow(seat, .5F, PALE, .9F * snap);
+                if (!hidden) c.glow(seat, .2F, TEAL, (.12F + .18F * pulse) * f);
+            }
+        }
+        // The sheen over the finished suit, and the ground it came from.
+        if (first && c.glow() && t >= assemble && t < assemble + 6) {
+            float k = (t - assemble) / 6;
+            c.ring(o.add(0, .2 + 1.9 * k, 0), UP, .55F, .06F, 0, Mth.TWO_PI, PALE, .7F * (1 - k));
+        }
+        if (first && t < assemble + 4) for (int i = 0; i < 6; i++)
+            crack(c, o, hash(17, i + 10) * Mth.TWO_PI, .8F + .6F * hash(17, i + 20), 17 + i, .8F, .8F);
+    }
+
+    /** Mountain Armor blasting off: every plate flies out from its seat, tumbling, over a ring of dust and cracks. */
+    static void mountainBurst(Canvas c, Active a, float t) {
+        Vec3 o = a.origin();
+        float life = a.piece().ticks, r = Math.max(1, a.scale()), f = fade(t, life, 0, 8);
+        Vec3 look = a.target().subtract(o);
+        float yaw = (float) Mth.atan2(look.z, look.x) - Mth.HALF_PI;
+        float s = Mth.sin(yaw), co = Mth.cos(yaw);
+        for (int i = 0; i < MOUNTAIN.length; i++) {
+            float[] p = MOUNTAIN[i];
+            Vec3 seat = o.add(p[0] * co - p[2] * s, p[1], p[0] * s + p[2] * co);
+            Vec3 out = seat.subtract(o.add(0, 1.1, 0));
+            out = out.lengthSqr() < 1e-4 ? new Vec3(0, 1, 0) : out.normalize();
+            float d = r * .9F * (1 - (float) Math.exp(-t / 5)), drop = .02F * t * t;
+            Vec3 at = seat.add(out.scale(d)).add(0, Math.max(-p[1] + .1, out.y * d * .3 - drop), 0);
+            slab(c, at, p[3], p[4], p[5], yaw + t * .3F * (i % 2 == 0 ? 1 : -1), t * .2F, i, i < 2 ? SLATE : STONE, 1 - smooth(life - 8, life, t));
+        }
+        if (c.glow() && t < 4) c.glow(o.add(0, 1.1, 0), 2.2F, PALE, .7F * (1 - t / 4));
+        float k = smooth(0, 10, t);
+        ripple(c, o.add(0, .05, 0), UP, r * k, k, STONE, f);
+        for (int i = 0; i < 8; i++) crack(c, o, i * Mth.TWO_PI / 8 + hash(a.seed(), i), r * k, a.seed() + i, .6F, f);
+    }
+
     /**
      * Rebound: the weight comes back out of the ground. A shock ring snaps out (ease-out cubic), slabs of stone are thrown
      * up round it and fall back, and dark cracks run out to the ring's edge.

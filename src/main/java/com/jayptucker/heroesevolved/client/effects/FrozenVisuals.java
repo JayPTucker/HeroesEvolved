@@ -126,7 +126,7 @@ public final class FrozenVisuals {
         Vec3 normal=b.subtract(a).cross(c.subtract(a)).normalize();
         Vec3[] points={a,b,c,d};float[][] uv={{0,1},{0,0},{1,0},{1,1}};
         for(int i=0;i<4;i++)out.addVertex(pose.pose(),(float)points[i].x,(float)points[i].y,(float)points[i].z)
-                .setColor(.68F*shade,.89F*shade,shade,alpha).setUv(uv[i][0],uv[i][1])
+                .setColor(CryoMeshVisuals.ICE_R*shade,CryoMeshVisuals.ICE_G*shade,CryoMeshVisuals.ICE_B*shade,alpha).setUv(uv[i][0],uv[i][1])
                 .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
                 .setNormal(pose,(float)normal.x,(float)normal.y,(float)normal.z);
     }

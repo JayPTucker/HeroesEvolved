@@ -58,6 +58,22 @@
           "cost": 3,
           "requires": "quake_short_fuse",
           "mechanic": "undertow"
+        },
+        {
+          "id": "quake_epicenter",
+          "name": "Epicenter",
+          "description": "Drive both fists into the ground. Eight faults race out to a ring 10 blocks wide and glow as the plates load; after a second every plate heaves at once, throwing everyone standing in the ring for 6 + tier, then drops back and drags them toward the centre, slowed for three seconds. The spot is fixed when you strike, so foes who see the faults glowing can get out.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:cracked_deepslate_bricks",
+          "level": 4,
+          "cost": 3,
+          "requires": "quake_0_2",
+          "mechanic": "epicenter",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -424,6 +440,22 @@
           "requires": "flight_wider_clap",
           "mechanic": "sonic_bloom",
           "icon": "minecraft:sculk_sensor"
+        },
+        {
+          "id": "flight_microburst",
+          "name": "Microburst",
+          "description": "Sweep a hand down from the sky at a spot up to 24 blocks away. A lid of cloud gathers over it while a ring of wind marks the ground; after a second the column slams down: everyone inside the 6-block ring takes 6 + tier and is pinned for two seconds, and anything flying there is driven into the ground. Then the air spills out and throws whoever stands just past the ring away.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:wind_charge",
+          "level": 4,
+          "cost": 3,
+          "requires": "flight_2_2",
+          "mechanic": "microburst",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ]
     ],
@@ -646,6 +678,22 @@
           "cost": 3,
           "requires": "cryokinesis_long_winter",
           "mechanic": "shattered_sky"
+        },
+        {
+          "id": "cryokinesis_absolute_zero",
+          "name": "Absolute Zero",
+          "description": "Raise both palms and, for a second and a half, draw the warmth out of every foe within 12 blocks: an ember leaves each one and runs to your hands while frost creeps over it, fires near them go out and they slow to a crawl. Then the cold closes: each drained foe takes 4 + tier and freezes solid for three seconds (strike it to shatter it), and the heat comes back to you as stamina, 4 for each foe. Bosses are too big to freeze; they take the cold.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:blue_ice",
+          "level": 4,
+          "cost": 3,
+          "requires": "cryokinesis_2_2",
+          "mechanic": "absolute_zero",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ]
     ],
@@ -955,12 +1003,12 @@
       [
         {
           "name": "Soft Landing",
-          "description": "Gently placing a gripped creature gives it five seconds of Slow Falling. Shift + Grip places instead of throwing.",
+          "description": "Friends you set down drift to the ground with Slow Falling, and once every twenty seconds the far hand catches you or a friend within 16 blocks at the end of a fall of five blocks or more.",
           "level": 1
         },
         {
-          "name": "Vector Lance",
-          "description": "Launch a visible stone lance along your crosshair. It travels up to 64 blocks, collides with cover, and deals 10 damage.",
+          "name": "Pin",
+          "description": "The far hand drives the creature in your crosshair (up to 24 blocks) back along your aim until it meets a wall, then holds it there helpless for three seconds: 6 damage against the wall. Shift pins it to the ground instead. A foe that meets nothing hangs in the air for a second and a half.",
           "energy": 23,
           "cooldown": 100,
           "level": 2,
@@ -968,14 +1016,14 @@
           "design_cooldown": 100
         },
         {
-          "name": "Thread the Needle",
-          "description": "Vector Lance pierces its first creature and can hit a second creature behind it.",
+          "name": "Pinned Together",
+          "description": "Pin carries up to two more foes standing in its path along with the first, and pins them beside it.",
           "level": 3
         },
         {
           "id": "telekinesis_remote_hand",
-          "name": "Remote Hand",
-          "description": "Pull a loose item along your sightline or operate a lever, button, door, trapdoor, gate or bell up to 24 blocks away.",
+          "name": "Beckon",
+          "description": "A small far hand works a lever, button, door, trapdoor, gate or bell up to 24 blocks away, or brings a loose item along your sightline to you.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -989,7 +1037,7 @@
         {
           "id": "telekinesis_long_reach",
           "name": "Long Reach",
-          "description": "Remote Hand reaches 48 blocks, and Grip reaches eight blocks farther.",
+          "description": "Beckon reaches 48 blocks, and Grip reaches eight blocks farther.",
           "active": false,
           "level": 4,
           "cost": 1,
@@ -999,7 +1047,7 @@
         {
           "id": "telekinesis_retrieve",
           "name": "Retrieve",
-          "description": "Remote Hand extracts one stack from an unlocked container you can edit. The actual stack flies back to you and can be intercepted.",
+          "description": "Beckon pulls one stack out of an unlocked container you can edit. The real stack flies back to you and can be intercepted.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1010,13 +1058,13 @@
       ],
       [
         {
-          "name": "Salvage Orbit",
-          "description": "Successful Push and Disarm gather a transient stone fragment beside you, up to three. Your next Push launches an available fragment.",
+          "name": "Bowling",
+          "description": "Anything you shove, throw or swing hurts every creature it runs into on the way for 70% of its own blow, and knocks them on.",
           "level": 1
         },
         {
-          "name": "Gravity Well",
-          "description": "Anchor a five-second pull at your crosshair, gathering nearby enemies. Press again to release them upward; Shift cancels safely.",
+          "name": "Round Up",
+          "description": "Two far hands cup the spot you aim at (up to 16 blocks) for five seconds, dragging foes within 4.5 blocks into a knot. Press again to toss them all into the air; Shift lets go.",
           "energy": 26,
           "cooldown": 240,
           "level": 2,
@@ -1024,14 +1072,14 @@
           "design_cooldown": 240
         },
         {
-          "name": "Crossfire",
-          "description": "A thrown enemy hitting a wall or ground flicks an orbiting fragment at another nearby enemy.",
+          "name": "Carom",
+          "description": "A body you throw that strikes a wall rebounds once at the nearest other foe within 8 blocks, and hits it.",
           "level": 3
         },
         {
           "id": "telekinesis_kinetic_volley",
-          "name": "Kinetic Volley",
-          "description": "Gather three visible fragments and launch them in sequence at your aimed point. Each deals 4 damage and collides with creatures and cover.",
+          "name": "Juggle",
+          "description": "Up to three foes near where you aim are popped into the air one after another, and popped again each time they come down: three pops each, 2 damage a pop.",
           "active": true,
           "level": 3,
           "cost": 2,
@@ -1044,8 +1092,8 @@
         },
         {
           "id": "telekinesis_five_fragments",
-          "name": "Five Fragments",
-          "description": "Your orbit holds five fragments and Kinetic Volley launches five shots.",
+          "name": "Five at Once",
+          "description": "Juggle takes five foes and pops each one four times.",
           "active": false,
           "level": 4,
           "cost": 1,
@@ -1054,25 +1102,41 @@
         },
         {
           "id": "telekinesis_iron_rain",
-          "name": "Iron Rain",
-          "description": "Shift + Kinetic Volley lobs a physical arcing barrage. Landing fragments create small pressure waves; ceilings and cover can stop them.",
+          "name": "Spike",
+          "description": "Press Juggle again while your foes are still in the air (free) to drive them all into the ground at once: 5 + half your tier each.",
           "active": false,
           "capstone": true,
           "level": 5,
           "cost": 3,
           "requires": "telekinesis_five_fragments",
           "mechanic": "iron_rain"
+        },
+        {
+          "id": "telekinesis_skyfall",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:heavy_core",
+          "level": 4,
+          "cost": 3,
+          "requires": "telekinesis_1_2",
+          "mechanic": "skyfall",
+          "name": "Skyfall",
+          "description": "The far hand hauls the foe in your crosshair (up to 24 blocks) sixteen blocks into the sky and holds it while a ring fills on the ground beneath, then drives it down where it stood: 12 + tier to it, and 6 + half your tier to everything within 5 blocks, thrown out. Leave the ring before it fills. A boss is too heavy to lift: the hand drags it out of the air instead.",
+          "design_energy": 52,
+          "design_cooldown": 700,
+          "energy": 52,
+          "cooldown": 700
         }
       ],
       [
         {
           "name": "Grounding",
-          "description": "Vector Step stores one safe landing for five seconds. The landing consumes the protection.",
+          "description": "Vector Step stores one safe landing for five seconds. The landing uses it up.",
           "level": 1
         },
         {
           "name": "Vector Step",
-          "description": "Press against a temporary force foothold to vault forward and upward. Shift reverses the vault. Movement collides normally with the world.",
+          "description": "Your own far hand throws you forward and up; Shift throws you back. Movement collides normally with the world.",
           "energy": 21,
           "cooldown": 160,
           "level": 2,
@@ -1080,28 +1144,28 @@
           "design_cooldown": 160
         },
         {
-          "name": "Counterstep",
-          "description": "During the first moment of Vector Step, your moving force foothold deflects incoming hostile projectiles.",
+          "name": "Second Step",
+          "description": "Press Vector Step again in the air within two seconds for a second throw, free.",
           "level": 3
         },
         {
           "id": "telekinesis_force_bubble",
-          "name": "Force Bubble",
-          "description": "A moving three-block shell deflects incoming hostile projectiles and pushes enemies out for six seconds. Press again for an outward release; Shift cancels.",
+          "name": "Levitate",
+          "description": "Lift yourself on the far hand and hover up to six blocks over the ground, drifting where you steer (jump and crouch to rise and sink), for as long as you pay. Loose things near you float up with you. Press again, or run out of stamina, to come down gently.",
           "active": true,
           "level": 3,
           "cost": 2,
           "requires": "telekinesis_2_0",
           "mechanic": "force_bubble",
-          "energy": 28,
-          "cooldown": 300,
-          "design_energy": 30,
-          "design_cooldown": 300
+          "energy": 18,
+          "cooldown": 100,
+          "design_energy": 16,
+          "design_cooldown": 100
         },
         {
           "id": "telekinesis_wider_bubble",
-          "name": "Forward Bastion",
-          "description": "Your shell grows to four blocks. Shift + Force Bubble anchors it at your crosshair to defend an ally or passage.",
+          "name": "Raise the Party",
+          "description": "Levitate lifts friends within 3 blocks with you and lets them down gently.",
           "active": false,
           "level": 4,
           "cost": 1,
@@ -1110,8 +1174,8 @@
         },
         {
           "id": "telekinesis_bastion",
-          "name": "Counterbattery",
-          "description": "Force Bubble lasts ten seconds and redirects intercepted hostile projectiles toward your current crosshair.",
+          "name": "Still Air",
+          "description": "While you levitate, shots that reach you stop in the air round you, up to six. Press Bullet Catch to send them where you aim.",
           "active": false,
           "capstone": true,
           "level": 5,
@@ -1122,16 +1186,16 @@
       ]
     ],
     "branch_names": [
-      "FINE MANIPULATION",
-      "KINETIC ARSENAL",
-      "BASTION"
+      "FINE HANDS",
+      "COLLISION",
+      "LEVITATION"
     ],
     "styles": [
       {
         "id": "telekinesis_implosion",
         "role": "offense",
-        "name": "Implosion",
-        "description": "Fold space in on a point up to 24 blocks away. For a second foes within 6 blocks are dragged in with the rubble, then everything near the centre is crushed for 6 + 0.75 per tier and slammed down.",
+        "name": "Clench",
+        "description": "The far hand closes on a point up to 24 blocks away. For a second, foes within 6 blocks are dragged into its fist; then everything near the centre is crushed for 6 + 0.75 per tier and slammed down.",
         "energy": 35,
         "cooldown": 400,
         "cost": 3,
@@ -1144,8 +1208,8 @@
       {
         "id": "telekinesis_debris_halo",
         "role": "defense",
-        "name": "Debris Halo",
-        "description": "Two rings of rubble whirl around you for 8 seconds. They catch projectiles and batter anyone who comes close. Each half-second contact deals 0.35 damage.",
+        "name": "Warding Hands",
+        "description": "Two far hands circle you for 8 seconds, swatting away shots and batting anyone who comes close. Each half-second contact deals 0.35 damage.",
         "energy": 26,
         "cooldown": 390,
         "cost": 3,
@@ -1159,7 +1223,7 @@
         "id": "telekinesis_gathering_hand",
         "role": "support",
         "name": "Gathering Hand",
-        "description": "Haul every friend within 16 blocks to your side and close a bubble of force around each of you: strong damage resistance for 5 seconds.",
+        "description": "The far hand scoops up every friend within 16 blocks and sets them at your side, then closes round each of you: strong damage resistance for 5 seconds.",
         "energy": 26,
         "cooldown": 390,
         "cost": 3,
@@ -1230,6 +1294,22 @@
           "cost": 3,
           "requires": "telepathy_silver_tongue",
           "mechanic": "edens_voice"
+        },
+        {
+          "id": "telepathy_puppeteer",
+          "name": "Puppeteer",
+          "description": "Drop strings of thought onto up to four foes within 14 blocks. For six seconds each turns on the nearest other foe instead of on you or your friends (one with nobody to fight hangs still). Then the strings are cut, or press again to cut them early: each puppet takes 3 + tier and is left slow and weak for two seconds. Bosses can't be strung.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:lead",
+          "level": 4,
+          "cost": 3,
+          "requires": "telepathy_0_2",
+          "mechanic": "puppeteer",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -1516,6 +1596,22 @@
           "cost": 3,
           "requires": "regeneration_thick_skin",
           "mechanic": "perfect_adaptation"
+        },
+        {
+          "id": "regeneration_last_one_standing",
+          "name": "Last One Standing",
+          "description": "Make yourself the target: for six seconds every foe within 12 blocks turns on you, and you take every blow at half strength while banking all of it (it feeds your Regrowth too). Then let it go, or press again to let it go early: a crimson heartbeat bursts out over the ground, dealing 4 + tier and up to 16 more from what you banked to everyone within 8 blocks, and throws them back.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:crimson_fungus",
+          "level": 4,
+          "cost": 3,
+          "requires": "regeneration_1_2",
+          "mechanic": "last_one_standing",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -1933,6 +2029,22 @@
           "cost": 3,
           "requires": "radiation_clean_vent",
           "mechanic": "containment"
+        },
+        {
+          "id": "radiation_fission_star",
+          "name": "Fission Star",
+          "description": "Grow a white-hot core between your cupped hands for a second and a half, then throw it. It drifts out slowly with a ring on the ground beneath showing its reach, and goes off when it touches a wall, the ground or a foe, after 27 blocks, or when you press again: 8 + tier to everyone within 5 blocks with a clear line to it, radiation sickness, and the ground there stays contaminated for five seconds.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:magma_cream",
+          "level": 4,
+          "cost": 3,
+          "requires": "radiation_0_2",
+          "mechanic": "fission_star",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -2167,6 +2279,22 @@
           "cost": 3,
           "requires": "sonic_resonance_wider_shatter",
           "mechanic": "resonant_breaker"
+        },
+        {
+          "id": "sonic_resonance_standing_wave",
+          "name": "Standing Wave",
+          "description": "Sing one note at a spot up to 24 blocks away until the air there rings by itself: a column of sound 6 blocks wide. Every second it pulses, hurting foes inside for 1 + tier/4 and drawing them in, stronger each time. On the fifth beat, or when you press again, the note breaks: 6 + tier to everyone in it, thrown out.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:amethyst_cluster",
+          "level": 4,
+          "cost": 3,
+          "requires": "sonic_resonance_0_2",
+          "mechanic": "standing_wave",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -2449,6 +2577,22 @@
           "cost": 3,
           "requires": "superspeed_charged_throw",
           "mechanic": "infinite_mass"
+        },
+        {
+          "id": "superspeed_lightning_round",
+          "name": "Lightning Round",
+          "description": "Visit every foe within 16 blocks in turn (up to six, each the nearest to the last), arriving behind each one and striking it for 4 + tier, one every three ticks, then be back where you started. Nothing can touch you while it lasts.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:sugar",
+          "level": 4,
+          "cost": 3,
+          "requires": "superspeed_1_2",
+          "mechanic": "lightning_round",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -2919,6 +3063,22 @@
           "cost": 3,
           "requires": "invisibility_light_fingers",
           "mechanic": "phantom"
+        },
+        {
+          "id": "invisibility_bastion",
+          "name": "Bastion",
+          "description": "Throw up a dome of force 6 blocks round where you stand, for six seconds. Shots from outside glance off it and fly back, foes inside are shoved out through its wall, and friends under it take half damage. When it ends, or when you press again, it bursts: 3 + tier to every foe within 9 blocks, thrown clear.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:glass",
+          "level": 4,
+          "cost": 3,
+          "requires": "invisibility_1_2",
+          "mechanic": "bastion",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -3150,6 +3310,22 @@
           "cost": 3,
           "requires": "phasing_long_lock",
           "mechanic": "entombed"
+        },
+        {
+          "id": "phasing_mountain_armor",
+          "name": "Mountain Armor",
+          "description": "Call the ground up onto yourself: plates of stone tear out of the floor and snap onto your body in half a second. For eight seconds you wear the mountain: +10 armor, +4 toughness, no knockback, a little slower, and every punch lands 3 + tier/2 harder and shoves. When it runs out, or when you press again, the plates blast off: 5 + tier to every foe within 5 blocks, thrown back.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:deepslate",
+          "level": 4,
+          "cost": 3,
+          "requires": "phasing_1_2",
+          "mechanic": "mountain_armor",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -3374,6 +3550,22 @@
           "cost": 3,
           "requires": "empathic_mimicry_twin_echo",
           "mechanic": "peters_burden"
+        },
+        {
+          "id": "empathic_mimicry_chorus",
+          "name": "Chorus",
+          "description": "Let every power you remember speak at once. A ring of voices, one in each remembered power's colour (at least three), circles you for six seconds; every second the next leaps at the nearest foe within 16 blocks for 2 + tier/2, with a touch of its own power (fire burns, cold slows, lightning jumps, radiation sickens, a far hand shoves). When it ends, or when you press again, they all speak together, one bolt each for 2 + tier/4.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:echo_shard",
+          "level": 4,
+          "cost": 3,
+          "requires": "empathic_mimicry_1_2",
+          "mechanic": "chorus",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -3613,6 +3805,22 @@
           "capstone": true,
           "level": 5,
           "cost": 3
+        },
+        {
+          "id": "matter_assembly_ballista",
+          "name": "Ballista",
+          "description": "Spend 6 Matter to fold a crystal ballista together on a spot up to 12 blocks away: its blueprint first, then its parts flying from your hand and snapping in. For six seconds it turns on the nearest foe within 18 blocks and looses a bolt every second, 2 + tier/2 each. When it is done, or when you press again, it comes apart and its Matter flies home.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:crossbow",
+          "level": 4,
+          "cost": 3,
+          "requires": "matter_assembly_recall_angle",
+          "mechanic": "ballista",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -4329,6 +4537,22 @@
           "cost": 3,
           "active": false,
           "capstone": true
+        },
+        {
+          "id": "hydrokinesis_leviathan",
+          "name": "Leviathan",
+          "description": "Open a pool on a spot up to 20 blocks away and raise a serpent of water out of it. It strikes three times, each at the nearest foe within 10 blocks of the pool: it rears back while a ring of water marks the spot (step off it to dodge), then lunges for 4 + tier/2, dragging whoever it bites toward the pool, slowing them and putting out fires. Then it dives. Press again to send it down after the strike in progress.",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:heart_of_the_sea",
+          "level": 4,
+          "cost": 3,
+          "requires": "hydro_0_2",
+          "mechanic": "leviathan",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [
@@ -4646,6 +4870,22 @@
           "cost": 3,
           "active": false,
           "capstone": true
+        },
+        {
+          "id": "power_amplification_overdrive",
+          "name": "Overdrive",
+          "description": "Throw red lightning into everyone on your side within 12 blocks and hold them open for eight seconds: each is Surged and gets back 4 stamina a second, and your Charge runs to the top. When it ends, or when you press again, the overflow leaps from each linked body to the nearest foe within 8 blocks, 4 + tier each (alone, you throw three forks).",
+          "active": true,
+          "signature": true,
+          "icon": "minecraft:redstone_block",
+          "level": 4,
+          "cost": 3,
+          "requires": "amp_1_2",
+          "mechanic": "overdrive",
+          "energy": 52,
+          "cooldown": 700,
+          "design_energy": 52,
+          "design_cooldown": 700
         }
       ],
       [

@@ -40,6 +40,8 @@ public final class RegrowthLayer extends RenderLayer<AbstractClientPlayer, Playe
     @Override
     public void render(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player, float limbSwing,
                        float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw, float headPitch) {
+        float regrowth = ClientRegrowth.shown(player.getId(), partialTick);
+        if (regrowth > .04F && !player.isInvisible()) veins(pose, buffers, player, regrowth, ageInTicks);
         BodyVisuals.State state = BodyVisuals.get(player);
         if (state == null || player.isInvisible()) return;
         PlayerModel<AbstractClientPlayer> model = getParentModel();
@@ -112,6 +114,140 @@ public final class RegrowthLayer extends RenderLayer<AbstractClientPlayer, Playe
         for (float[] b : bone) box(out, matrix, b[0], b[1], b[2], b[3], b[4], b[5], light);
         out = buffers.getBuffer(RenderType.entityCutoutNoCull(MUSCLE));
         for (float[] b : muscle) box(out, matrix, b[0], b[1], b[2], b[3], b[4], b[5], light);
+    }
+
+    /**
+     * Regrowth glowing in the veins, for anyone who can see her: dark crimson lines under the skin with a bright line in
+     * them, down both arms from the shoulder, out across the chest from the heart and up the neck as it builds; more of
+     * them and brighter the more she carries, gold at the top, and a lub-dub every second. Drawn in each part's own
+     * model space (pixels), so they follow every pose and animation.
+     */
+    private void veins(PoseStack pose, MultiBufferSource buffers, AbstractClientPlayer player, float amount, float age) {
+        PlayerModel<AbstractClientPlayer> model = getParentModel();
+        boolean slim = player.getSkin().model() == PlayerSkin.Model.SLIM;
+        int seed = player.getUUID().hashCode();
+        float t = age % 20;
+        float beat = Math.max(pulse(t, 1), .7F * pulse(t, 5));
+        float glow = Mth.clamp(amount * 1.3F, 0, 1) * (.5F + .5F * beat);
+        float[] core = {Mth.lerp(amount, 1F, 1F), Mth.lerp(amount, .25F, .85F), Mth.lerp(amount, .31F, .63F)};
+        // One buffer at a time: asking the source for a second render type ends the first one's batch.
+        veinPass(pose, buffers.getBuffer(RenderType.debugQuads()), false, model, slim, seed, amount, glow, core);
+        veinPass(pose, buffers.getBuffer(RenderType.lightning()), true, model, slim, seed, amount, glow, core);
+    }
+
+    private void veinPass(PoseStack pose, VertexConsumer out, boolean bright, PlayerModel<AbstractClientPlayer> model, boolean slim,
+                          int seed, float amount, float glow, float[] core) {
+        VertexConsumer dark = bright ? null : out, light = bright ? out : null;
+        // Both arms: one vein down the front and one down the outside, branching as Regrowth builds.
+        for (int side = 0; side < 2; side++) {
+            ModelPart arm = side == 0 ? model.rightArm : model.leftArm;
+            if (!arm.visible) continue;
+            float sign = side == 0 ? -1 : 1, half = slim ? 1.5F : 2F, cx = sign * (slim ? .5F : 1F);
+            pose.pushPose();
+            arm.translateAndRotate(pose);
+            vein(dark, light, pose.last(), front(cx, -1.6F, -2.02F, 11F, 1.1F, seed + side * 31), 0, 0, -1, amount, glow, core, seed + side);
+            vein(dark, light, pose.last(), outer(cx + sign * half + sign * .02F, -1.4F, 10.5F, 1.2F, seed + side * 57), sign, 0, 0, amount, glow, core, seed + side * 7);
+            pose.popPose();
+        }
+        // The chest: out from the heart toward the shoulders and down the ribs.
+        if (amount > .25F && model.body.visible) {
+            pose.pushPose();
+            model.body.translateAndRotate(pose);
+            float reach = Mth.clamp((amount - .25F) / .5F, 0, 1);
+            for (int i = 0; i < 4; i++) {
+                float ang = (float) (i * Math.PI / 2 + .6 + hash(seed, i) * .5);
+                float[][] pts = new float[5][];
+                for (int k = 0; k < 5; k++) {
+                    float u = k / 4F * reach;
+                    pts[k] = new float[] {1.4F + Mth.cos(ang) * 4.2F * u + (hash(seed, i * 5 + k) - .5F) * .7F,
+                            3.6F + Mth.sin(ang) * 4.6F * u, -2.02F};
+                }
+                vein(dark, light, pose.last(), pts, 0, 0, -1, amount, glow, core, seed + 100 + i);
+            }
+            pose.popPose();
+        }
+        // The neck, last of all.
+        if (amount > .6F && model.head.visible) {
+            pose.pushPose();
+            model.head.translateAndRotate(pose);
+            float reach = Mth.clamp((amount - .6F) / .3F, 0, 1);
+            for (int s = -1; s <= 1; s += 2) {
+                float[][] pts = {{s * 2.4F, 0, -3.2F}, {s * 2.7F, -1.2F * reach, -3.6F}, {s * 3.1F, -2.4F * reach, -4.02F}};
+                vein(dark, light, pose.last(), pts, 0, 0, -1, amount, glow, core, seed + 200 + s);
+            }
+            pose.popPose();
+        }
+    }
+
+    private static float pulse(float t, float at) { float d = t - at; return (float) Math.exp(-d * d / 2.5F); }
+
+    private static float hash(int seed, int i) {
+        int h = seed * 374761393 + i * 668265263;
+        h = (h ^ (h >>> 13)) * 1274126177;
+        return ((h ^ (h >>> 16)) & 0xFFFF) / 65535F;
+    }
+
+    /** A vein wandering down a front face (constant z), with its length set by how much Regrowth she has. */
+    private static float[][] front(float cx, float top, float z, float length, float wander, int seed) {
+        float[][] pts = new float[7][];
+        for (int k = 0; k < 7; k++) pts[k] = new float[] {cx + (hash(seed, k) - .5F) * wander, top + length * k / 6F, z};
+        return pts;
+    }
+
+    /** A vein wandering down an outer side face (constant x). */
+    private static float[][] outer(float x, float top, float length, float wander, int seed) {
+        float[][] pts = new float[7][];
+        for (int k = 0; k < 7; k++) pts[k] = new float[] {x, top + length * k / 6F, (hash(seed, k) - .5F) * wander * 2};
+        return pts;
+    }
+
+    /**
+     * One vein along these points (model pixels), drawn on the face whose normal is (nx, ny, nz): how far along it shows
+     * follows {@code amount}, with two short branches off it; a dark line under the skin, a bright one in it.
+     */
+    private static void vein(VertexConsumer dark, VertexConsumer light, PoseStack.Pose pose, float[][] pts, float nx, float ny, float nz,
+                             float amount, float glow, float[] core, int seed) {
+        int shown = Math.max(2, Math.round(pts.length * Mth.clamp(amount * 1.6F, 0, 1)));
+        for (int k = 0; k + 1 < shown; k++) {
+            strip(dark, light, pose, pts[k], pts[k + 1], nx, ny, nz, glow, core, k == shown - 2 ? .6F : 1);
+            if (k % 2 == 1 && amount > .35F) {
+                float[] a = pts[k], b = pts[k + 1];
+                float dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+                float s = hash(seed, k) > .5F ? 1 : -1;
+                // A branch leaves at a slant across the face.
+                float[] end = nz != 0 ? new float[] {a[0] + s * 1.3F + dx * .3F, a[1] + dy * .6F, a[2]}
+                        : new float[] {a[0], a[1] + dy * .6F, a[2] + s * 1.3F + dz * .3F};
+                strip(dark, light, pose, a, end, nx, ny, nz, glow * .8F, core, .55F);
+            }
+        }
+    }
+
+    private static void strip(VertexConsumer dark, VertexConsumer light, PoseStack.Pose pose, float[] a, float[] b,
+                              float nx, float ny, float nz, float glow, float[] core, float thin) {
+        float dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+        // Across the segment, in the face's plane.
+        float px = dy * nz - dz * ny, py = dz * nx - dx * nz, pz = dx * ny - dy * nx;
+        float len = (float) Math.sqrt(px * px + py * py + pz * pz);
+        if (len < 1e-4F) return;
+        px /= len; py /= len; pz /= len;
+        // Solid pass: the dark vein, then its bright line lifted just off it so the two never fight for depth.
+        if (dark != null) {
+            quadStrip(dark, pose, a, b, px, py, pz, nx, ny, nz, 0, .34F * thin, .26F, .02F, .05F, .8F * Math.min(1, glow + .45F));
+            quadStrip(dark, pose, a, b, px, py, pz, nx, ny, nz, .03F, .13F * thin, core[0], core[1], core[2], .95F * Math.min(1, glow + .35F));
+        }
+        // Glow pass: a soft additive halo around the line, brighter on each beat.
+        if (light != null) quadStrip(light, pose, a, b, px, py, pz, nx, ny, nz, .05F, .65F * thin, core[0], core[1] * .6F, core[2] * .6F, .4F * glow);
+    }
+
+    private static void quadStrip(VertexConsumer out, PoseStack.Pose pose, float[] a, float[] b, float px, float py, float pz,
+                                  float nx, float ny, float nz, float lift, float half, float r, float g, float bl, float alpha) {
+        if (alpha < .01F) return;
+        int ar = (int) (r * 255), ag = (int) (g * 255), ab = (int) (bl * 255), aa = (int) (Mth.clamp(alpha, 0, 1) * 255);
+        float ox = nx * lift, oy = ny * lift, oz = nz * lift;
+        out.addVertex(pose, (a[0] + ox - px * half) / 16, (a[1] + oy - py * half) / 16, (a[2] + oz - pz * half) / 16).setColor(ar, ag, ab, aa);
+        out.addVertex(pose, (b[0] + ox - px * half) / 16, (b[1] + oy - py * half) / 16, (b[2] + oz - pz * half) / 16).setColor(ar, ag, ab, aa);
+        out.addVertex(pose, (b[0] + ox + px * half) / 16, (b[1] + oy + py * half) / 16, (b[2] + oz + pz * half) / 16).setColor(ar, ag, ab, aa);
+        out.addVertex(pose, (a[0] + ox + px * half) / 16, (a[1] + oy + py * half) / 16, (a[2] + oz + pz * half) / 16).setColor(ar, ag, ab, aa);
     }
 
     /** The real limb with this player's skin, fading in as the skin closes over. */

@@ -279,6 +279,8 @@ public final class CryoGameTests {
             cow.setDeltaMovement(Vec3.ZERO);
             aim(player, cow);
             TelekinesisService.push(player, 1);
+            // The shove lands as the drawn palm reaches the cow, a few ticks out.
+            for (int i = 0; i <= com.jayptucker.heroesevolved.telekinesis.KineticGeometry.SHOVE_TRAVEL; i++) TelekinesisService.tick(player.getServer());
             helper.assertTrue(cow.getDeltaMovement().length() > 0.5, "Telekinetic Push must reach twelve blocks (old range eight)");
             cow.setHealth(cow.getMaxHealth());
             cow.invulnerableTime = 0;

@@ -164,6 +164,74 @@ final class FlightArt {
         }
     }
 
+    /**
+     * Microburst ({@code flight/Microburst}): a lid of cloud gathering over the spot while a ring of wind circles the
+     * ground under it and draws tighter (the warning); at {@code SLAM} a column of condensation falls out of the lid and
+     * hits the ground as a flattened ring of mist, then the outflow curls away along the ground past the ring. Origin the
+     * ground centre, target the cloud's centre, scale the radius; the timings are {@code Microburst}'s.
+     */
+    static void microburst(Canvas c, Active a, float t) {
+        int slam = com.jayptucker.heroesevolved.flight.Microburst.SLAM, out = com.jayptucker.heroesevolved.flight.Microburst.OUTFLOW;
+        float r = Math.max(2, a.scale()), life = a.piece().ticks, alpha = fade(t, life, 1, 12);
+        float outer = (float) com.jayptucker.heroesevolved.flight.Microburst.OUTER;
+        Vec3 ground = a.origin().add(0, .05, 0), lid = a.target();
+        float height = (float) (lid.y - ground.y);
+        int seed = a.seed();
+        // The lid: billows gathering in a disc over the spot, darkening as it loads, thinning after.
+        float gather = smooth(0, slam, t), spent = smooth(slam + 4, life, t);
+        if (c.soft()) {
+            int puffs = minimal() ? 7 : 14;
+            for (int i = 0; i < puffs; i++) {
+                float ang = TWO_PI * (i + hash(seed, i) * .5F) / puffs + t * .01F;
+                float rr = r * (1.25F - .35F * gather) * (.4F + .6F * hash(seed, i + 20));
+                Vec3 at = lid.add(cos(ang) * rr, (hash(seed, i + 40) - .5) * .8, sin(ang) * rr);
+                float s = (.9F + 1.1F * hash(seed, i + 60)) * (.4F + .6F * gather);
+                c.cloud(at, s * 1.4F, s * .6F, s * 1.4F, i, ang, alpha * (.18F + .22F * gather) * (1 - spent * .8F),
+                        Shades.smoke(c, mix(CONDENSATION, SHADOW, .35F * gather), 0));
+            }
+            c.disc(lid.add(0, -.4, 0), UP, r * 1.2F, SHADOW, .14F * gather * alpha * (1 - spent), 0);
+        }
+        // The warning on the ground: a ring of wind turning and drawing tighter.
+        if (t < slam + 2) {
+            float k = smooth(0, slam, t);
+            arc(c, ground, UP, r * (1.05F + .3F * (1 - k)), .09F + .05F * k, t * .12F, 5.2F, alpha * (.35F + .65F * k));
+            arc(c, ground.add(0, .02, 0), UP, r * .55F * (1 + .2F * (1 - k)), .07F, -t * .15F + 2, 4.2F, alpha * .5F * k);
+            // Streaks of air already falling.
+            if (c.glow() && t > slam - 8) for (int i = 0; i < 6; i++) {
+                float ang = i * TWO_PI / 6 + seed % 7, u = ((t - (slam - 8)) / 8F + hash(seed, i + 80)) % 1;
+                Vec3 top = lid.add(cos(ang) * r * .6, -u * height, sin(ang) * r * .6);
+                c.line(top, top.add(0, 1.6, 0), .05F, CORE, 0, alpha * .4F);
+            }
+        }
+        // The column: falling out of the lid and hitting the ground.
+        if (t >= slam - 4 && t < out + 8) {
+            float fall = smooth(slam - 4, slam, t), fadeCol = 1 - smooth(slam + 2, out + 8, t);
+            float bottom = height * (1 - fall);
+            Vec3 base = ground.add(0, bottom, 0);
+            float h = height - bottom;
+            if (c.soft() && h > .1F) {
+                c.tube(base, r * .8F, h, CONDENSATION, .32F * alpha * fadeCol, .12F * alpha * fadeCol,
+                        (theta, phi) -> .45F + .55F * abs(sin(theta * 5 + phi * 6 - t * .8F)), t * .05F);
+                c.tube(base, r * .45F, h, VAPOR, .22F * alpha * fadeCol, .08F * alpha * fadeCol, PLAIN, -t * .07F);
+            }
+            if (c.glow() && h > .1F) for (int i = 0; i < 10; i++) {
+                float ang = i * TWO_PI / 10 + hash(seed, i + 100), u = ((t * .2F) + hash(seed, i + 120)) % 1;
+                float rr = r * (.3F + .45F * hash(seed, i + 140));
+                Vec3 p = base.add(cos(ang) * rr, h * (1 - u), sin(ang) * rr);
+                c.line(p, p.add(0, 1.4 + h * .1, 0), .045F, CORE, 0, alpha * fadeCol * .5F);
+            }
+        }
+        // The hit: a flattened ring of mist spreading under the column.
+        if (t >= slam) impact(c, ground, UP, r * 1.15F, t - slam, alpha, seed);
+        // The outflow: curling sheets of air rolling out past the ring.
+        if (t >= out - 2) {
+            float age = t - (out - 2), p = smooth(0, 16, age), f = 1 - smooth(10, 22, age);
+            for (int i = 0; i < (minimal() ? 1 : 2); i++)
+                arc(c, ground.add(0, .25 + .35 * p + i * .3, 0), UP, r + (outer - r + 1.5F) * p - i * .6F, .16F - i * .04F,
+                        age * .04F + i * 1.7F, i == 0 ? TWO_PI : 5.4F, alpha * f * (1 - i * .3F));
+        }
+    }
+
     private static void rescue(Canvas c, Vec3 from, Vec3 to, float size, float age, float alpha) {
         float arrive = smooth(0, 6, age);
         Vec3 reached = from.lerp(to, arrive);

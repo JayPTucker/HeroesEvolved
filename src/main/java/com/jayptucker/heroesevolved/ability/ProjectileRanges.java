@@ -14,5 +14,4 @@ public final class ProjectileRanges {
     public static final double FORCE_PUSH = 24, HARD_FORCE_PUSH = 32;
     public static final double RADIATION_BEAM = 64, GAMMA_LANCE = 80;
     public static final double ARC_LANCE = 80, FOCUSED_SHRIEK = 80;
-    public static final double KINETIC_SHARD = 48, KINETIC_SPEAR = 64, IRON_RAIN = 64;
 }

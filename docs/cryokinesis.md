@@ -154,6 +154,15 @@ existing purchase IDs remain compatible with saved characters.
 
 Only one capstone may be learned at a time.
 
+### Signature: Absolute Zero
+
+Under Winterbinder, after Echoing Fracture. Raise both palms and, for a second and a half, **draw the warmth out of every
+foe within 12 blocks**: an ember (the only warm colour in your kit) leaves each one and runs along a thread to your
+hands while frost rims creep over it, fires near them go out, and they slow to a crawl. Then the cold closes: every
+drained foe takes 4 + tier and **freezes solid for three seconds**, a hexagonal frost wave races out over the ground,
+and the heat comes back to you as stamina, 4 for each foe (up to 24). Strike a frozen foe to shatter it, as with Crystal
+Prison. Bosses are too big to freeze; they take the cold as damage.
+
 ## Three-dimensional ice and restoration
 
 Sculpt walls, stairs and bridges draw faceted frost meshes over their temporary collision
@@ -173,6 +182,14 @@ two-millisecond allowance. Large patches melt gradually rather than restoring ev
 single expensive tick.
 
 ## Effects and controls
+
+**One look.** Every Cryokinesis effect is drawn by one art class, `CryoArt`, in one palette: deep `2E5470` (the shadow
+side of ice, seams), glacier `5AA8E8`, ice `A6D8EE`, rime `DDF1F8`, a white core `F6FCFF`, and warmth `FF9A3C` for heat
+being drawn out. Its shapes are the power's signature: **hexagonal rims** of frost (where a chill lands, round a freezing
+body, at a shatter, at the edge of Whiteout), **feathered frost veins** spreading over a struck face or the ground,
+translucent **ice chips**, and **snow** that hangs and drifts. Solid ice standing in the world (a lance, armour, a
+cocoon, spires, a frozen shell) keeps the ice block's own texture, so a construct and a real ice block match. Nothing is
+a cloud of particles any more.
 
 - Both palms brace and spray rolling frost clouds full of tumbling ice chips. The spray widens
   as it travels, then disperses into powder at impact. Amber flecks drift back toward the

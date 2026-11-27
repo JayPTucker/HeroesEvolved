@@ -134,6 +134,14 @@ Three lanes of six. In each lane the 2nd and 5th are active skills and the 6th i
 6. **Grounded** *(capstone).* A fifth of the damage powered foes deal you becomes Charge, and your hands never spark on
    their own.
 
+### Signature: Overdrive
+
+Under Red Lightning, after Opposite Current. Throw red lightning into **everyone on your side within
+12 blocks** and hold them all open for **eight seconds**: red lightning crawls over each linked body, a live channel jumps
+between your hand and each friend, every one is **Surged** and gets back **4 stamina a second**, and your **Charge runs to
+the top**. When it ends, or when you **press again**, the overflow comes out: a **fork of red lightning leaps from each
+linked body to the nearest foe within 8 blocks**, **4 + tier** each (alone, you throw three forks yourself).
+
 ## Classes
 
 - **Got Your Back** (support). A dash to your partner's side, or the nearest friend, pet or friendly villager within

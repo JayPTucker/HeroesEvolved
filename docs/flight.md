@@ -127,6 +127,14 @@ build, or **Rescue Rush → Tandem Lift → Wind Sanctuary** to bring a friend b
 **Ram Air → charged Skyburst → Slipstream Echo → Jetstream** turns your flight path into a
 route the team can follow.
 
+### Signature: Microburst
+
+Under Stormbreaker, after Rising Pressure. Sweep a hand down at a spot up to 24 blocks away. A
+**lid of cloud gathers** over it while a ring of wind turns on the ground beneath, drawing tighter. After a second the
+**column slams down**: everyone inside the 6-block ring takes **6 + tier** and is **pinned** (barely able to move) for two
+seconds, and anything flying there is driven into the ground. Then the air spills out along the ground in curling sheets
+and **throws whoever stands just past the ring away**. The spot is fixed when you point, so the ring is a fair warning.
+
 ## Rules and tuning
 
 Meteor Drop and Tempest respect solid cover and allies. They never break blocks or start fires.

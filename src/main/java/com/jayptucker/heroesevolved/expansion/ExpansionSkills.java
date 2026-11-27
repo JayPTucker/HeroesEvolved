@@ -47,6 +47,9 @@ public final class ExpansionSkills {
     public static boolean hostile(ServerPlayer p, LivingEntity t) {
         return t != p && t.isAlive() && !t.isSpectator() && !p.isAlliedTo(t)
                 && !(t instanceof com.jayptucker.heroesevolved.entity.TemporalEchoEntity)
+                // Your own pets are never foes (as StyleOps.isFoe), nor are armor stands.
+                && !(t instanceof net.minecraft.world.entity.OwnableEntity pet && pet.getOwner() == p)
+                && !(t instanceof net.minecraft.world.entity.decoration.ArmorStand)
                 && (!(t instanceof ServerPlayer other) || p.getServer().isPvpAllowed() && p.canHarmPlayer(other));
     }
     public static boolean friendly(ServerPlayer p, LivingEntity t) {
@@ -70,6 +73,8 @@ public final class ExpansionSkills {
             case "singularity" -> !com.jayptucker.heroesevolved.time.SingularityService.active(c.player());
             case "shared_blink" -> com.jayptucker.heroesevolved.time.SpaceTimeSkills.canEdge(c.player());
             case "phoenix" -> !com.jayptucker.heroesevolved.pyro.PhoenixService.active(c.player()) && !c.player().isInWaterOrBubble();
+            case "absolute_zero" -> com.jayptucker.heroesevolved.cryo.AbsoluteZero.canUse(c.player());
+            case "last_one_standing" -> com.jayptucker.heroesevolved.regeneration.LastOneStanding.canUse(c.player());
             default -> true;
         };
     }
@@ -78,6 +83,8 @@ public final class ExpansionSkills {
             case "blackout" -> { return com.jayptucker.heroesevolved.electro.BlackoutService.activate(c.player(), c.abilityLevel()); }
             case "singularity" -> { return com.jayptucker.heroesevolved.time.SingularityService.activate(c.player(), c.abilityLevel()); }
             case "phoenix" -> { return com.jayptucker.heroesevolved.pyro.PhoenixService.activate(c.player(), c.abilityLevel()); }
+            case "absolute_zero" -> { return com.jayptucker.heroesevolved.cryo.AbsoluteZero.activate(c.player(), c.abilityLevel()); }
+            case "last_one_standing" -> { return com.jayptucker.heroesevolved.regeneration.LastOneStanding.activate(c.player(), c.abilityLevel()); }
             default -> { }
         }
         ServerPlayer p = c.player(); BlockPos target = aim(p);

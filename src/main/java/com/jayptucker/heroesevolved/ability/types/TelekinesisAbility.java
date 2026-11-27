@@ -8,7 +8,7 @@ import java.util.Map;
 
 import static com.jayptucker.heroesevolved.config.HeroesEvolvedConfig.COMMON;
 
-/** A physical control kit: gather, hold beside you, redirect, then use the collision. */
+/** The far hand: a hand of bent air that shoves, grips, catches, plucks and lifts real things at a distance. */
 public final class TelekinesisAbility implements Ability {
     private static final AbilityDefinition DEFINITION = new AbilityDefinition(0, 0, 5, AbilityActivationType.INSTANT);
     private static final Map<AbilitySlot, AbilityAction> ACTIONS = Map.of(
@@ -24,6 +24,8 @@ public final class TelekinesisAbility implements Ability {
             AbilitySlot.TERTIARY, new BulletAction(),
             AbilitySlot.QUATERNARY, SimpleAction.builder("telekinesis_disarm", 4)
                     .cost(COMMON.telekinesisDisarmEnergyCost::get, COMMON.telekinesisDisarmCooldownTicks::get)
+                    // A second press while a plucked weapon is still in reach flings it: free, before the cooldown.
+                    .followUp(c -> TelekinesisService.fling(c.player()))
                     .activate(c -> { TelekinesisService.disarm(c.player(), c.abilityLevel()); return true; }).build(),
             AbilitySlot.QUINARY, new StormAction()
     );

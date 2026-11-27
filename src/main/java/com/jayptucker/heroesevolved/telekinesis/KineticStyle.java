@@ -6,8 +6,6 @@ import com.jayptucker.heroesevolved.combat.ComboStyle;
 import com.jayptucker.heroesevolved.combat.FightingStyles.Dodge;
 import com.jayptucker.heroesevolved.combat.StyleHits;
 import com.jayptucker.heroesevolved.combat.StyleMotion;
-import com.jayptucker.heroesevolved.effects.AbilityEffects;
-import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.CameraShakePayload;
 import com.jayptucker.heroesevolved.network.SetPiecePayload;
 import com.jayptucker.heroesevolved.styles.Piece;
@@ -80,7 +78,7 @@ public final class KineticStyle extends ComboStyle {
             StyleHits.shove(target, throwing);
             thrown.add(new Thrown(p, target, now(p) + THROWN_TICKS, damage, new HashSet<>()));
             Vec3 center = target.getBoundingBox().getCenter();
-            AbilityEffects.send(world(p), Kind.TK_IMPACT, center.subtract(side.scale(.6)), center.add(side), loaded ? 1.6 : .9);
+            TelekinesisService.show(world(p), Piece.KINETIC_IMPACT, center.subtract(side.scale(.6)), center.subtract(side.scale(1.6)), loaded ? 1.6F : .9F, null, -1);
             SetPiecePayload.send(world(p), Piece.STYLE_TK_PALM, center, center.add(throwing.normalize()), loaded ? 1.6F : 1, null);
             StyleHits.sound(p, center, SoundEvents.PLAYER_ATTACK_KNOCKBACK, .8F, 1.3F);
         }
@@ -96,9 +94,8 @@ public final class KineticStyle extends ComboStyle {
             StyleHits.hurt(p, target, .4F + .1F * level);
             StyleHits.shove(target, new Vec3(0, .85, 0));
             lifts.add(new Lift(p, target, now(p) + LIFT_HANG, .8F + .2F * level));
-            AbilityEffects.send(world(p), Kind.TK_GRIP, target.position(), target.getEyePosition(), 1.2);
+            TelekinesisService.show(world(p), Piece.KINETIC_SEND, TelekinesisService.hand(p), target.getBoundingBox().getCenter(), 1, p, p.getId());
             SetPiecePayload.send(world(p), Piece.STYLE_TK_GRASP, target.position(), target.position(), LIFT_HANG, target);
-            AbilityEffects.send(world(p), Kind.TK_LAUNCH, target.position(), target.position().add(0, 1, 0), 1);
         }
         pose(p, ArmPose.STYLE_LIFT, LIFT_HANG + 6);
         StyleHits.sound(p, SoundEvents.ILLUSIONER_CAST_SPELL, .6F, 1.4F);
@@ -111,7 +108,7 @@ public final class KineticStyle extends ComboStyle {
             StyleHits.hurt(p, target, .8F + .2F * level);
             StyleHits.away(target, feet, StyleHits.level(p), 1.0, .4);
         }
-        AbilityEffects.send(world(p), Kind.TK_WAVE, feet.add(0, .6, 0), feet.add(0, 1.6, 0), REPULSE_RADIUS);
+        TelekinesisService.show(world(p), Piece.KINETIC_IMPACT, feet.add(0, .15, 0), feet.add(0, 1.15, 0), (float) REPULSE_RADIUS, null, -1);
         pose(p, ArmPose.KINETIC_RELEASE, 12);
         StyleHits.sound(p, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), .9F, .7F);
     }
@@ -123,12 +120,12 @@ public final class KineticStyle extends ComboStyle {
             // Float up and back on the mind alone, falling slow.
             StyleMotion.dash(p, direction.scale(.6), .62, 1, 12, true, false);
             p.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 30, 0, false, false, true));
-            AbilityEffects.send(world(p), Kind.TK_LAUNCH, from, from.add(0, 1, 0), 1.2);
+            TelekinesisService.show(world(p), Piece.KINETIC_STEP, from, from.add(direction), 1, p, p.getId());
             pose(p, ArmPose.STYLE_BACKSTEP, 12);
         } else {
             // The telekinetic shoves themself.
             StyleMotion.dash(p, direction.scale(1.15), .12, 4, 6, false, false);
-            AbilityEffects.send(world(p), Kind.TK_STEP, from.add(0, .2, 0), from.add(direction), 1.2);
+            TelekinesisService.show(world(p), Piece.KINETIC_STEP, from, from.add(direction), 1, p, p.getId());
             pose(p, ArmPose.STYLE_SIDESTEP, 10);
         }
         StyleHits.sound(p, SoundEvents.BREEZE_JUMP, .7F, 1.3F);
@@ -140,7 +137,7 @@ public final class KineticStyle extends ComboStyle {
         LivingEntity attacker = f.marked();
         if (attacker != null && attacker.distanceToSqr(p) < 14 * 14) {
             grips.add(new Grip(p, attacker, now(p) + GRIP_TICKS, attacker.position().add(0, 1.2, 0)));
-            AbilityEffects.send(world(p), Kind.TK_GRIP, attacker.position(), attacker.getEyePosition(), 1.4);
+            TelekinesisService.show(world(p), Piece.KINETIC_SEND, TelekinesisService.hand(p), attacker.getBoundingBox().getCenter(), 1, p, p.getId());
             SetPiecePayload.send(world(p), Piece.STYLE_TK_GRASP, attacker.position(), attacker.position(), GRIP_TICKS, attacker);
         }
         StyleHits.sound(p, SoundEvents.ILLUSIONER_PREPARE_BLINDNESS, .6F, 1.6F);
@@ -160,8 +157,8 @@ public final class KineticStyle extends ComboStyle {
                 StyleHits.hurt(t.owner, other, t.damage * .8F);
                 StyleHits.hurt(t.owner, t.body, t.damage * .5F);
                 StyleHits.shove(other, t.body.getDeltaMovement().scale(.7).add(0, .25, 0));
-                AbilityEffects.send((ServerLevel) other.level(), Kind.TK_IMPACT, other.getBoundingBox().getCenter(),
-                        other.getBoundingBox().getCenter().add(t.body.getDeltaMovement()), 1.2);
+                TelekinesisService.show((ServerLevel) other.level(), Piece.KINETIC_IMPACT, other.getBoundingBox().getCenter(),
+                        other.getBoundingBox().getCenter().subtract(t.body.getDeltaMovement().normalize()), 1.2F, null, -1);
                 StyleHits.sound(t.owner, other.position(), SoundEvents.PLAYER_ATTACK_CRIT, .9F, .8F);
             }
         // Lifted foes are slammed down.
@@ -172,7 +169,7 @@ public final class KineticStyle extends ComboStyle {
             StyleMotion.push(l.body, new Vec3(0, -1.7, 0));
             StyleHits.hurt(l.owner, l.body, l.damage);
             Vec3 ground = l.body.position();
-            AbilityEffects.send((ServerLevel) l.body.level(), Kind.TK_IMPACT, ground, ground.add(0, -1, 0), 1.6);
+            TelekinesisService.show((ServerLevel) l.body.level(), Piece.KINETIC_IMPACT, ground, ground.add(0, 1, 0), 1.6F, null, -1);
             CameraShakePayload.sendAround((ServerLevel) l.body.level(), ground, 10, .2F, 5);
             StyleHits.sound(l.owner, ground, SoundEvents.ANVIL_LAND, .5F, .9F);
         }

@@ -90,6 +90,14 @@ The three styles keep their effects and have new poses and drawings: **Resonance
 four downbeats as the waves stack), **Silence Dome** (palms pressed down; slate rings close inward) and
 **Battle Hymn** (arms opened in song; a stave circles you and notes rise off it).
 
+### Signature: Standing Wave
+
+Under Resonant Breaker, after Feedback Loop. Sing one note at a spot up to 24 blocks away and hold
+it until the air there rings by itself: **a column of sound 6 blocks wide**, rings stacked up it that swell at the bellies
+and pinch to nothing at the still nodes, a note hanging at each node. **Every second it pulses**: foes inside take
+**1 + tier/4** and are **drawn in**, and each beat swells it. On the fifth beat, or when you **press again**, the note
+**breaks**: **6 + tier** to everyone in it, thrown out.
+
 ## Sound
 
 The cry, the burst and the held scream are original synthesized sounds; no recordings are used.

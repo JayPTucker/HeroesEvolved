@@ -166,6 +166,14 @@ the point; each second in it threads a foe 10 Focus deeper), Blind Spot (a hand 
 and Hive Mind (hands clasped, then spread; for its ten seconds, teammates and crouching volunteers in it
 hear each other's voices from anywhere).
 
+### Signature: Puppeteer
+
+Under Puppet Master, after Strings Attached. Strings of thought drop from your fingers onto **up to
+four foes within 14 blocks** you can see. A marionette's cross of light hangs over each one with strings to its head, hands
+and knees. For **six seconds each puppet turns on the nearest other foe** instead of on you or your friends; one with
+nobody to fight hangs still. When the time is up, or when you **press again** (free), the strings are cut: each puppet
+takes **3 + tier** and is left **slow and weak** for two seconds. Bosses can't be strung.
+
 ## Voices
 
 Mind Link, Far Hearing, Hive Link, Mind Network and Hive Mind relay real Simple Voice Chat audio. The

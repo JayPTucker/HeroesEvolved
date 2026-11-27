@@ -35,3 +35,23 @@ What the player sees is in [docs/regeneration.md](../../../docs/regeneration.md)
 - **Photographs:** `tools/regen-kit-preview.init.gradle` (`uitest/RegenKitPreview`) shoots every action, follow-up, skill and
   style into `build/regen-kit-preview/screenshots/`. A leap needs its landing shots timed to the fall; a front camera with
   someone standing in front of the player only shows their back.
+
+## Patterns from the one-look pass (November 2026)
+
+- **Old effect kinds map onto one new piece.** `RegenerationEffects` no longer draws anything itself: each old
+  `AbilityEffectPayload.Kind` is turned into a `Piece.REGEN_FX` played locally with `SetPieceClient.play`, the kind's
+  ordinal in the seed's high bits (`kind << 16 | hash`). `RegenArt.fx` switches on it. Cryokinesis does the same with
+  `CRYO_FX`; copy it when a power's old kinds must keep working but should look new.
+- **A resource you can see on the body.** Regrowth is drawn as veins by `client/RegrowthLayer.veins`, in each model
+  part's own space (pixels), so the lines follow every pose. Other players learn the number from `RegrowthPayload`
+  (sent by `RegenerationService.broadcastRegrowth` from `syncHud`, and to new watchers by `RegrowthTracking`);
+  `ClientRegrowth` eases it so veins grow and drain instead of popping.
+- **One render type at a time from a `MultiBufferSource`.** Asking it for a second render type ends the first one's
+  batch, so writing to the first again throws "Not building!". `RegrowthLayer` draws every solid strip, then fetches
+  the additive buffer and draws every halo (`veinPass` twice). Lift a line drawn over another by a hair along the face
+  normal, or the two fight for depth.
+- **A stand that banks blows needs a testable entry point.** `LastOneStanding.braced(player, amount)` is what the
+  `LivingIncomingDamageEvent` hook calls; FakePlayers in game tests don't reliably go through the event, so tests call
+  it directly. Its release uses an explosion damage source, not `playerAttack`, so it never counts as a reckless punch.
+- **Photographs:** `tools/regenart-preview.init.gradle` (`uitest/RegenArtPreview`) shoots the veins, Mending, Blood Gift
+  and a Bond, Second Life, revive, reckless and eject, and Last One Standing into `build/regenart-preview/screenshots/`.

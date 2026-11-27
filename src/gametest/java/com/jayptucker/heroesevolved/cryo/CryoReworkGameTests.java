@@ -796,9 +796,12 @@ public final class CryoReworkGameTests {
     public static void interactionBranchesKeepSavedSkillIdentitiesAndRemoveOldStatBonuses(GameTestHelper h) {
         ServerPlayer p = player(h, 3, true);
         try {
-            var nodes = SkillCatalog.nodes("cryokinesis");
+            var all = SkillCatalog.nodes("cryokinesis");
+            var nodes = all.stream().filter(n -> !n.signature()).toList();
             h.assertTrue(nodes.size() == 18 && nodes.stream().filter(SkillCatalog.Node::active).count() == 6,
                     "The redesigned kit retains eighteen saved nodes and six optional actions");
+            h.assertTrue(all.stream().filter(SkillCatalog.Node::signature).map(SkillCatalog.Node::id).toList().equals(java.util.List.of("cryokinesis_absolute_zero")),
+                    "Beside them, one signature: Absolute Zero");
             h.assertTrue(nodes.stream().anyMatch(n -> n.id().equals("cryokinesis_stillheart"))
                             && nodes.stream().anyMatch(n -> n.id().equals("cryokinesis_suspension_stitch")),
                     "Cocoon and woven-path purchases retain their existing IDs");

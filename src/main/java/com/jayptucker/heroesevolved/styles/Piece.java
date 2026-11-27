@@ -20,7 +20,7 @@ public enum Piece {
     FISSURE_MAW(56), STONE_RAMPART(200), BEDROCK_STANCE(160),
     // Flight
     TEMPEST_DRILL(30), GALE_WALL(160), FORMATION_FLIGHT(200),
-    // Telekinesis
+    // Telekinesis's first class pieces, retired for KINETIC_CLENCH, KINETIC_WARD and KINETIC_GATHER (kept: ordinals)
     IMPLOSION(44), DEBRIS_HALO(160), GATHERING_HAND(34),
     // Telepathy
     PSYCHIC_STORM(120), BLIND_SPOT(34), HIVE_MIND(200),
@@ -341,7 +341,60 @@ public enum Piece {
     // the role and bit 5 strong); a knot or its stance cracking (seed 0..16 how far; scale 2 a knot breaking, 3 a tower
     // crystal); the Seal shattering off its chest (scale 1 a phase, 2 a backfire, 3 the star cracking); a fighter a power
     // carried out of The Unmaking (bound to them; seed the role).
-    END_SEAL_WARNING(130), END_SEAL_KEY(18), END_SEAL_CRACK(16), END_SEAL_SHATTER(46), END_SEAL_SPARED(22);
+    END_SEAL_WARNING(130), END_SEAL_KEY(18), END_SEAL_CRACK(16), END_SEAL_SHATTER(46), END_SEAL_SPARED(22),
+    // Telekinesis, the far hand (telekinesis/, drawn by KineticArt; numbers in KineticGeometry). A hand of bent air does
+    // at a distance what the caster's hand does. The seed carries the caster's entity id wherever the drawing starts
+    // from their visible hand (-1 for none, then it starts at the origin).
+    // SEND: a ripple leaving the hand for a far point (origin a fallback hand, target the point). SHOVE: a palm driven
+    // along the cone (origin the hand, target the reach's end, scale the reach). GRIP: the hand round a held body (bound;
+    // re-sent while held). THROW: the hand flung open (origin the body, target along the throw; bound to what flew).
+    // IMPACT: a body striking something (origin the contact, target contact + the struck face's normal, scale its size;
+    // a big scale is a ring burst on that plane). CATCH: the cupped hand (bound to the caster, re-sent). SHOT: rings round
+    // a caught shot (bound to it, re-sent). RETURN: a shot sent back (origin the shot, target along its way). PLUCK: a
+    // pinch taking a weapon home (origin where it was, bound to the item). FLING: a flung weapon turning (bound to it).
+    KINETIC_SEND(8), KINETIC_SHOVE(16), KINETIC_GRIP(14), KINETIC_THROW(16), KINETIC_IMPACT(14), KINETIC_CATCH(14),
+    KINETIC_SHOT(14), KINETIC_RETURN(10), KINETIC_PLUCK(20), KINETIC_FLING(12),
+    // STORM: two hands sweeping foes in and lifting them (origin the centre, scale the radius; the gather and lift).
+    // SLAM: both hands driven down (origin the centre, scale the radius). PIN: a palm pressing a body into what it met
+    // (bound; origin the contact, target contact + the face's normal; re-sent while pinned). BECKON: a small hand working a
+    // control or carrying an item home (origin the spot; bound to an item if it carries one; scale 1 a press, 2 a pull).
+    // ROUND_UP: two hands cupping foes together (origin the centre, scale the radius; re-sent). POP: a palm popping a
+    // juggled foe up (bound; scale 2 a spike down). STEP: the caster's own far hand throwing them (bound to them, target
+    // along the vault). LEVITATE: hands cradling a floating caster (bound, re-sent). CUSHION: a palm under a falling
+    // friend (bound). SKYFALL: the haul, the hang, the drop (bound to the hauled body; origin the drop point, scale the
+    // radius). CLENCH, WARD, GATHER: the class abilities (a fist closing on a point; two hands circling the caster; a
+    // hand scooping a friend home). CRUSH, TOSS: the alternate finishers' hands. BRACE: two hands holding a blast back.
+    KINETIC_STORM(65), KINETIC_SLAM(22), KINETIC_PIN(14), KINETIC_BECKON(18), KINETIC_ROUND_UP(14), KINETIC_POP(12),
+    KINETIC_STEP(14), KINETIC_LEVITATE(14), KINETIC_CUSHION(18), KINETIC_SKYFALL(56), KINETIC_CLENCH(44),
+    KINETIC_WARD(160), KINETIC_GATHER(34),
+    // Cryokinesis in one art class (CryoArt). FX: what the older short CRYO_* effects draw now, started on the client
+    // (client/effects/CryoEffects) with the effect's ordinal in the seed's high bits. ZERO: Absolute Zero round its caster
+    // (bound to them, scale the radius): the cold gathering for the channel, then the freezing wave. EMBER: one foe's
+    // warmth drawn out along a thread to the caster's palms while frost creeps over it (bound to the foe, seed the caster).
+    CRYO_FX(30), CRYO_ZERO(64), CRYO_EMBER(34),
+    // Regeneration in one art class (RegenArt). FX: what the older short REGEN_* effects draw now, started on the client
+    // (client/effects/RegenerationEffects) with the effect's ordinal in the seed's high bits. STAND: Last One Standing
+    // round Claire (bound, re-sent while it lasts). TAUNT: a cord of blood from a foe she has drawn to her (bound to the
+    // foe, seed her id, re-sent). RELEASE: the banked wounds let go (origin her feet, scale the radius).
+    REGEN_FX(32), REGEN_STAND(14), REGEN_TAUNT(14), REGEN_RELEASE(30),
+    // The signatures run by expansion/Signatures, each drawn by its power's own art class. QUAKE_EPICENTER: the faults,
+    // the heave and the drop (origin the centre). FLIGHT_MICROBURST: the lid, the column, the outflow (origin the ground,
+    // target the lid). TELEPATHY_STRINGS / SNIP: a marionette's cross over a strung foe, and the strings cut (bound to the
+    // puppet, the telepath's id in the seed). RAD_STAR_CHARGE / STAR / STAR_BLAST: the core grown in cupped hands (bound),
+    // the thrown core (re-sent every other tick) and its blast (origin where it went off, target the ground under it).
+    // SONIC_STANDING / STANDING_BREAK: the column of sound (re-sent each beat, the beat in the seed) and its breaking.
+    // SPEED_ROUND / ROUND_HIT: one hop of a Lightning Round (seed the hop) and a strike. FORCE_BASTION / BASTION_BURST: the dome
+    // (re-sent each second; seed 0 raises it) and its burst. DENSITY_ARMOR / ARMOR_BURST: Mountain Armor assembling and
+    // held (bound; seed 0 assembles) and blasting off. MIMIC_CHORUS / VOICE: the ring of voices (bound; voices packed in
+    // the seed) and one voice's bolt (the power's index in the scale). MATTER_BALLISTA / TURRET: the ballista folding
+    // together and one beat of it (seed 1 fires). HYDRO_LEVIATHAN_RISE / STRIKE / DIVE: the water serpent (origin the
+    // pool; a strike's target is the spot, its index the seed). AMP_OVERDRIVE / DISCHARGE: a linked body held open (bound,
+    // the amplifier's id in the seed) and one fork of the overflow.
+    QUAKE_EPICENTER(54), FLIGHT_MICROBURST(50), TELEPATHY_STRINGS(12), TELEPATHY_SNIP(14),
+    RAD_STAR_CHARGE(32), RAD_STAR(3), RAD_STAR_BLAST(34), SONIC_STANDING(22), SONIC_STANDING_BREAK(26),
+    SPEED_ROUND(10), SPEED_ROUND_HIT(8), FORCE_BASTION(22), FORCE_BASTION_BURST(24), DENSITY_ARMOR(22), DENSITY_ARMOR_BURST(26),
+    MIMIC_CHORUS(22), MIMIC_VOICE(12), MATTER_BALLISTA(22), MATTER_TURRET(20),
+    HYDRO_LEVIATHAN_RISE(12), HYDRO_LEVIATHAN_STRIKE(18), HYDRO_LEVIATHAN_DIVE(12), AMP_OVERDRIVE(22), AMP_DISCHARGE(12);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

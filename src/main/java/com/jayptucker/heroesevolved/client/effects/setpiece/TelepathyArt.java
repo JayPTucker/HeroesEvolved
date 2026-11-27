@@ -678,6 +678,77 @@ final class TelepathyArt {
     /** 0 within a block and a half of the camera, 1 from three and a half out: things that pass the lens don't fill it. */
     private static float near(Canvas c, Vec3 at) { return (float) Math.clamp((at.distanceTo(c.camera()) - 1.5) / 2, 0, 1); }
 
+    /**
+     * Puppeteer ({@code telepathy/Puppeteer}): a marionette's cross of light hangs over the strung foe, swaying, with a
+     * string from each arm of it to the head, both hands and both knees, and one long thread from the telepath's hand up to
+     * the cross carrying beads of thought. Bound to the puppet, the telepath's id in the seed, scale its height; re-sent
+     * while the strings hold.
+     */
+    static void strings(Canvas c, Active a, float t) {
+        if (SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.TELEPATHY_STRINGS, com.jayptucker.heroesevolved.styles.Piece.TELEPATHY_SNIP), c.level.getGameTime())) return;
+        Entity puppet = a.bound(c), owner = c.level.getEntity(a.seed());
+        if (puppet == null) return;
+        float h = Math.max(.8F, a.scale()), life = a.piece().ticks, f = fade(t, life, 2, 3);
+        float clock = (c.level.getGameTime() % 2400 + c.partial) * .05F;
+        Vec3 feet = puppet.getPosition(c.partial);
+        float yaw = (puppet instanceof net.minecraft.world.entity.LivingEntity l ? l.yBodyRot : puppet.getYRot()) * DEG_TO_RAD;
+        Vec3 fwd = new Vec3(-sin(yaw), 0, cos(yaw)), side = new Vec3(cos(yaw), 0, sin(yaw));
+        // The cross: two bars, swaying.
+        float sway = sin(clock * 6) * .25F, bob = sin(clock * 4.3F) * .08F;
+        Vec3 cross = feet.add(0, h + 1.2 + bob, 0).add(side.scale(sway * .3));
+        Vec3 barA = side.scale(.55).add(0, sway * .2, 0), barB = fwd.scale(.4).add(0, -sway * .15, 0);
+        Vec3 aL = cross.subtract(barA), aR = cross.add(barA), bF = cross.add(barB), bB = cross.subtract(barB);
+        float in = smooth(0, 4, t);
+        // The cross itself is solid, so it holds against a noon sky: two violet bars, lit, with glowing tips.
+        if (c.solid() && f > .3F) {
+            float[] wood = mix(VIOLET, SHADOW, .25F);
+            c.box(cross.add(0, sway * .1, 0), .62F, .05F, .05F, yaw, 0, sway * .3F, wood, 1);
+            c.box(cross, .05F, .05F, .45F, yaw, sway * .2F, 0, wood, 1);
+        }
+        if (c.glow()) {
+            for (Vec3 tip : new Vec3[] {aL, aR, bF, bB}) c.glow(tip, .1F, LILAC, f * .9F);
+            c.glow(cross, .28F, LILAC, f * .5F);
+            c.glow(puppet.getPosition(c.partial).add(0, h * .88, 0), .35F, LILAC, f * .25F);
+        }
+        // The strings, tugging as the puppet moves.
+        Vec3 head = feet.add(0, h * .95, 0);
+        Vec3 handR = feet.add(side.scale(h * .2)).add(fwd.scale(.1)).add(0, h * .5 + sin(clock * 6) * .06, 0);
+        Vec3 handL = feet.add(side.scale(-h * .2)).add(fwd.scale(.1)).add(0, h * .5 - sin(clock * 6) * .06, 0);
+        Vec3 kneeR = feet.add(side.scale(h * .08)).add(fwd.scale(.08)).add(0, h * .25, 0);
+        Vec3 kneeL = feet.add(side.scale(-h * .08)).add(fwd.scale(.08)).add(0, h * .25, 0);
+        Vec3 slack = new Vec3(0, -.05, 0);
+        thread(c, bF, head, slack, in, .016F, LILAC, f * .9F, clock, 0);
+        thread(c, aR, handR, slack, in, .016F, LILAC, f * .9F, clock + 1, 0);
+        thread(c, aL, handL, slack, in, .016F, LILAC, f * .9F, clock + 2, 0);
+        thread(c, bB, kneeR, slack, in, .014F, LILAC, f * .75F, clock + 3, 0);
+        thread(c, bB, kneeL, slack, in, .014F, LILAC, f * .75F, clock + 4, 0);
+        // The long thread home to the telepath's hand.
+        if (owner instanceof Player p) thread(c, hand(c, p, .5), cross, new Vec3(0, .9, 0), smooth(0, 6, t), .02F, LILAC, f * .7F, clock, 2);
+    }
+
+    /** Puppeteer's strings cut: each one snaps and curls up into the cross, which breaks apart in motes. */
+    static void snip(Canvas c, Active a, float t) {
+        Entity puppet = a.bound(c);
+        float h = Math.max(.8F, a.scale()), life = a.piece().ticks, f = fade(t, life, .5F, 8);
+        Vec3 feet = puppet != null ? puppet.getPosition(c.partial) : a.origin();
+        Vec3 cross = feet.add(0, h + 1.2 + t * .04, 0);
+        float k = smooth(0, 8, t), clock = t * .3F;
+        for (int i = 0; i < 5; i++) {
+            float ang = i * TWO_PI / 5 + .4F;
+            Vec3 end = feet.add(cos(ang) * .3, h * (.25 + .7 * (i / 4F)), sin(ang) * .3);
+            Vec3 recoil = end.lerp(cross, k * .8).add(cos(ang) * .3 * k, 0, sin(ang) * .3 * k);
+            thread(c, cross, recoil, new Vec3(cos(ang) * .2 * k, .1 * k, sin(ang) * .2 * k), 1, .012F, PALE, f * (1 - k * .5F), clock + i, 0);
+        }
+        if (c.glow()) {
+            if (t < 3) c.glow(feet.add(0, h * .9, 0), .6F, CORE, (1 - t / 3) * .8F);
+            for (int i = 0; i < 8; i++) {
+                float ang = hash(a.seed() + 7, i) * TWO_PI;
+                Vec3 d = new Vec3(cos(ang), hash(a.seed() + 7, i + 9) - .3, sin(ang)).scale(.6 * k);
+                c.glow(cross.add(d), .07F, LILAC, f * (1 - k));
+            }
+        }
+    }
+
     private static boolean firstPerson(Entity e) {
         Minecraft mc = Minecraft.getInstance();
         return e == mc.player && mc.options.getCameraType() == CameraType.FIRST_PERSON;

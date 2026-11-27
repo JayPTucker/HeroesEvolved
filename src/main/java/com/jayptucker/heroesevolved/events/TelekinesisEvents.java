@@ -17,7 +17,6 @@ public final class TelekinesisEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         TelekinesisService.tick(event.getServer());
-        com.jayptucker.heroesevolved.telekinesis.TelekineticArsenalService.tick(event.getServer());
         com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.tick(event.getServer());
     }
 

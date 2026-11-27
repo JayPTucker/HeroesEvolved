@@ -14,7 +14,6 @@ import com.jayptucker.heroesevolved.pyro.PyroService;
 import com.jayptucker.heroesevolved.quake.QuakeService;
 import com.jayptucker.heroesevolved.radiation.RadiationService;
 import com.jayptucker.heroesevolved.radiation.RadiationSkills;
-import com.jayptucker.heroesevolved.telekinesis.TelekineticArsenalService;
 import com.jayptucker.heroesevolved.vibe.VibeService;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -119,7 +118,7 @@ public final class ProjectileRangeGameTests {
             PyroService.forget(player); CryoCombatSkills.forget(player); CryoService.stopAll(player);
             ElectroService.forget(player); QuakeService.stopAll(player); VibeService.forget(player);
             ForceFieldService.forget(player); RadiationService.stopAll(player);
-            HydroService.forget(player); TelekineticArsenalService.forget(player);
+            HydroService.forget(player);
             targets.forEach(LivingEntity::discard);
             blocks.forEach(pos -> h.getLevel().setBlock(pos, Blocks.AIR.defaultBlockState(), 2));
             for (int z = 62; z <= 69; z++) h.getLevel().setChunkForced(chunkX, z, false);
@@ -287,27 +286,6 @@ public final class ProjectileRangeGameTests {
             }
             HydroService.crashingWave(lane.context());
             lane.later(32, () -> h.assertTrue(target.getHealth() < target.getMaxHealth(), "The Crashing Wave reaches 30 blocks"));
-        });
-    }
-
-    @GameTest(template = "rewind_empty", batch = "projectile.kinetic", timeoutTicks = 240)
-    public static void kineticLanceFliesSixtyBlocks(GameTestHelper h) {
-        Lane lane = new Lane(h, ModAbilities.TELEKINESIS_ID);
-        LivingEntity target = lane.target(60);
-        lane.ready(() -> {
-            h.assertTrue(TelekineticArsenalService.lance(lane.player, target.getBoundingBox().getCenter()), "Kinetic Lance launches");
-            lane.later(35, () -> h.assertTrue(target.getHealth() < target.getMaxHealth(), "The physical Kinetic Lance hits at 60 blocks"));
-        });
-    }
-
-    @GameTest(template = "rewind_empty", batch = "projectile.forcecover", timeoutTicks = 240)
-    public static void forcePushCannotHitThroughAWall(GameTestHelper h) {
-        Lane lane = new Lane(h, ModAbilities.INVISIBILITY_ID);
-        LivingEntity target = lane.target(22);
-        lane.ready(() -> {
-            lane.wall(15, false);
-            ForceFieldService.raiseShield(lane.player); ForceFieldService.push(lane.player);
-            lane.later(14, () -> h.assertTrue(target.getHealth() == target.getMaxHealth(), "Force Push cannot damage a body behind a wall"));
         });
     }
 

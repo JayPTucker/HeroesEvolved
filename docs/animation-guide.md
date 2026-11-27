@@ -137,6 +137,9 @@ geyser) follow it, each with its own character. Not every power should: a telepa
    | Pyrokinesis | `A32813` edge, `F76A13` body, `FFBE42` gold (ember fire); `38409E`, `447EF4`, `74CCF3` (blue fire); `493833` soot (all in `PyroArt`) |
    | Electrokinesis | `10172D` shadow, `3D52B8` indigo, `5588FF` blue, `84D5FF` ion, `EAF5FF` core (all in `ElectroArt`, the fighting style included) |
    | Hydrokinesis | `0B3A5C` deep, `1F78B4` sea, `3CC2D6` teal, `9EE8F2` shallow (glints, healing), `F2FBFF` foam, `CDEFFF` ice (all in `HydroArt`) |
+   | Cryokinesis | `2E5470` deep (shadow side, seams; soft pass), `5AA8E8` glacier, `A6D8EE` ice, `DDF1F8` rime, `F6FCFF` core, `FF9A3C`/`FFE0A0` warmth drawn out (all in `CryoArt`; solid ice keeps the ice texture) |
+   | Telekinesis | `2A1030` plum (refraction shadow, soft pass), `8A2C6E` deep orchid (halo), `D65AA8` orchid (body), `FFB3DE` blush (rim, glints), `FFF3FA` core, dust (all in `KineticArt`) |
+   | Regeneration | `3A060C` clot (dark veins, soft pass), `B0101C` blood, `FF4050` bright, `FFD9A0` life gold, `EDE3D0` bone, `FFF4F0` core (all in `RegenArt`; Regrowth's veins in `RegrowthLayer`) |
    | Matter Assembly | `7A4513` deep amber (dark seams, soft pass), `F2A848` amber, `FFC766` honey, `FFE3A0` seam, `FFF1C8` core, `BFE8FF` ice glint (all in `AssemblyArt`; the block texture from `tools/GenerateAssemblyTextures.java`) |
 
    Flight is also a good model of a whole power built from one shape language: every Flight set piece is drawn

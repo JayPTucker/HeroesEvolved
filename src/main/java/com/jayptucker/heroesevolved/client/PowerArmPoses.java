@@ -160,6 +160,12 @@ public final class PowerArmPoses {
             model.leftSleeve.copyFrom(model.leftArm);
             return;
         }
+        if (KineticPoses.owns(pose)) {
+            KineticPoses.third(model, pose, id, ageInTicks, aimX, aimY, main, rightHanded ? model.leftArm : model.rightArm, inward);
+            model.rightSleeve.copyFrom(model.rightArm);
+            model.leftSleeve.copyFrom(model.leftArm);
+            return;
+        }
 
         switch (pose) {
             case ELECTRO_DRAW -> {

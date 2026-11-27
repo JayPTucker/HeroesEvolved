@@ -29,6 +29,10 @@ public final class FirstPersonArmGeometry {
             AmpPoses.first(stack, arm, side, pose, time, poseAge);
             return;
         }
+        if (KineticPoses.owns(pose)) {
+            KineticPoses.first(stack, arm, side, pose, time, poseAge);
+            return;
+        }
         if (switch (pose) {
             case VIBE_PALM, VIBE_OPEN, VIBE_READ, VIBE_GUARD, VIBE_LOCK, VIBE_LANCE, VIBE_CROSS, VIBE_STEP, VIBE_CHANNEL, VIBE_HOP, VIBE_RIFT -> true;
             default -> false;

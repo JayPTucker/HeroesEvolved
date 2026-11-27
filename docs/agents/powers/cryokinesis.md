@@ -1,12 +1,13 @@
 # Cryokinesis: notes for agents
 
-Terrain freezing (`cryo/TerrainFrost`). What the player sees: [cryokinesis.md](../../cryokinesis.md#freezing-terrain).
+One art class (`client/effects/setpiece/CryoArt`), terrain freezing (`cryo/TerrainFrost`) and the signature
+(`cryo/AbsoluteZero`). What the player sees: [cryokinesis.md](../../cryokinesis.md).
 
 Part of the notes for coding agents: start at [AGENTS.md](../../../AGENTS.md).
 
 ## Reusable patterns from terrain freezing
 
-Cold hits freeze the terrain they land on (`cryo/TerrainFrost`, art in `CryoBlastArt.terrainFrost`): Ice Blast, Crystal
+Cold hits freeze the terrain they land on (`cryo/TerrainFrost`, art in `CryoArt.terrainFrost`): Ice Blast, Crystal
 Lance, Frost Armor shards and the Freeze Gun. Solids turn to brittle frost that thaws back, water to ice and lava to
 obsidian. What the player sees is in [docs/cryokinesis.md](../../../docs/cryokinesis.md#freezing-terrain).
 
@@ -34,3 +35,31 @@ obsidian. What the player sees is in [docs/cryokinesis.md](../../../docs/cryokin
   walking step every render frame. `TemporalMobAnimationMixin` returns partial tick 1 for `FrozenVisuals.isFrozen`,
   holding the last pose. Glacier Ride keeps its actual `ServerPlayer` and ticks through `CryoRideService.tickAll`
   once per server tick; the action's release hook ends the ride, so a held key has no short lifetime.
+
+## One look (November 2026)
+
+The power had four palettes and three ways of drawing: particle streaks and vanilla snowflakes (`CryoEffects`), set
+pieces in `CryoBlastArt` and `StyleArt`, and a construct renderer, each in its own blues. It is now:
+
+- **`CryoArt` draws all cold**, in one palette (the table in [animation-guide.md](../../animation-guide.md)): the Ice
+  Blast stream and quench, terrain frost, frost-construct cells (`CryoConstructArt` only keeps the client's cell cache),
+  the Ice Skater's strip, the three finishers, and Absolute Zero.
+- **The old `CRYO_*` effect kinds are shapes now.** `client/effects/CryoEffects` starts one `CRYO_FX` piece with the
+  kind's ordinal in the seed's high bits (`kind << 16 | hash`); `CryoArt.fx` draws each from four primitives: `hexRing`
+  (ice's own ring), `feather` (veins with barbs on a plane), `chips` (translucent, in the soft pass: opaque solid chips
+  read as blue gravel) and `snowfall`. Gifted cryokinetics and the Ice Skater get the new look with no server change.
+- **Solid ice keeps the ice texture** (`CryoSkillVisuals`, `CryoMeshVisuals`, `FrozenVisuals`), so a construct and a
+  real ice block match. Don't recolour it to the palette.
+- **No particle bursts.** The shatter's 50 blue-ice block particles and 25 snowflakes were removed from
+  `CryoService.thaw`'s shatter path; a couple of snowflakes on a frozen body remain as seasoning.
+- **A warm accent means heat leaving.** `WARM` is used only where heat is drawn out (Last Warmth, a siphoned reactor,
+  Absolute Zero's embers), so the player reads it as "the cold is taking something".
+
+## Absolute Zero (the signature)
+
+`cryo/AbsoluteZero`, routed by mechanic `absolute_zero` through `expansion/ExpansionSkills`. Copied from
+`electro/BlackoutService`: a channel kept on the server tick with the `ServerPlayer`, then one release. Foes are fixed
+when the channel starts (`foes`), slowed and put out while it runs, and frozen with `CryoService.freezeSolid` at the end
+(bosses take `coldHit` only). Stamina comes back with `PlayerEnergyService.restore`. Pieces: `CRYO_ZERO` round the
+caster, one `CRYO_EMBER` per foe (bound to it, the caster's id in the seed). Tests: `cryo/AbsoluteZeroGameTests`.
+Photographs: `tools/cryoart-preview.init.gradle` (`uitest/CryoArtPreview`, flag `heroes.preview.cryoart`).

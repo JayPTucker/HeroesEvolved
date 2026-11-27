@@ -707,6 +707,73 @@ public final class SpeedArt {
         }
     }
 
+    /**
+     * One hop of a Lightning Round ({@code speed/LightningRound}): a gold afterimage of the runner left standing where they were (a body of
+     * light with a hot outline, fading), and a jagged streak of lightning along the ground-hugging path to where they
+     * arrive, burning out from the tail. Origin where they left, target where they arrived; the seed is the hop's index
+     * (-1 for the run home).
+     */
+    static void round(Canvas c, Active a, float t) {
+        Vec3 from = a.origin(), to = a.target();
+        float life = a.piece().ticks, f = Mth.clamp((life - t) / 8, 0, 1);
+        int seed = a.seed() * 31 + 7;
+        Vec3 dir = to.subtract(from);
+        double length = dir.length();
+        // The afterimage: a figure of light where they stood.
+        float ghost = (1 - smooth(0, life, t)) * (a.seed() == -1 ? .5F : 1);
+        if (ghost > .01F && from.distanceToSqr(to) > .5) {
+            // A figure, not a capsule: legs, torso and head, filled faintly gold with a hot rim, smeared back along the run.
+            Vec3 back = to.subtract(from).multiply(1, 0, 1);
+            back = back.lengthSqr() < 1e-4 ? Vec3.ZERO : back.normalize().scale(-.18 * (1 - ghost));
+            Vec3 legs = from.add(0, .4, 0).add(back), torso = from.add(0, 1.12, 0).add(back.scale(.6)), head = from.add(0, 1.68, 0).add(back.scale(.3));
+            if (c.soft()) {
+                c.shell(legs, .2F, .4F, .14F, PI, GOLD, .3F * ghost, .55F, Canvas.PLAIN, 0);
+                c.shell(torso, .27F, .36F, .16F, PI, GOLD, .32F * ghost, .55F, Canvas.PLAIN, 0);
+                c.shell(head, .19F, .2F, .19F, PI, GOLD, .32F * ghost, .55F, Canvas.PLAIN, 0);
+            }
+            if (c.glow()) {
+                c.shell(torso, .29F, .38F, .18F, PI, HOT, .45F * ghost, 0, Canvas.PLAIN, 0);
+                c.shell(legs, .22F, .42F, .16F, PI, HOT, .35F * ghost, 0, Canvas.PLAIN, 0);
+                c.shell(head, .21F, .22F, .21F, PI, HOT, .45F * ghost, 0, Canvas.PLAIN, 0);
+            }
+        }
+        if (length < .2) return;
+        // The streak: jagged lightning along the path, burning out from where they left.
+        float burn = smooth(0, life * .8F, t);
+        Vec3 a0 = from.add(0, 1, 0).lerp(to.add(0, 1, 0), burn);
+        if (c.glow()) {
+            c.bolt(a0, to.add(0, 1, 0), seed, .35F, .09F, AMBER, f * .6F);
+            c.bolt(a0, to.add(0, 1, 0), seed, .35F, .035F, HOT, f);
+            c.bolt(from.add(0, .4, 0).lerp(to.add(0, .4, 0), burn), to.add(0, .4, 0), seed + 3, .25F, .03F, GOLD, f * .7F);
+        }
+        if (c.soft()) {
+            Vec3 side = new Vec3(-dir.z, 0, dir.x).normalize();
+            for (int i = 0; i < 6; i++) streak(c, from, dir.normalize(), side, seed, i, t + 2, .3F, life + 2, WIND, f * .5F);
+        }
+    }
+
+    /** A Lightning Round strike landing: a flash on the struck body and a ring across the blow, sparks thrown off it. */
+    static void roundHit(Canvas c, Active a, float t) {
+        Vec3 at = a.origin(), from = a.target();
+        float life = a.piece().ticks, h = Math.max(.6F, a.scale()), f = Mth.clamp((life - t) / 5, 0, 1);
+        Vec3 axis = at.subtract(from);
+        axis = axis.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : axis.normalize();
+        float k = smooth(0, 6, t);
+        if (c.glow()) {
+            if (t < 3) c.glow(at, .7F * h, HOT, .9F * (1 - t / 3));
+            c.ring(at, axis, .2F + .9F * k * h, .06F, 0, TWO_PI, GOLD, f * (1 - k));
+            c.ring(at, axis, .15F + .7F * k * h, .025F, 0, TWO_PI, HOT, f * (1 - k));
+            for (int i = 0; i < 8; i++) {
+                float ang = hash(a.seed() + 50, i) * TWO_PI;
+                Vec3 up = Math.abs(axis.y) > .9 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
+                Vec3 u = axis.cross(up).normalize(), v = axis.cross(u).normalize();
+                Vec3 d = u.scale(cos(ang)).add(v.scale(sin(ang))).add(axis.scale(.6)).normalize();
+                Vec3 p = at.add(d.scale(.3 + 1.2 * k));
+                c.line(p, p.add(d.scale(.35)), .03F, i % 2 == 0 ? HOT : GOLD, 0, f * (1 - k));
+            }
+        }
+    }
+
     /** One streak of the air rushing on: it runs ahead, spreads and fades. */
     private static void streak(Canvas c, Vec3 o, Vec3 dir, Vec3 side, int seed, int i, float t, float s, float life, float[] col, float alpha) {
         float lat = (hash(seed, i + 200) - 0.5F) * 2.4F, h = 0.2F + hash(seed, i + 220) * 1.9F, pace = 0.8F + hash(seed, i + 240) * 0.5F;

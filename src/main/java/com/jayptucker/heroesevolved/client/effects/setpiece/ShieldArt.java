@@ -21,7 +21,7 @@ import static net.minecraft.util.Mth.sin;
  */
 final class ShieldArt {
     private static final float RADIUS = 1.45F;
-    private static final float[] KINETIC = rgb(0xC9A8FF), KINETIC_EDGE = rgb(0xF2E8FF), STONE = rgb(0x8D8A84),
+    private static final float[] STONE = rgb(0x8D8A84),
             SEAM = rgb(0xFFD58A), ICE = rgb(0xBFEFFF), ICE_DEEP = rgb(0x6FB8E8), SOUND = rgb(0xFFCF7A), SOUND_PALE = rgb(0xFFF4DC),
             FLASH = rgb(0xFFF6E0);
 
@@ -44,7 +44,8 @@ final class ShieldArt {
         float spin = (c.level == null ? t : (c.level.getGameTime() % 24000L) + c.partial) * 0.02F;
         switch (kind) {
             case 0 -> ForceArt.cage(c, body, r, spin, UP, alpha, 0.5F, ForceArt.EDGE);
-            case 1 -> kinetic(c, body, r, spin, alpha);
+            // A telekinetic holds the blast back with both far hands, palms to the wave.
+            case 1 -> KineticArt.brace(c, body, dir, r, alpha);
             case 2 -> matter(c, body, dir, r, alpha, a.seed());
             case 3 -> ice(c, body, dir, r, alpha, a.seed());
             default -> sound(c, body, r, t, alpha);
@@ -61,17 +62,6 @@ final class ShieldArt {
                 c.ring(face, dir, 0.2F + ti * r * 1.1F, 0.06F, 0, TWO_PI, kind == 3 ? ICE : kind == 4 ? SOUND : kind == 2 ? SEAM : FLASH, 0.8F * (1 - ti));
             }
         }
-    }
-
-    /** A shimmering lavender shell with rings of pressure turning round it. */
-    private static void kinetic(Canvas c, Vec3 at, float r, float spin, float alpha) {
-        if (!c.glow()) return;
-        c.shell(at, r, r, r, Mth.PI, KINETIC, alpha * 0.4F, 0.05F, Canvas.PLAIN, spin);
-        for (int i = 0; i < 3; i++) {
-            Vec3 axis = new Vec3(sin(spin * 2 + i * 2.1F), 0.6, cos(spin * 2 + i * 2.1F)).normalize();
-            c.ring(at, axis, r * (1.01F + i * 0.02F), 0.04F, 0, TWO_PI, KINETIC_EDGE, alpha * 0.6F);
-        }
-        c.glow(at, r * 1.2F, KINETIC, alpha * 0.1F);
     }
 
     /** Plates of assembled matter locked into a dome on the side facing the blast, with hot seams between them. */

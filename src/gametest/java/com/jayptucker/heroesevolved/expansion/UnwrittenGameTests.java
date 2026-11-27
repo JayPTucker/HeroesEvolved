@@ -56,7 +56,9 @@ public final class UnwrittenGameTests {
         h.assertTrue(b.training() == 0 && b.highestLevel() == 15 && b.earned() == com.jayptucker.heroesevolved.progression.PowerLevels.points(15)
                 && SkillCatalog.spent("quake", b) == 3, "A legacy Level 5 is Power Level 15: purchases kept, the new points added");
         h.assertTrue(SkillCatalog.find("quake", b.slots().get("PRIMARY")).orElseThrow().active(), "Legacy equipped ID still resolves");
-        h.assertTrue(SkillCatalog.nodes("quake").size() == 18 && SkillCatalog.rows("quake") == 6, "Expanded tree has two pages and stable old IDs"); h.succeed();
+        var core = SkillCatalog.nodes("quake").stream().filter(n -> !n.signature()).toList();
+        h.assertTrue(core.size() == 18 && core.stream().mapToInt(SkillCatalog.Node::tier).max().orElse(0) == 5,
+                "Expanded tree has two pages and stable old IDs (its signature sits beside them)"); h.succeed();
     }
     @GameTest(template="rewind_empty", batch="unwritten.capstones")
     public static void namedPrerequisitesCapstonesAndRespecializationAreEnforced(GameTestHelper h) {

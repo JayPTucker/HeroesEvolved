@@ -1,0 +1,25 @@
+// The twelve signatures run by expansion/Signatures, staged with foes and photographed from the side. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('sigSetPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/sigset-preview')
+                        programArguments.addAll('--width', '1200', '--height', '800')
+                        systemProperty('heroes.preview.sigset', 'true')
+                        if (project.hasProperty('sound')) systemProperty('heroes.preview.sound', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('sigSetPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

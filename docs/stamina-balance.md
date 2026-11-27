@@ -97,8 +97,24 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 - **cryokinesis_0_1**: 6+tier -> 8+tier; one forged lance. Weighted damage at unlock: 6 -> 7.5; budget 9 from 24 stamina. Code: `cryo/CryoCombatSkills#tickForge`.
 - **cryokinesis_2_1**: 2 -> 5 in Cold Snap's single wave. Weighted damage at unlock: 1.5 -> 3.75; budget 3.89 from 26 stamina. Code: `cryo/CryoCombatSkills#tick`.
 - **cryokinesis_brittle_constellation**: 4 -> 6 per unique hop (strong: 7 -> 9). Weighted damage at unlock: 3.4 -> 5.1; budget 5.28 from 27 stamina. Code: `cryo/CryoTechniqueService#tickStars`.
+- **regeneration_last_one_standing**: 4+tier to everyone within 8 after a 6 s stand; + half of what she banked (cap 16). Weighted damage at unlock: 0 -> 8; budget 8.67 from 52 stamina. Code: `regeneration/LastOneStanding#release`.
+- **quake_epicenter**: 6+tier to everyone standing in a 10-block ring after a 24-tick telegraph; dragged in and slowed. Weighted damage at unlock: 0 -> 10; budget 10.3 from 52 stamina. Code: `quake/Epicenter#heave`.
+- **flight_microburst**: 6+tier inside a 6-block ring after a 20-tick telegraph; 2 s pin; outflow shove beyond. Weighted damage at unlock: 0 -> 10; budget 11.8 from 52 stamina. Code: `flight/Microburst#slam`.
+- **telepathy_puppeteer**: 3+tier to each of up to 4 puppets when the strings are cut, after 6 s of fighting each other. Weighted damage at unlock: 0 -> 7; budget 9.19 from 52 stamina. Code: `telepathy/Puppeteer#cut`.
+- **radiation_fission_star**: 8+tier within 5 with line of sight after a 30-tick charge; sickness and a 5 s zone. Weighted damage at unlock: 0 -> 12; budget 12.8 from 52 stamina. Code: `radiation/FissionStar#detonate`.
+- **sonic_resonance_standing_wave**: four pulses of 1+tier/4, then 6+tier on the fifth beat, inside a 6-block column. Weighted damage at unlock: 0 -> 13.5; budget 12.9 from 52 stamina. Code: `sonic/StandingWave#pulse,shatter`.
+- **superspeed_lightning_round**: 4+tier to each of up to 6 foes, one every 3 ticks. Weighted damage at unlock: 0 -> 8; budget 10.5 from 52 stamina. Code: `speed/LightningRound#strike`.
+- **invisibility_bastion**: 3+tier to every foe within 9 when the dome bursts. Weighted damage at unlock: 0 -> 7; budget 7.39 from 52 stamina. Code: `invisibility/Bastion#burst`.
+- **phasing_mountain_armor**: 5+tier within 5 when the plates blast off. Weighted damage at unlock: 0 -> 9; budget 10 from 52 stamina. Code: `phasing/MountainArmor#blast`.
+- **empathic_mimicry_chorus**: five bolts of 2+tier/2 at the nearest foe, then one 2+tier/4 bolt per voice (3 at least). Weighted damage at unlock: 0 -> 20.3; budget 18.6 from 52 stamina. Code: `mimicry/Chorus#sing`.
+- **matter_assembly_ballista**: six bolts of 2+tier/2, one a second, at the nearest foe within 18. Weighted damage at unlock: 0 -> 24; budget 26 from 52 stamina. Code: `assembly/Ballista#tick`.
+- **hydrokinesis_leviathan**: three telegraphed bites of 4+tier/2 at the nearest foe within 10 of the pool. Weighted damage at unlock: 0 -> 16.2; budget 17.1 from 52 stamina. Code: `hydro/Leviathan#bite`.
+- **power_amplification_overdrive**: 4+tier per fork, one fork per linked body (3 alone). Weighted damage at unlock: 0 -> 8; budget 8.89 from 52 stamina. Code: `amplify/Overdrive#discharge`.
+- **cryokinesis_absolute_zero**: 4+tier cold hit on each drained foe (up to 16) after a 30-tick channel; 3 s solid freeze. Weighted damage at unlock: 0 -> 8; budget 7.32 from 52 stamina. Code: `cryo/AbsoluteZero#release`.
 - **electrokinesis_ground_sink**: 2+min(16,charge) -> 4+.5*min(16,charge). Weighted damage at unlock: 2 -> 4; budget 5.56 from 40 stamina. Code: `expansion/ExpansionSkills#activate`.
-- **telekinesis_0_1**: 8 -> 10; one spear (second pierce needs a skill). Weighted damage at unlock: 8 -> 10; budget 11.5 from 23 stamina. Code: `telekinesis/TelekineticArsenalService#lance`.
+- **telekinesis_0_1**: Vector Lance 10 -> Pin: 6 (+.5 per tier over 2) against the wall, then 3 s held. Weighted damage at unlock: 10 -> 6; budget 7 from 23 stamina. Code: `telekinesis/TelekinesisSkillService#land`.
+- **telekinesis_kinetic_volley**: Kinetic Volley 3 shards*4 -> Juggle: 3 pops*2 on each of up to 3 foes. Weighted damage at unlock: 10.2 -> 5.1; budget 4.42 from 24 stamina. Code: `telekinesis/TelekinesisSkillService#tickJuggle`.
+- **telekinesis_skyfall**: 12+tier to the hauled foe after a 40-tick haul and drop; 6+tier/2 within 5 blocks. Weighted damage at unlock: 6.4 -> 22.4; budget 23 from 52 stamina. Code: `telekinesis/TelekinesisSkillService#tickSkyfall`.
 - **time_manipulation_shared_blink**: 6+tier -> 2+tier, one cut per target. Weighted damage at unlock: 9 -> 5; budget 4.58 from 27 stamina. Code: `time/SpaceTimeSkills#edge`.
 - **time_manipulation_singularity**: 9*(3+.5*tier) + (8+tier) collapse -> 9*(.6+.1*tier) + (3+.5*tier). Weighted damage at unlock: 36 -> 9.15; budget 10.5 from 51 stamina. Code: `time/SingularityService#pull,collapse`.
 - **radiation_0_1**: 8+tier -> 4+.5*tier; 7 s stage-I sickness adds 3.5. Weighted damage at unlock: 12.1 -> 7.1; budget 6.79 from 19 stamina. Code: `radiation/RadiationSkills#lance`.
@@ -277,10 +293,10 @@ each level after (21 at Level 15, 28 Evolved), plus training and story notes, ag
 
 | Key | Move | Level | Stamina | Cooldown | Was | Pays for |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `telekinesis_push` | 1 | 8 | 0.75s | 12 / 1.5s, Level 1 | a shove (2 + tier/4) |
-| 2 | `telekinesis_grip` | 3 | 24 | 7.25s | 30 / 10s, Level 3 | hold, then a throw |
+| 1 | `telekinesis_push` | 1 | 8 | 0.75s | 12 / 1.5s, Level 1 | Shove: a palm along the cone (2 + tier/4) |
+| 2 | `telekinesis_grip` | 3 | 24 | 7.25s | 30 / 10s, Level 3 | hold (swing it through foes), then a throw |
 | 3 | `telekinesis_bullet_stop` | 6 | 22 | 10s | 32 / 21s, Level 6 | catches every shot, then turns them |
-| 4 | `telekinesis_disarm` | 10 | 16 | 4.75s | 20 / 8s, Level 10 | tears a weapon away |
+| 4 | `telekinesis_disarm` | 10 | 16 | 4.75s | 20 / 8s, Level 10 | plucks a weapon away; a free second press flings it back |
 | 5 | `telekinesis_storm` | 15 | 79 | 59s | 94 / 72s, Level 15 | lifts and slams everyone round you |
 
 ### Hydrokinesis
@@ -415,6 +431,7 @@ and 0.75.
 | --- | --- | --- | --- | --- |
 | quake | Seismic Lance | skill | 23 (was 24) | 4.5s |
 | quake | Fault Script | skill | 20 (was 18) | 4s |
+| quake | Epicenter | skill | 52 | 35s |
 | quake | Vibration Shell | skill | 26 (was 30) | 12s |
 | quake | Counterforce | skill | 17 (was 14) | 3.5s (was 1s) |
 | quake | Pressure Step | skill | 21 (was 22) | 5s |
@@ -428,6 +445,7 @@ and 0.75.
 | flight | Jetstream | skill | 24 | 10s |
 | flight | Thermal Lance | skill | 23 (was 24) | 8s |
 | flight | Vacuum Clap | skill | 28 (was 30) | 9s |
+| flight | Microburst | skill | 52 | 35s |
 | flight | Tempest Drill | class:offense | 31 (was 30) | 15s |
 | flight | Gale Wall | class:defense | 26 (was 25) | 19.5s (was 22s) |
 | flight | Formation Flight | class:support | 26 (was 25) | 19.5s (was 24s) |
@@ -437,6 +455,7 @@ and 0.75.
 | cryokinesis | Stillheart Cocoon | skill | 25 (was 26) | 12s |
 | cryokinesis | Cold Snap | skill | 26 (was 32) | 9s |
 | cryokinesis | Brittle Constellation | skill | 27 (was 28) | 9s |
+| cryokinesis | Absolute Zero | skill | 52 | 35s |
 | cryokinesis | Hailstorm | class:offense | 35 | 20s |
 | cryokinesis | Crystal Bastion | class:defense | 29 (was 30) | 21.75s (was 24s) |
 | cryokinesis | Aurora Veil | class:support | 26 (was 25) | 19.5s (was 26s) |
@@ -450,17 +469,19 @@ and 0.75.
 | electrokinesis | Tesla Spire | class:offense | 35 | 20s |
 | electrokinesis | Faraday Cage | class:defense | 26 (was 25) | 19.5s (was 22s) |
 | electrokinesis | Jumpstart | class:support | 22 (was 20) | 16.5s (was 18s) |
-| telekinesis | Vector Lance | skill | 23 (was 24) | 5s |
-| telekinesis | Remote Hand | skill | 14 (was 8) | 2.75s (was 2s) |
-| telekinesis | Gravity Well | skill | 26 (was 35) | 12s |
-| telekinesis | Kinetic Volley | skill | 24 | 6s |
+| telekinesis | Pin | skill | 23 (was 24) | 5s |
+| telekinesis | Beckon | skill | 14 (was 8) | 2.75s (was 2s) |
+| telekinesis | Round Up | skill | 26 (was 35) | 12s |
+| telekinesis | Juggle | skill | 24 | 6s |
+| telekinesis | Skyfall | skill | 52 | 35s |
 | telekinesis | Vector Step | skill | 21 (was 22) | 8s |
-| telekinesis | Force Bubble | skill | 28 (was 30) | 15s |
-| telekinesis | Implosion | class:offense | 35 | 20s |
-| telekinesis | Debris Halo | class:defense | 26 (was 25) | 19.5s (was 22s) |
+| telekinesis | Levitate | skill | 18 (was 16) | 5s |
+| telekinesis | Clench | class:offense | 35 | 20s |
+| telekinesis | Warding Hands | class:defense | 26 (was 25) | 19.5s (was 22s) |
 | telekinesis | Gathering Hand | class:support | 26 (was 25) | 19.5s (was 20s) |
 | telepathy | Drop It | skill | 21 (was 22) | 8s |
 | telepathy | Persuasion | skill | 32 (was 40) | 20s |
+| telepathy | Puppeteer | skill | 52 | 35s |
 | telepathy | Far Hearing | skill | 19 (was 18) | 15.25s (was 20s) |
 | telepathy | Memory Walk | skill | 20 (was 18) | 10s |
 | telepathy | Dream Double | skill | 26 (was 32) | 9s |
@@ -472,6 +493,7 @@ and 0.75.
 | regeneration | Take the Wound | skill | 18 (was 16) | 8s |
 | regeneration | Adrenal Rush | skill | 26 (was 30) | 12s |
 | regeneration | Adaptation | skill | 21 (was 20) | 16.75s (was 30s) |
+| regeneration | Last One Standing | skill | 52 | 35s |
 | regeneration | Play Dead | skill | 23 (was 24) | 15s |
 | regeneration | Revive | skill | 28 (was 30) | 20s |
 | regeneration | Vital Burst | class:offense | 28 (was 25) | 15s |
@@ -489,6 +511,7 @@ and 0.75.
 | time_manipulation | Borrowed Time | class:support | 26 (was 25) | 19.5s (was 24s) |
 | radiation | Gamma Lance | skill | 19 (was 18) | 5s |
 | radiation | Heat Vent | skill | 14 (was 10) | 10s |
+| radiation | Fission Star | skill | 52 | 35s |
 | radiation | Lead Skin | skill | 23 (was 24) | 15s |
 | radiation | Reactor Core | skill | 14 (was 6) | 11.25s (was 15s) |
 | radiation | Decontaminate | skill | 20 | 12s |
@@ -498,6 +521,7 @@ and 0.75.
 | radiation | Reactor Hearth | class:support | 29 (was 30) | 21.75s (was 26s) |
 | sonic_resonance | Focused Shriek | skill | 24 (was 26) | 5s |
 | sonic_resonance | Shatter Note | skill | 21 (was 20) | 6s |
+| sonic_resonance | Standing Wave | skill | 52 | 35s |
 | sonic_resonance | Dissonant Wave | skill | 26 (was 30) | 9s |
 | sonic_resonance | Echo Map | skill | 18 (was 16) | 14.5s (was 20s) |
 | sonic_resonance | Resonant Guard | skill | 26 (was 30) | 11s |
@@ -509,6 +533,7 @@ and 0.75.
 | superspeed | Speed Mirage | skill | 21 (was 20) | 12s |
 | superspeed | Momentum Strike | skill | 26 (was 28) | 9s |
 | superspeed | Lightning Throw | skill | 20 (was 18) | 5s |
+| superspeed | Lightning Round | skill | 52 | 35s |
 | superspeed | Slipstream Rescue | skill | 23 (was 24) | 6s |
 | superspeed | Perception | skill | 23 (was 22) | 15s |
 | superspeed | Lightning Flurry | class:offense | 31 (was 30) | 15s |
@@ -528,6 +553,7 @@ and 0.75.
 | invisibility | Vanishing Squad | skill | 28 (was 30) | 22.5s (was 30s) |
 | invisibility | Force Barrier | skill | 23 (was 24) | 15s |
 | invisibility | Force Disc | skill | 21 (was 20) | 15s |
+| invisibility | Bastion | skill | 52 | 35s |
 | invisibility | Pinpoint | skill | 16 (was 14) | 6s |
 | invisibility | Kinetic Shell | skill | 28 (was 30) | 20s |
 | invisibility | Shadow Strike | class:offense | 31 (was 30) | 16s |
@@ -537,6 +563,7 @@ and 0.75.
 | phasing | Avalanche | skill | 25 (was 26) | 10s |
 | phasing | Stone Skin | skill | 20 | 15s |
 | phasing | Quicksand | skill | 27 (was 28) | 15s |
+| phasing | Mountain Armor | skill | 52 | 35s |
 | phasing | Tunnel | skill | 19 (was 18) | 12s |
 | phasing | Earth Surf | skill | 23 (was 22) | 10s |
 | phasing | Pillar Barrage | class:offense | 31 (was 30) | 16s |
@@ -546,6 +573,7 @@ and 0.75.
 | empathic_mimicry | Sense Powers | skill | 18 (was 16) | 14.5s (was 20s) |
 | empathic_mimicry | Empathic Surge | skill | 24 (was 26) | 15s |
 | empathic_mimicry | Overcharge | skill | 17 (was 14) | 10s |
+| empathic_mimicry | Chorus | skill | 52 | 35s |
 | empathic_mimicry | Calm | skill | 19 (was 18) | 12s |
 | empathic_mimicry | Absorb Pain | skill | 21 (was 20) | 12s |
 | empathic_mimicry | Prismatic Overflow | class:offense | 35 | 18s |
@@ -555,6 +583,7 @@ and 0.75.
 | matter_assembly | Drawbridge | skill | 20 (was 18) | 4s (was 3s) |
 | matter_assembly | Scattershot | skill | 21 (was 22) | 5s |
 | matter_assembly | Kaleidoscope | skill | 27 (was 28) | 9s |
+| matter_assembly | Ballista | skill | 52 | 35s |
 | matter_assembly | Folded Shelter | skill | 21 (was 22) | 8s |
 | matter_assembly | Rescue Cradle | skill | 20 (was 18) | 6s |
 | matter_assembly | Forge Cannon | class:offense | 31 (was 30) | 18s |
@@ -582,6 +611,7 @@ and 0.75.
 | shapeshifting | Masquerade | class:support | 31 (was 32) | 20s |
 | hydrokinesis | Geyser | skill | 20 | 4.5s |
 | hydrokinesis | Pressure Jet | skill | 25 (was 26) | 7s |
+| hydrokinesis | Leviathan | skill | 52 | 35s |
 | hydrokinesis | Tide Wall | skill | 19 (was 18) | 6s |
 | hydrokinesis | Water Spout | skill | 24 | 8s |
 | hydrokinesis | Healing Water | skill | 17 (was 16) | 5s |
@@ -593,6 +623,7 @@ and 0.75.
 | power_amplification | Hold Hands | skill | 23 (was 22) | 10s |
 | power_amplification | Van Full | skill | 20 | 8s |
 | power_amplification | Overcharge the Enemy | skill | 24 | 12s |
+| power_amplification | Overdrive | skill | 52 | 35s |
 | power_amplification | Burnout | skill | 19 (was 18) | 10s |
 | power_amplification | Doorbuster | skill | 18 (was 16) | 8s |
 | power_amplification | Lightning Cannon | class:offense | 37 (was 38) | 16.75s (was 15s) |
@@ -601,7 +632,7 @@ and 0.75.
 
 ## Every damage review
 
-Checked 185 tree actives, signatures and class abilities, and 77 fighting-style moves across all 20 powers.
+Checked 200 tree actives, signatures and class abilities, and 77 fighting-style moves across all 20 powers.
 Each complete sequence is measured at its unlock tier, before optional upgrades, stored-resource bonuses, armor or resistance.
 Offense classes include their compulsory 10% damage bonus. Typical targets are one for a single hit, two for a narrow
 fan or small patch, and three for a broad area; a four-body Shell uses four. The per-move assumptions are below.
@@ -633,6 +664,20 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `cryokinesis_brittle_constellation` | 3 | 27 | 3 | 0 | 8 / 0 blocks | 5.1 / 5.28 | changed | 4 -> 6 per unique hop (strong: 7 -> 9) (`cryo/CryoTechniqueService#tickStars`) |
 | `cryokinesis_rime_loom` | 3 | 24 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: lays rime and chills; no direct hit (`cryo/CryoTechniqueService`) |
 | `cryokinesis_stillheart` | 3 | 25 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: heals and protects in a cocoon (`cryo/CryoTechniqueService`) |
+| `regeneration_last_one_standing` | 4 | 52 | 3 | 2 | 10 / 0 blocks | 8 / 8.67 | changed | 4+tier to everyone within 8 after a 6 s stand; + half of what she banked (cap 16). Six seconds of drawing every foe onto herself is soft control; the half-strength brace is the utility. Banked damage is earned by taking hits, so it is conditional. (`regeneration/LastOneStanding#release`) |
+| `quake_epicenter` | 4 | 52 | 4 | 1 | 0 / 0 blocks | 10 / 10.3 | changed | 6+tier to everyone standing in a 10-block ring after a 24-tick telegraph; dragged in and slowed (`quake/Epicenter#heave`) |
+| `flight_microburst` | 4 | 52 | 3 | 1 | 4 / 0 blocks | 10 / 11.8 | changed | 6+tier inside a 6-block ring after a 20-tick telegraph; 2 s pin; outflow shove beyond (`flight/Microburst#slam`) |
+| `telepathy_puppeteer` | 4 | 52 | 3 | 3.5 | 0 / 0 blocks | 7 / 9.19 | changed | 3+tier to each of up to 4 puppets when the strings are cut, after 6 s of fighting each other. Foes turned on each other is soft control: their own blows are the payoff, and one with nobody to fight only hangs still. (`telepathy/Puppeteer#cut`) |
+| `radiation_fission_star` | 4 | 52 | 3 | 0 | 6 / 0 blocks | 12 / 12.8 | changed | 8+tier within 5 with line of sight after a 30-tick charge; sickness and a 5 s zone (`radiation/FissionStar#detonate`) |
+| `sonic_resonance_standing_wave` | 4 | 52 | 3 | 1 | 0 / 0 blocks | 13.5 / 12.9 | changed | four pulses of 1+tier/4, then 6+tier on the fifth beat, inside a 6-block column. Only a foe that stays in the column takes every pulse; the pull is soft control. (`sonic/StandingWave#pulse,shatter`) |
+| `superspeed_lightning_round` | 4 | 52 | 4 | 0 | 6 / 0 blocks | 8 / 10.5 | changed | 4+tier to each of up to 6 foes, one every 3 ticks. Untouchable for the second it lasts, and back where it began. (`speed/LightningRound#strike`) |
+| `invisibility_bastion` | 4 | 52 | 3 | 1 | 20 / 0 blocks | 7 / 7.39 | changed | 3+tier to every foe within 9 when the dome bursts. Six seconds of reflected shots and halved damage for friends under it is the utility; foes are shoved out. (`invisibility/Bastion#burst`) |
+| `phasing_mountain_armor` | 4 | 52 | 3 | 0 | 16 / 0 blocks | 9 / 10 | changed | 5+tier within 5 when the plates blast off. Eight seconds of +10 armor, +4 toughness and no knockback is the utility; the punch bonus is conditional on landing blows. (`phasing/MountainArmor#blast`) |
+| `empathic_mimicry_chorus` | 4 | 52 | 2 | 0 | 0 / 0 blocks | 20.3 / 18.6 | changed | five bolts of 2+tier/2 at the nearest foe, then one 2+tier/4 bolt per voice (3 at least). Each bolt picks the nearest foe in sight at that moment, so the total spreads; voices add small riders. (`mimicry/Chorus#sing`) |
+| `matter_assembly_ballista` | 4 | 52 | 1 | 0 | 0 / 0 blocks | 24 / 26 | changed | six bolts of 2+tier/2, one a second, at the nearest foe within 18. Also spends 6 Matter, all returned when it folds. (`assembly/Ballista#tick`) |
+| `hydrokinesis_leviathan` | 4 | 52 | 2 | 1 | 0 / 0 blocks | 16.2 / 17.1 | changed | three telegraphed bites of 4+tier/2 at the nearest foe within 10 of the pool (`hydro/Leviathan#bite`) |
+| `power_amplification_overdrive` | 4 | 52 | 3 | 0 | 20 / 0 blocks | 8 / 8.89 | changed | 4+tier per fork, one fork per linked body (3 alone). Eight seconds of Surge and 4 stamina a second for every linked friend is the utility. (`amplify/Overdrive#discharge`) |
+| `cryokinesis_absolute_zero` | 4 | 52 | 4 | 3 | 0 / 0 blocks | 8 / 7.32 | changed | 4+tier cold hit on each drained foe (up to 16) after a 30-tick channel; 3 s solid freeze. Returns 4 stamina per foe drained (capped 24); a frozen foe shatters for more when struck, as Crystal Prison's do. (`cryo/AbsoluteZero#release`) |
 | `electrokinesis_0_1` | 2 | 26 | 1 | 0 | 0 / 0 blocks | 13.2 / 13 | within 30% | 8+tier on primary, two hops of 4. Two weaker hops count at +40% each: 2*4*.4. Slow is soft control, not a root. (`skills/SkillActionService#activate`) |
 | `electrokinesis_circuit_thread` | 3 | 23 | 2 | 0 | 0 / 0 blocks | 8 / 8.21 | within 30% | 5+tier, one hit per UUID across all conductors (`expansion/ExpansionSkills#activate`) |
 | `electrokinesis_ground_sink` | 3 | 40 | 3 | 0 | 20 / 0 blocks | 4 / 5.56 | changed | 2+min(16,charge) -> 4+.5*min(16,charge). Plant AND discharge each pay 20; 20 of that buys projectile absorption. Charge is absorbed incoming damage. (`expansion/ExpansionSkills#activate`) |
@@ -640,12 +685,13 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `electrokinesis_blackout` | 4 | 47 | 3 | 0 | 20 / 0 blocks | 6.75 / 7.5 | within 30% | 5+tier; one release after windup. Machines are shut down and Charge is gathered; darkness/slow are utility, not hard control. (`electro/BlackoutService#release`) |
 | `electrokinesis_1_1` | 2 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Static Screen reflects shots (`skills/SkillActionService#activate`) |
 | `electrokinesis_2_1` | 2 | 24 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Overcharge fills Charge and grants speed/haste (`skills/SkillActionService#activate`) |
-| `telekinesis_0_1` | 2 | 23 | 1 | 0 | 0 / 0 blocks | 10 / 11.5 | changed | 8 -> 10; one spear (second pierce needs a skill) (`telekinesis/TelekineticArsenalService#lance`) |
-| `telekinesis_kinetic_volley` | 3 | 24 | 1 | 0 | 0 / 0 blocks | 10.2 / 12 | within 30% | 3 shards * 4, delayed 11 ticks apart. Five Fragments adds two shards; Iron Rain adds a 2-damage splash to bodies not hit directly. (`telekinesis/TelekineticArsenalService#volley`) |
-| `telekinesis_remote_hand` | 3 | 14 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: remote interaction/weapon handling (`telekinesis/TelekinesisSkillService`) |
-| `telekinesis_1_1` | 2 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Gravity Well pulls, no direct damage (`telekinesis/TelekinesisSkillService`) |
+| `telekinesis_0_1` | 2 | 23 | 1 | 3 | 0 / 0 blocks | 6 / 7 | changed | Vector Lance 10 -> Pin: 6 (+.5 per tier over 2) against the wall, then 3 s held. A foe that meets no wall is held 1.5 s and takes nothing; Pinned Together carries two more foes along for the same blow. (`telekinesis/TelekinesisSkillService#land`) |
+| `telekinesis_kinetic_volley` | 3 | 24 | 3 | 1.5 | 0 / 0 blocks | 5.1 / 4.42 | changed | Kinetic Volley 3 shards*4 -> Juggle: 3 pops*2 on each of up to 3 foes. Each foe spends about two seconds in the air. Five at Once adds two foes and a pop; Spike is a separate free slam. (`telekinesis/TelekinesisSkillService#tickJuggle`) |
+| `telekinesis_skyfall` | 4 | 52 | 1 | 2 | 0 / 0 blocks | 22.4 / 23 | changed | 12+tier to the hauled foe after a 40-tick haul and drop; 6+tier/2 within 5 blocks. Two bystanders count at +40% each; the hauled foe is held for two seconds. The ring telegraphs the area. (`telekinesis/TelekinesisSkillService#tickSkyfall`) |
+| `telekinesis_remote_hand` | 3 | 14 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Beckon works controls and fetches items (`telekinesis/TelekinesisSkillService`) |
+| `telekinesis_1_1` | 2 | 26 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Round Up gathers and tosses, no direct damage (`telekinesis/TelekinesisSkillService`) |
 | `telekinesis_2_1` | 2 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Vector Step moves the caster (`telekinesis/TelekinesisSkillService`) |
-| `telekinesis_force_bubble` | 3 | 28 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Force Bubble reflects and repels (`telekinesis/TelekinesisSkillService`) |
+| `telekinesis_force_bubble` | 3 | 18 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Levitate hovers the caster (and friends with Raise the Party) (`telekinesis/TelekinesisSkillService`) |
 | `telepathy_0_1` | 2 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Drop It disarms (`telepathy/TelepathySkills`) |
 | `telepathy_persuasion` | 3 | 32 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: persuades or frightens one mind (`telepathy/TelepathySkills`) |
 | `telepathy_1_1` | 2 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Far Hearing relays voices (`telepathy/TelepathySkills`) |

@@ -110,6 +110,15 @@ Node IDs are unchanged, so earlier purchases carry over.
 The three styles keep their effects and have their own poses: **Fissure Maw** (fists driven down and pulled
 apart), **Stone Rampart** (palms swept up) and **Bedrock Stance** (a wide, rooted stance).
 
+### Signature: Epicenter
+
+Under Faultwright, after Deep Roots. Drive both fists into the ground and **eight faults race out
+to a jagged ring 10 blocks wide**, glowing brighter as the plates load. A second later every wedge of ground **heaves at
+once**, tipping up in slabs: everyone standing in the ring takes **6 + tier** and is thrown up and out. A moment after, the
+slabs slam back down and a dust ring rolls in: whoever is still there is **dragged toward the centre and slowed** for
+three seconds. The ring is fixed where you struck, so a foe who sees the faults glowing can get out of it; anything in the
+air when it heaves is untouched.
+
 ## Breaking blocks
 
 Quake's held powers grind blocks down slowly, with vanilla's mining cracks:

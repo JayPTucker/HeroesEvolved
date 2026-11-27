@@ -17,7 +17,7 @@ public final class ModPayloads {
     public static void registerPayloadHandlers(
         RegisterPayloadHandlersEvent event
     ) {
-        event.registrar("128")
+        event.registrar("131")
             .playToClient(FutureLookPayload.TYPE, FutureLookPayload.STREAM_CODEC, FutureLookPayload::handle)
             .playToClient(GuidanceStatePayload.TYPE, GuidanceStatePayload.STREAM_CODEC, GuidanceStatePayload::handle)
             .playToServer(GuidanceActionPayload.TYPE, GuidanceActionPayload.STREAM_CODEC, GuidanceActionPayload::handle)
@@ -79,6 +79,7 @@ public final class ModPayloads {
             .playToClient(BreachViewPayload.TYPE, BreachViewPayload.STREAM_CODEC, BreachViewPayload::handle)
             .playToClient(BreachActorsPayload.TYPE, BreachActorsPayload.STREAM_CODEC, BreachActorsPayload::handle)
             .playToClient(RegenerationStatePayload.TYPE, RegenerationStatePayload.STREAM_CODEC, RegenerationStatePayload::handle)
+            .playToClient(RegrowthPayload.TYPE, RegrowthPayload.STREAM_CODEC, RegrowthPayload::handle)
             .playToClient(ResonancePayload.TYPE, ResonancePayload.STREAM_CODEC, ResonancePayload::handle)
             .playToClient(MomentumPayload.TYPE, MomentumPayload.STREAM_CODEC, MomentumPayload::handle)
             .playToClient(DensityPayload.TYPE, DensityPayload.STREAM_CODEC, DensityPayload::handle)

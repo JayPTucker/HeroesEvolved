@@ -18,6 +18,11 @@ public final class SkillCatalog {
         public ResourceLocation actionId() { return ResourceLocation.fromNamespaceAndPath("heroesevolved", id); }
         public AbilityAction action() {
             if (style) return com.jayptucker.heroesevolved.styles.StyleSkills.action(this);
+            if (signature && com.jayptucker.heroesevolved.expansion.Signatures.handles(mechanic))
+                return SimpleAction.builder(id, level()).cost(() -> energy, () -> cooldown)
+                        .canUse(c -> com.jayptucker.heroesevolved.expansion.Signatures.canUse(c, mechanic))
+                        .activate(c -> com.jayptucker.heroesevolved.expansion.Signatures.activate(c, mechanic))
+                        .followUp(c -> com.jayptucker.heroesevolved.expansion.Signatures.press(c.player(), mechanic)).build();
             if (power.equals("vibe")) return com.jayptucker.heroesevolved.vibe.VibeSkills.action(this);
             if (power.equals("hydrokinesis")) return com.jayptucker.heroesevolved.hydro.HydroSkills.action(this);
             if (power.equals("power_amplification")) return com.jayptucker.heroesevolved.amplify.AmpSkills.action(this);
@@ -35,6 +40,8 @@ public final class SkillCatalog {
                     .followUp(c -> power.equals("cryokinesis") ? (mechanic.isEmpty()
                             ? com.jayptucker.heroesevolved.cryo.CryoCombatSkills.followUp(c, branch)
                             : com.jayptucker.heroesevolved.cryo.CryoTechniqueService.followUp(c, mechanic))
+                            : power.equals("regeneration") && mechanic.equals("last_one_standing")
+                            ? com.jayptucker.heroesevolved.regeneration.LastOneStanding.followUp(c.player())
                             : power.equals("regeneration") && mechanic.isEmpty()
                             ? com.jayptucker.heroesevolved.regeneration.RegenSkills.followUp(c, branch)
                             : power.equals("time_manipulation")

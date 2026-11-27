@@ -77,6 +77,14 @@ borrowed power shown in its own colour:
 
 **Passive:** near anyone with a power you regain stamina. Overexertion scrambles which set answers.
 
+### Signature: Chorus
+
+Under Resonance, after Strong Echo Mastery. Let every power you remember speak at once. A **ring of
+voices** circles you, one in each remembered power's colour (at least three: the echoes that come easiest fill any gaps),
+for six seconds. **Every second the next voice leaps** at the nearest foe within 16 blocks for **2 + tier/2**, with a touch
+of its own power: fire burns, cold slows, lightning jumps to a second foe, radiation sickens, a far hand (or Quake, or
+Flight) shoves. When it ends, or when you **press again**, they **all speak together**, one bolt each for **2 + tier/4**.
+
 ## Older saves
 
 A mimic's old memory (a plain list of powers) loads as kept sets, still channeling the same power. The old

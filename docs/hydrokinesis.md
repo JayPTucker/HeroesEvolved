@@ -144,6 +144,14 @@ on a low stance, and the vault is a backflip. Calls raise both arms and circle t
 | **Rain Call** (active) | 4 | A dark cloud gathers over you for twenty seconds, ten blocks across, raining: friends under it heal and stop burning, enemies are Soaked, fires go out and your water fills. |
 | Spirit Water | 5 | Once every five minutes, with at least 30 water carried, a killing blow is turned aside: the water closes your wounds, leaving you at 8 health, and is spent. |
 
+### Signature: Leviathan
+
+Under Tides, after Riptide. Open a pool on a spot up to 20 blocks away and a **serpent of water rises
+out of it**, glassy and thick at the water, a foam crest down its back. It **strikes three times**, each at the nearest
+foe within 10 blocks of the pool: it **rears back while a ring of water fills on the spot** it will hit (step off it to
+dodge), then **lunges** for **4 + tier/2**, dragging whoever it bites toward the pool, slowing them and putting out fires.
+Then it dives back down. **Press again** to send it down after the strike in progress.
+
 ### Classes
 
 | Class ability | Role | What it does |

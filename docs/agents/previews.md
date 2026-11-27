@@ -185,6 +185,10 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `vibe-preview.init.gradle`, `vibe-vision-preview.init.gradle` | every Vibe move and the view through a breach; visions and holograms | `-Pbreaches` |
 | `construct-preview.init.gradle`, `signature-preview.init.gradle` | particle constructs; signature abilities at night | `-PconstructWeaveOnly` |
 | **Combat** | | |
+| `cryoart-preview.init.gradle` | Cryokinesis in one palette: Ice Blast, the frost effects sampler, Prison and its shatter, Whiteout, a Sculpt wall, the skater's jab, Absolute Zero | prints `CRYO_ART PASS/FAIL` |
+| `regenart-preview.init.gradle` | Regeneration in one palette: Regrowth's veins at three levels, Mending, Blood Gift and a Bond, Second Life, revive, a reckless punch and an ejected bullet, Last One Standing and its release | prints `REGEN_ART PASS/FAIL` |
+| `sigset-preview.init.gradle` | The twelve signatures run by `expansion/Signatures`, each staged with foes and shot from the side at its own class's ticks: Epicenter, Microburst, Puppeteer, Fission Star, Standing Wave, Lightning Round, Bastion, Mountain Armor, Chorus, Ballista, Leviathan, Overdrive (and their second presses) | prints `SIG_SET PASS/FAIL` |
+| `telekinesis-preview.init.gradle` | Telekinesis, the far hand: Shove, Grip (held, swung, thrown), Bullet Catch (and first person), Disarm and fling, the Storm, Pin, Juggle and Spike, Skyfall, Levitate, Round Up, Clench, Warding Hands, a swat, minimal | prints `KINETIC PASS/FAIL` |
 | `fighting-preview.init.gradle` | every shared fighting style | `-Ponly=telekinesis,quake`, `-Pinput` (presses the real keys and prints `INPUT_RESULT`) |
 | `flight-roll-preview.init.gradle` | Flight's Barrel Roll on the real strafe keys: both directions, near misses, chat, the ground, a rebound key, its card in the tree, and its HUD ring ready, recharging and low | Prints `ROLL_INPUT` lines and fails on any wrong case |
 | `style-preview.init.gradle` | every class ability's set piece | |

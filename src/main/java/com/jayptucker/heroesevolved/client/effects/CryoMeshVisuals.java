@@ -30,6 +30,9 @@ import java.util.Map;
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class CryoMeshVisuals {
     private static final ResourceLocation ICE = ResourceLocation.withDefaultNamespace("textures/block/ice.png");
+    /** The one tint every solid-ice mesh (here, CryoSkillVisuals, FrozenVisuals) multiplies the ice texture by: CryoArt's rime, so
+     *  thrown and standing ice reads as clear pale ice rather than dark blue stone. */
+    static final float ICE_R = .86F, ICE_G = .95F, ICE_B = 1;
     private static final Deque<Crystal> CRYSTALS = new ArrayDeque<>();
     private static final Deque<Ribbon> RIBBONS = new ArrayDeque<>();
     private static final Map<BlockPos, Long> SCULPTED = new LinkedHashMap<>();
@@ -223,7 +226,7 @@ public final class CryoMeshVisuals {
         Vec3 normal=b.subtract(a).cross(c.subtract(a)).normalize();
         Vec3[] p={a,b,c,d};float[][] uv={{0,1},{1,1},{1,0},{0,0}};
         for(int i=0;i<4;i++)out.addVertex(pose.pose(),(float)p[i].x,(float)p[i].y,(float)p[i].z)
-                .setColor(.62F*shade,.86F*shade,shade,alpha).setUv(uv[i][0],uv[i][1])
+                .setColor(ICE_R*shade,ICE_G*shade,ICE_B*shade,alpha).setUv(uv[i][0],uv[i][1])
                 .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
                 .setNormal(pose,(float)normal.x,(float)normal.y,(float)normal.z);
     }

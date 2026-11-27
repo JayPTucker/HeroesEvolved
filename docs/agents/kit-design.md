@@ -37,6 +37,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
 | I need... | Pattern | Read |
 | --- | --- | --- |
+| Hits that land as a travelling shape reaches each target | a per-target countdown from one shared arrival function | [powers/telekinesis.md](powers/telekinesis.md) (Shove) |
+| A held thing swung like a club, thrown harder for the whip | a hold point on the look, a capped chase, the last swing speeds | [powers/telekinesis.md](powers/telekinesis.md) (Grip) |
 | A second press that is free and ignores the cooldown | `SimpleAction.builder(...).followUp(...)` | [powers/radiation.md](powers/radiation.md) (Fission Leap), [powers/quake.md](powers/quake.md) |
 | Two different follow-ups on one key | the follow-up reads `c.modifierHeld()` | [powers/sonic.md](powers/sonic.md) |
 | Tap for one thing, hold for another | record the press, let the server tick decide | [powers/regeneration.md](powers/regeneration.md) (Blood Gift), [powers/vibe.md](powers/vibe.md) (Breach) |
@@ -51,6 +53,36 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | A key that means two things by context | try the special case first | [power-interactions.md](power-interactions.md) |
 | Many moves on one key | the move comes from state; each keeps its own cost and cooldown | [powers/shapeshifting.md](powers/shapeshifting.md) (Instinct) |
 | A power to act through a player for a while | `intro/Surge` | [awakenings.md](awakenings.md) |
+| A signature that plays out over seconds (windup, beats, a free second press) | a `Signatures.Run` keyed by mechanic and caster; the node routed in `Signatures.ROUTES` | below, "Signatures that play out" |
+
+### Signatures that play out
+
+Twelve signatures (Epicenter, Microburst, Puppeteer, Fission Star, Standing Wave, Lightning Round, Bastion, Mountain
+Armor, Chorus, Ballista, Leviathan, Overdrive) share one runner, `expansion/Signatures`. Copy it for the next one:
+
+- **One class per signature in its power's package** (`quake/Epicenter`, `hydro/Leviathan`): public timing constants that
+  the art reads (`HEAVE`, `SLAM`, `Ballista.lands(part)`, `Leviathan.strikeAt(i)`), `canUse`, `activate`, and a nested
+  `Run extends Signatures.Run` with `tick()` (false when done), `press()` (the free second press) and `cancel()` (death,
+  logout, a dampened power: undo attribute modifiers, give back spent Matter). Add one line to `Signatures.ROUTES`.
+- **`SkillCatalog` sends any signature node whose mechanic is routed there,** before the power's own skill class, so
+  Flight, Hydrokinesis, Power Amplification and Matter Assembly need no special case. Its `followUp` is `Signatures.press`.
+- **Runs keep their `ServerPlayer` and tick on the server tick,** so game-test players run too (`SignatureSetGameTests`
+  casts every one through its key and checks it at the ticks its class names). `Signatures.foes`, `hit` (resets
+  `invulnerableTime` so each beat lands) and `fling` (never throws a boss) are the shared helpers.
+- **Long drawings are re-sent each second rather than sent once,** so ending early never leaves a drawing running:
+  a short piece per beat (`SONIC_STANDING`, `FORCE_BASTION`, `MATTER_TURRET`) or per phase (`HYDRO_LEVIATHAN_RISE`,
+  `STRIKE`, `DIVE`, drawn from one serpent shape so they chain), with seed 0 marking the first sending that plays the
+  arrival.
+- **Check a new class name and a new player-facing name before writing.** A signature first written as
+  `flight/Downburst` overwrote Flight's existing finisher of that name (restored from git; the signature is
+  `Microburst`), and "Critical Mass" and "Blitz" were already Radiation and Superspeed actions (now Fission Star and
+  Lightning Round). `ls` the package and search `en_us.json` for the name first.
+- **Your own pets are not foes.** `ExpansionSkills.hostile` (used by every tree skill and `Signatures.foes`) once hit a
+  player's own tamed wolf, found when Overdrive's forks struck the wolf it had just linked; it now spares the caster's
+  `OwnableEntity` pets and armor stands, as `StyleOps.isFoe` always did.
+- **Signature node ids follow the tree's own ids.** Matter Assembly, Hydrokinesis and Power Amplification name their nodes
+  (`matter_assembly_recall_angle`, `hydro_0_2`, `amp_1_2`); a `requires` of `power_1_2` that doesn't exist makes the
+  whole tree invalid and every skill test fail.
 
 ## Rules, statuses and other powers
 
@@ -133,6 +165,7 @@ Read [animation-guide.md](../animation-guide.md) first; these are the code patte
 
 | I need... | Pattern | Read |
 | --- | --- | --- |
+| A hand of light that reads at noon, curled, spread, posed | `KineticArt.hand` (filled palm, glass fingers) and `claw` | [powers/telekinesis.md](powers/telekinesis.md) |
 | A construct the player watches assemble | blueprint, fragments from the hand, snap, sheen; the server builds on the drawing's schedule (`Job.paced`, `AssemblyGeometry.panelArrival`) | [powers/matter-assembly.md](powers/matter-assembly.md) |
 | A spendable resource orbiting the body that flies home when returned | a pool + state payload, eased client mirror, `drawLive` orbit, a return piece | [powers/matter-assembly.md](powers/matter-assembly.md) (`Matter`) |
 | A projectile that reads at speed | one short piece per server step (crystal crosses the step in a tick, tail fades), a flash piece per ricochet | [powers/matter-assembly.md](powers/matter-assembly.md) (`MATTER_SHARD`) |

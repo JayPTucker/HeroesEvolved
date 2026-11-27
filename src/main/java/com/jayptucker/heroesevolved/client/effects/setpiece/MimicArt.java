@@ -150,6 +150,58 @@ final class MimicArt {
         }
     }
 
+    /** Where the {@code i}th of {@code n} voices of a Chorus circles, {@code clock} ticks in. */
+    private static Vec3 voiceAt(Vec3 chest, int i, int n, float clock) {
+        float ang = clock * .06F + i * TWO_PI / Math.max(1, n);
+        return chest.add(cos(ang) * .95, .25 + sin(clock * .11F + i * 1.7F) * .12, sin(ang) * .95);
+    }
+
+    /**
+     * Chorus ({@code mimicry/Chorus}): a ring of voices circling the empath, one per remembered power in its own colour,
+     * each a turning ring round a bright bead on a gold thread back to his chest, with a slow halo binding them. The
+     * voices are packed in the seed (five bits each, the count from bit 27). Bound to him; re-sent each second.
+     */
+    static void chorus(Canvas c, Active a, float t) {
+        if (SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.MIMIC_CHORUS), c.level.getGameTime())) return;
+        Entity mimic = a.bound(c);
+        if (mimic == null) return;
+        int packed = a.seed(), n = Math.min(5, packed >>> 27 & 7);
+        float life = a.piece().ticks, f = Math.clamp(t / 4 + (a.scale() > 0 && t > 0 ? .5F : 0), 0, 1) * Math.clamp((life - t) / 2 + .3F, 0, 1);
+        float clock = c.time();
+        Vec3 chest = mimic.getPosition(c.partial).add(0, mimic.getBbHeight() * .62, 0);
+        ring(c, chest.add(0, .25, 0), UP, .95F, .02F, THREAD, f * .45F);
+        for (int i = 0; i < n; i++) {
+            int index = packed >>> (i * 5) & 31;
+            float[] tint = rgb(MimicColors.color(index));
+            Vec3 at = voiceAt(chest, i, n, clock);
+            Vec3 axis = at.subtract(chest).normalize();
+            ring(c, at, axis, .16F + .03F * sin(clock * .3F + i), .025F, tint, f);
+            if (c.glow()) {
+                c.glow(at, .28F, tint, f * .55F);
+                c.glow(at, .09F, CORE, f);
+            }
+            thread(c, new Vec3[] {chest, chest.lerp(at, .5).add(0, -.12, 0), at}, .012F, f * .5F);
+        }
+    }
+
+    /** One voice of a Chorus speaking: a bolt in its power's colour from the chest to the foe, a bloom where it lands. */
+    static void voice(Canvas c, Active a, float t) {
+        Vec3 from = a.origin(), to = a.target();
+        float[] tint = rgb(MimicColors.color((int) floor(a.scale())));
+        float life = a.piece().ticks, f = fade(t, life, .5F, 6), k = smooth(0, 3, t);
+        Vec3 head = from.lerp(to, k);
+        if (c.glow()) {
+            c.bolt(from.lerp(to, Math.max(0, k - .6F)), head, a.seed() * 13 + 1, .22F, .07F, tint, f * .8F);
+            c.bolt(from.lerp(to, Math.max(0, k - .6F)), head, a.seed() * 13 + 1, .22F, .025F, CORE, f);
+            c.glow(head, .3F, tint, f * .7F);
+            if (t >= 3) {
+                float b = smooth(3, 10, t);
+                c.glow(to, .4F + .6F * b, tint, f * (1 - b));
+            }
+        }
+        if (t >= 3) ring(c, to, to.subtract(from).normalize(), .2F + .8F * smooth(3, 10, t), .04F, tint, f * (1 - smooth(3, 10, t)));
+    }
+
     private static float[] widths(int n, float width) {
         float[] w = new float[n];
         java.util.Arrays.fill(w, width);

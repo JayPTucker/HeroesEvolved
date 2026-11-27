@@ -117,6 +117,14 @@ so anything already bought stays bought (each slot now holds its earthbending no
   hard on top of it.
 - **Tunnel → Grasp from Below → Uproot.** Pull an enemy down from underneath, then surface under it.
 
+### Signature: Mountain Armor
+
+Under Mountain, after Pile Driver. Call the ground up onto yourself: cracks open round your feet and
+**plates of stone tear out of the floor and fly onto your body** one after another, legs first and crown last, each
+snapping in with a pale flash. Once they have closed (half a second) you wear the mountain for **eight seconds**:
+**+10 armor, +4 toughness, no knockback**, a little slower, and **every punch lands 3 + tier/2 harder and shoves**. When it
+runs out, or when you **press again**, the plates **blast off**: **5 + tier** to every foe within 5 blocks, thrown back.
+
 ## Classes
 
 | Role | Class ability |

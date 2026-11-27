@@ -87,8 +87,8 @@ player sees is in [docs/fighting-styles.md](../../docs/fighting-styles.md).
   lanes, Pressure Palm Quake's rings and fissures. Tiger and Crane draws with `EarthArt`'s chunks and cracks. New pieces live in
   `client/effects/setpiece/StyleArt` and borrow the power's primitives (Force Palm draws with `ForceArt.lens`/`pane`).
   Telekinesis's strokes were too thin to read at fighting range, so the Puppeteer has a visible hand: `STYLE_TK_PALM`
-  (a palm print on each swat) and `STYLE_TK_GRASP` (fingers closing over a lifted or gripped body, bound to it, with
-  the hold's length in the scale).
+  (the far hand swatting, drawn by `KineticArt.hand`) and `STYLE_TK_GRASP` (`KineticArt.claw` closing over a lifted or
+  gripped body, bound to it, with the hold's length in the scale); its other strokes are `KINETIC_*` pieces.
 - **A brace instead of a dodge.** `StyleMotion.brace(player, ticks)` and the style's `braced(player, source, amount)`
   reduce a blow rather than cancel it; `FightingStyles.incoming` checks the brace before evasion. Reckless Brawler banks
   every braced blow and calls `counter` on the first.

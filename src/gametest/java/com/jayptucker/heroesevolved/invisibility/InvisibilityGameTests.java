@@ -601,7 +601,7 @@ public final class InvisibilityGameTests {
     public static void redesignedSkillNodesKeepTheirSavedIdentitiesAndDoNotGrantOldStatBonuses(GameTestHelper h) {
         ServerPlayer p = player(h, 5, 3);
         try {
-            var nodes = SkillCatalog.nodes("invisibility");
+            var nodes = SkillCatalog.nodes("invisibility").stream().filter(n -> !n.signature()).toList();
             h.assertTrue(nodes.size() == 18 && nodes.stream().filter(SkillCatalog.Node::active).count() == 6,
                     "The three branches retain eighteen nodes and six active techniques");
             h.assertTrue(nodes.stream().anyMatch(n -> n.id().equals("invisibility_cloak_field") && n.name().equals("Kinetic Shell")),

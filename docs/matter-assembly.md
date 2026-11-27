@@ -88,6 +88,15 @@ minute by raising an emergency shelter round you; it needs space for at least fo
 after armor and potion reductions and accounts for absorption, so a survivable armored blow does not waste the
 rescue. It is not immunity to later hits.
 
+### Signature: Ballista
+
+Under Ballistics, after Recall Angle. Spend **6 Matter** to fold a **crystal ballista** together on a
+spot up to 12 blocks away (or just ahead of you): its blueprint is drawn in seams of light first, then its nine parts
+fly from your hand along arcs and **snap in one by one**, and it only starts shooting once the drawing has finished it.
+For **six seconds** it turns on the nearest foe within 18 blocks and looses **a bolt every second, 2 + tier/2** each,
+landing when the drawn bolt reaches the foe. When it is done, or when you **press again**, it comes apart and **its Matter
+flies home** into your orbit.
+
 ## Matter and world safety
 
 Matter is folded out of thin air, never taken from the player: no inventory block is read or taken, so nothing in

@@ -250,5 +250,13 @@ public enum ArmPose {
      *  both palms pressed down at the ground, then flicked up. Raise: both arms swept up from low to high as the turrets
      *  rise. Stride: arms out, palms down, balancing on air. Call: an open hand drawn back to the chest, calling the
      *  Matter home. */
-    MATTER_FORM, MATTER_FLICK, MATTER_PLANT, MATTER_RAISE, MATTER_STRIDE, MATTER_CALL
+    MATTER_FORM, MATTER_FLICK, MATTER_PLANT, MATTER_RAISE, MATTER_STRIDE, MATTER_CALL,
+    /** Telekinesis, the far hand (client/KineticPoses). Pin: the palm driven straight out and held there, trembling.
+     *  Catch: both hands raised forward, cupped, held. Pluck: two fingers pinched at the target, then yanked back to the
+     *  shoulder. Fling: an overhand whip along the aim. Storm: both arms raised, palms up, shaking under the weight
+     *  (held). Slam: both fists pulled down hard from overhead. Levitate: arms out low, palms down (held). Skyfall: one arm
+     *  thrust straight up, the hand open and straining (held). Beckon: a palm turned up, fingers curling in. Juggle: a palm
+     *  flicked up from the hip. */
+    KINETIC_PIN, KINETIC_CATCH, KINETIC_PLUCK, KINETIC_FLING, KINETIC_STORM, KINETIC_SLAM, KINETIC_LEVITATE,
+    KINETIC_SKYFALL, KINETIC_BECKON, KINETIC_JUGGLE
 }

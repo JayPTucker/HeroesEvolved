@@ -106,8 +106,10 @@ public final class TelekinesisBaseGameTests {
             for (int y = 0; y < 4; y++) h.getLevel().setBlock(wall.above(y), Blocks.STONE.defaultBlockState(), 3);
             aim(p, enemy);
             TelekinesisService.push(p, 5);
+            h.assertTrue(enemy.getHealth() == enemy.getMaxHealth(), "Nothing is shoved before the drawn palm reaches it");
+            tick(p, KineticGeometry.SHOVE_TRAVEL + 1);
             h.assertTrue(enemy.getDeltaMovement().length() > .5 && enemy.getHealth() < enemy.getMaxHealth(),
-                    "The palm strike moves and hits a visible enemy");
+                    "The palm strike moves and hits a visible enemy as the palm arrives");
             h.assertTrue(friend.getDeltaMovement().lengthSqr() < .001 && friend.getHealth() == friend.getMaxHealth(),
                     "A teammate is protected from both force and damage");
             h.assertTrue(covered.getDeltaMovement().lengthSqr() < .001 && covered.getHealth() == covered.getMaxHealth(),
@@ -131,8 +133,9 @@ public final class TelekinesisBaseGameTests {
             p.setXRot(0); target.setDeltaMovement(Vec3.ZERO); tick(p, 1);
             Vec3 level = target.getDeltaMovement();
             p.setXRot(80); target.setDeltaMovement(Vec3.ZERO); tick(p, 1);
-            h.assertTrue(target.getDeltaMovement().distanceToSqr(level) < .0001,
-                    "Looking sharply down does not drag the held target into the crosshair or floor");
+            Vec3 down = target.getDeltaMovement();
+            h.assertTrue(Math.abs(down.x - level.x) < 1e-4 && Math.abs(down.z - level.z) < 1e-4 && down.y < level.y,
+                    "Looking down only lowers the held target in its side slot (a swing), never into the crosshair");
             h.assertTrue(Math.abs(level.x) > .1, "The hold moves the target into a peripheral side slot");
             TelekinesisService.cancelGrip(p);
             h.assertTrue(target.isNoGravity() && target.isNoAi() && !target.noPhysics && !target.isInvulnerable(),
@@ -177,7 +180,7 @@ public final class TelekinesisBaseGameTests {
             Arrow friendly = new Arrow(EntityType.ARROW, h.getLevel());
             friendly.setOwner(p); friendly.setPos(p.position().add(.5, 1.2, 3));
             friendly.setDeltaMovement(0, 0, -1); h.getLevel().addFreshEntity(friendly); arrows.add(friendly);
-            TelekinesisService.bulletStop(p, 5); tick(p, 1);
+            TelekinesisService.bulletStop(p, 5); tick(p, 12);
             h.assertTrue(TelekinesisService.caughtCount(p) == TelekinesisService.MAX_CAUGHT_PROJECTILES,
                     "Capture has a fixed projectile capacity");
             Arrow captured = arrows.stream().filter(Entity::isNoGravity).findFirst().orElseThrow();

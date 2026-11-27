@@ -25,7 +25,6 @@ Damage, stamina, cooldowns, melee reach and explosion radii keep their own balan
 | Force Push / Hard Push | 24 / 32 |
 | Meltdown Beam / Gamma Lance | 64 / 80 |
 | Focused Shriek | 80 |
-| Telekinetic fragments / Kinetic Lance / Iron Rain | 48 / 64 / 64 travelled |
 
 Travelling shots stop on cover and expire when their distance is spent. Ball Lightning counts the length of its
 curving path, rather than relying only on a timer. Its lifetime allows the full trip; swept collision finds the first

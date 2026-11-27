@@ -67,6 +67,14 @@ Good combinations: **Pinpoint → Bubble** holds a foe in mid-air; **Kinetic She
 the others; **Unseen Constructs + Force Barrier** builds a wall your foes cannot see; **Vanishing Squad →
 Implosion** brings the whole team in unseen for the finisher.
 
+### Signature: Bastion
+
+Under Aegis, after Safety Net. Throw up a **dome of force 6 blocks round where you stand** for six
+seconds: a hexagonal lattice, brightest at its edges, a sheen climbing it. **Shots from outside glance off it and fly
+back** (each glance ripples the wall), **foes inside are shoved out** through it, and **friends under it take half
+damage**. When it ends, or when you **press again**, it bursts outward: **3 + tier** to every foe within 9 blocks, thrown
+clear.
+
 ## What the player sees
 
 One idea runs through every move: **a lens of bent light**. Every field is a clear, faintly blue sheet or shell

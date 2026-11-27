@@ -452,7 +452,7 @@
     "base_energy": 15,
     "base_cooldown": 30,
     "role": "basic",
-    "note": "a shove (2 + tier/4)"
+    "note": "Shove: a palm along the cone (2 + tier/4)"
   },
   {
     "power": "telekinesis",
@@ -463,7 +463,7 @@
     "base_energy": 30,
     "base_cooldown": 200,
     "role": "skill",
-    "note": "hold, then a throw"
+    "note": "hold (swing it through foes), then a throw"
   },
   {
     "power": "telekinesis",
@@ -485,7 +485,7 @@
     "base_energy": 20,
     "base_cooldown": 160,
     "role": "skill",
-    "note": "tears a weapon away"
+    "note": "plucks a weapon away; a free second press flings it back"
   },
   {
     "power": "telekinesis",

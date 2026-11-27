@@ -136,10 +136,10 @@ act("invisibility_unseen_strike", "invisibility", 2, "quick", "Force Bridge: a 1
 act("invisibility_shroud", "invisibility", 3, "heavy", "Bubble: 5 s hold, then a crush (6 + 2/tier)", ctrl=5, dmg=6, util=2)
 act("invisibility_ghost_protocol", "invisibility", 5, "ultimate", "Force Nova: heavy damage and a throw in 12 blocks", dmg=14, n=4, ult=True)
 # --- Telekinesis
-act("telekinesis_push", "telekinesis", 1, "basic", "a shove (2 + tier/4)", dmg=2.25, ctrl=1)
-act("telekinesis_grip", "telekinesis", 2, "skill", "hold, then a throw", ctrl=4, dmg=6)
+act("telekinesis_push", "telekinesis", 1, "basic", "Shove: a palm along the cone (2 + tier/4)", dmg=2.25, ctrl=1)
+act("telekinesis_grip", "telekinesis", 2, "skill", "hold (swing it through foes), then a throw", ctrl=4, dmg=6)
 act("telekinesis_bullet_stop", "telekinesis", 3, "heavy", "catches every shot, then turns them", util=22)
-act("telekinesis_disarm", "telekinesis", 4, "skill", "tears a weapon away", util=16)
+act("telekinesis_disarm", "telekinesis", 4, "skill", "plucks a weapon away; a free second press flings it back", util=16)
 act("telekinesis_storm", "telekinesis", 5, "ultimate", "lifts and slams everyone round you", dmg=10, n=4, ctrl=3, ult=True)
 # --- Hydrokinesis
 act("hydro_water_whip", "hydrokinesis", 1, "basic", "4 + tier along your aim", dmg=5)
@@ -281,6 +281,30 @@ reviewed("cryokinesis_2_1", "cryo/CryoCombatSkills#tick", "2 -> 5 in Cold Snap's
          note="Cold buildup has a utility reserve; a 2/3-second solid freeze requires existing frost.")
 reviewed("cryokinesis_brittle_constellation", "cryo/CryoTechniqueService#tickStars", "4 -> 6 per unique hop (strong: 7 -> 9)", 4, 6, n=3, factor=.85, util=8)
 utility_reviews("cryo/CryoTechniqueService", [("cryokinesis_rime_loom", "lays rime and chills; no direct hit"), ("cryokinesis_stillheart", "heals and protects in a cocoon")])
+reviewed("regeneration_last_one_standing", "regeneration/LastOneStanding#release", "4+tier to everyone within 8 after a 6 s stand; + half of what she banked (cap 16)", 0, 8,
+         n=3, ctrl=2, util=10, note="Six seconds of drawing every foe onto herself is soft control; the half-strength brace is the utility. Banked damage is earned by taking hits, so it is conditional.")
+reviewed("quake_epicenter", "quake/Epicenter#heave", "6+tier to everyone standing in a 10-block ring after a 24-tick telegraph; dragged in and slowed", 0, 10, n=4, ctrl=1)
+reviewed("flight_microburst", "flight/Microburst#slam", "6+tier inside a 6-block ring after a 20-tick telegraph; 2 s pin; outflow shove beyond", 0, 10, n=3, ctrl=1, util=4)
+reviewed("telepathy_puppeteer", "telepathy/Puppeteer#cut", "3+tier to each of up to 4 puppets when the strings are cut, after 6 s of fighting each other", 0, 7, n=3, ctrl=3.5,
+         note="Foes turned on each other is soft control: their own blows are the payoff, and one with nobody to fight only hangs still.")
+reviewed("radiation_fission_star", "radiation/FissionStar#detonate", "8+tier within 5 with line of sight after a 30-tick charge; sickness and a 5 s zone", 0, 12, n=3, util=6)
+reviewed("sonic_resonance_standing_wave", "sonic/StandingWave#pulse,shatter", "four pulses of 1+tier/4, then 6+tier on the fifth beat, inside a 6-block column", 0, 18, n=3, ctrl=1, factor=.75,
+         note="Only a foe that stays in the column takes every pulse; the pull is soft control.")
+reviewed("superspeed_lightning_round", "speed/LightningRound#strike", "4+tier to each of up to 6 foes, one every 3 ticks", 0, 8, n=4, util=6,
+         note="Untouchable for the second it lasts, and back where it began.")
+reviewed("invisibility_bastion", "invisibility/Bastion#burst", "3+tier to every foe within 9 when the dome bursts", 0, 7, n=3, ctrl=1, util=20,
+         note="Six seconds of reflected shots and halved damage for friends under it is the utility; foes are shoved out.")
+reviewed("phasing_mountain_armor", "phasing/MountainArmor#blast", "5+tier within 5 when the plates blast off", 0, 9, n=3, util=16,
+         note="Eight seconds of +10 armor, +4 toughness and no knockback is the utility; the punch bonus is conditional on landing blows.")
+reviewed("empathic_mimicry_chorus", "mimicry/Chorus#sing", "five bolts of 2+tier/2 at the nearest foe, then one 2+tier/4 bolt per voice (3 at least)", 0, 29, n=2, factor=.7,
+         note="Each bolt picks the nearest foe in sight at that moment, so the total spreads; voices add small riders.")
+reviewed("matter_assembly_ballista", "assembly/Ballista#tick", "six bolts of 2+tier/2, one a second, at the nearest foe within 18", 0, 24, n=1,
+         note="Also spends 6 Matter, all returned when it folds.")
+reviewed("hydrokinesis_leviathan", "hydro/Leviathan#bite", "three telegraphed bites of 4+tier/2 at the nearest foe within 10 of the pool", 0, 18, n=2, ctrl=1, factor=.9)
+reviewed("power_amplification_overdrive", "amplify/Overdrive#discharge", "4+tier per fork, one fork per linked body (3 alone)", 0, 8, n=3, util=20,
+         note="Eight seconds of Surge and 4 stamina a second for every linked friend is the utility.")
+reviewed("cryokinesis_absolute_zero", "cryo/AbsoluteZero#release", "4+tier cold hit on each drained foe (up to 16) after a 30-tick channel; 3 s solid freeze", 0, 8,
+         n=4, ctrl=3, note="Returns 4 stamina per foe drained (capped 24); a frozen foe shatters for more when struck, as Crystal Prison's do.")
 reviewed("electrokinesis_0_1", "skills/SkillActionService#activate", "8+tier on primary, two hops of 4", 10, n=1, extra=3.2, util=0,
          note="Two weaker hops count at +40% each: 2*4*.4. Slow is soft control, not a root.")
 reviewed("electrokinesis_circuit_thread", "expansion/ExpansionSkills#activate", "5+tier, one hit per UUID across all conductors", 8, n=2)
@@ -291,11 +315,14 @@ reviewed("electrokinesis_arc_lattice", "expansion/ExpansionSkills#tick", "6 once
 reviewed("electrokinesis_blackout", "electro/BlackoutService#release", "5+tier; one release after windup", 9, n=3, factor=.75, util=20,
          note="Machines are shut down and Charge is gathered; darkness/slow are utility, not hard control.")
 utility_reviews("skills/SkillActionService#activate", [("electrokinesis_1_1", "Static Screen reflects shots"), ("electrokinesis_2_1", "Overcharge fills Charge and grants speed/haste")])
-reviewed("telekinesis_0_1", "telekinesis/TelekineticArsenalService#lance", "8 -> 10; one spear (second pierce needs a skill)", 8, 10)
-reviewed("telekinesis_kinetic_volley", "telekinesis/TelekineticArsenalService#volley", "3 shards * 4, delayed 11 ticks apart", 12, factor=.85,
-         note="Five Fragments adds two shards; Iron Rain adds a 2-damage splash to bodies not hit directly.")
-utility_reviews("telekinesis/TelekinesisSkillService", [("telekinesis_remote_hand", "remote interaction/weapon handling"), ("telekinesis_1_1", "Gravity Well pulls, no direct damage"),
-    ("telekinesis_2_1", "Vector Step moves the caster"), ("telekinesis_force_bubble", "Force Bubble reflects and repels")])
+reviewed("telekinesis_0_1", "telekinesis/TelekinesisSkillService#land", "Vector Lance 10 -> Pin: 6 (+.5 per tier over 2) against the wall, then 3 s held", 10, 6, ctrl=3,
+         note="A foe that meets no wall is held 1.5 s and takes nothing; Pinned Together carries two more foes along for the same blow.")
+reviewed("telekinesis_kinetic_volley", "telekinesis/TelekinesisSkillService#tickJuggle", "Kinetic Volley 3 shards*4 -> Juggle: 3 pops*2 on each of up to 3 foes", 12, 6,
+         factor=.85, n=3, ctrl=1.5, note="Each foe spends about two seconds in the air. Five at Once adds two foes and a pop; Spike is a separate free slam.")
+reviewed("telekinesis_skyfall", "telekinesis/TelekinesisSkillService#tickSkyfall", "12+tier to the hauled foe after a 40-tick haul and drop; 6+tier/2 within 5 blocks",
+         0, 16, extra=2*8*.4, ctrl=2, note="Two bystanders count at +40% each; the hauled foe is held for two seconds. The ring telegraphs the area.")
+utility_reviews("telekinesis/TelekinesisSkillService", [("telekinesis_remote_hand", "Beckon works controls and fetches items"), ("telekinesis_1_1", "Round Up gathers and tosses, no direct damage"),
+    ("telekinesis_2_1", "Vector Step moves the caster"), ("telekinesis_force_bubble", "Levitate hovers the caster (and friends with Raise the Party)")])
 utility_reviews("telepathy/TelepathySkills", [("telepathy_0_1", "Drop It disarms"), ("telepathy_persuasion", "persuades or frightens one mind"),
     ("telepathy_1_1", "Far Hearing relays voices"), ("telepathy_memory_walk", "replays a memory"), ("telepathy_2_1", "Dream Double draws attention and frightens on contact"), ("telepathy_hive_link", "links willing voices")])
 reviewed("regeneration_0_1", "regeneration/RegenSkills#bloodletting", "4+tier to undead; same amount heals bonded friends", 6, n=2, util=6)
@@ -677,7 +704,6 @@ DESCRIPTION_EDITS = {
     "electrokinesis_ground_sink": [("discharge up to 16 stored damage nearby", "discharge nearby for 4 + half the stored damage, using up to 16 stored damage")],
     "electrokinesis_tesla_spire": [("4 damage each", "0.7 + 0.15 per tier damage each")],
     "electrokinesis_faraday_cage": [("shocked for 4", "shocked for 0.5")],
-    "telekinesis_0_1": [("deals 8 damage", "deals 10 damage")],
     "telekinesis_implosion": [("12 + 2 per tier", "6 + 0.75 per tier")],
     "regeneration_vital_burst": [("10 + 2 per tier", "3 + 0.5 per tier")],
     "time_manipulation_shared_blink": [("6 + level", "2 + level")],

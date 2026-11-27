@@ -77,7 +77,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Telepathy | [powers/telepathy.md](docs/agents/powers/telepathy.md) | [telepathy.md](docs/telepathy.md) |
 | Vibe | [powers/vibe.md](docs/agents/powers/vibe.md) | [vibe.md](docs/vibe.md) |
 | Matter Assembly | [powers/matter-assembly.md](docs/agents/powers/matter-assembly.md) (Matter, paced building, the effects bar) | [matter-assembly.md](docs/matter-assembly.md) |
-| Telekinesis | none yet: read [kit-design.md](docs/agents/kit-design.md) | [telekinesis.md](docs/telekinesis.md) |
+| Telekinesis | [powers/telekinesis.md](docs/agents/powers/telekinesis.md) (the far hand; hits that land as the drawing reaches them) | [telekinesis.md](docs/telekinesis.md) |
 
 Shared systems with player docs: [fighting-styles.md](docs/fighting-styles.md), [finishers.md](docs/finishers.md),
 [classes.md](docs/classes.md), [skill-trees.md](docs/skill-trees.md), [progression.md](docs/progression.md),

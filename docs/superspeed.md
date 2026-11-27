@@ -304,6 +304,13 @@ player's real afterimages rather than sprites:
 
 Learn and equip these with the inventory **Skills** button. Passive discounts apply to initial activation costs and cooldowns, not ongoing running or dodge costs. Running earns Mastery for actual stamina spent. Each running interval is paid upfront so toggling cannot avoid the drain; walking does not consume running stamina.
 
+### Signature: Lightning Round
+
+Under Momentum Fighter, after Kinetic Force Mastery. Visit **every foe within 16 blocks** you can
+see, up to six, each the nearest to the last: you arrive behind each one and strike it for **4 + tier**, one every three
+ticks, then you are **back where you started**. Each hop leaves a gold afterimage of you where you stood and a jagged
+streak of lightning along the path; each strike flashes and rings on the body. **Nothing can touch you** while it lasts.
+
 ## Power interactions and awakening
 
 - Only one player can own Superspeed, through the existing persistent ownership system. It participates in the normal assignment pool and admin menus.

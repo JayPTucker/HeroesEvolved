@@ -429,6 +429,143 @@ final class AssemblyArt {
         }
     }
 
+    // ------------------------------------------------------------------ Ballista
+
+    /** One part of the ballista: a shard (a to b, radius r), a box (centre a, half-sizes in b, turned by yaw/pitch) or a string. */
+    private record Part(int kind, Vec3 a, Vec3 b, float r, float yaw, float pitch) {}
+
+    /** The ballista's nine parts, in the order {@code Ballista.lands} brings them, facing {@code aim} from {@code base}. */
+    private static Part[] ballistaParts(Vec3 base, Vec3 aim, float draw) {
+        Vec3 hub = base.add(0, 1.05, 0), muzzle = base.add(0, com.jayptucker.heroesevolved.assembly.Ballista.MUZZLE, 0);
+        Vec3 d = aim.subtract(muzzle);
+        Vec3 flat = d.multiply(1, 0, 1);
+        Vec3 fwd = flat.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : flat.normalize();
+        float up = (float) Mth.clamp(d.lengthSqr() < 1e-4 ? 0 : d.normalize().y, -.6, .6);
+        Vec3 dir = fwd.scale(Math.sqrt(1 - up * up)).add(0, up, 0);
+        Vec3 side = new Vec3(-fwd.z, 0, fwd.x);
+        float yaw = (float) Mth.atan2(-fwd.x, fwd.z), pitch = -(float) Math.asin(up);
+        Part[] p = new Part[9];
+        for (int i = 0; i < 3; i++) {
+            float ang = yaw + i * Mth.TWO_PI / 3 + Mth.PI;
+            p[i] = new Part(0, base.add(-Mth.sin(ang) * .75, .02, Mth.cos(ang) * .75), hub, .09F, 0, 0);
+        }
+        p[3] = new Part(1, hub, new Vec3(.21, .17, .21), 0, yaw, 0);
+        p[4] = new Part(1, muzzle.add(dir.scale(.15)), new Vec3(.12, .09, .6), 0, yaw, pitch);
+        Vec3 front = muzzle.add(dir.scale(.65));
+        Vec3 tipR = front.add(side.scale(.8)).subtract(dir.scale(.28)), tipL = front.subtract(side.scale(.8)).subtract(dir.scale(.28));
+        p[5] = new Part(0, front.add(side.scale(.05)), tipR, .075F, 0, 0);
+        p[6] = new Part(0, front.subtract(side.scale(.05)), tipL, .075F, 0, 0);
+        Vec3 nock = muzzle.subtract(dir.scale(.4 * draw)).add(dir.scale(.3 * (1 - draw)));
+        p[7] = new Part(2, tipR, tipL, 0, 0, 0);
+        p[8] = new Part(0, nock.add(dir.scale(-.05)), nock.add(dir.scale(.95)), .06F, 0, 0);
+        // The string runs tip to nock to tip; store the nock in the shard's r-less slot via the bolt part.
+        return p;
+    }
+
+    private static void ballistaPart(Canvas c, Part part, int i, float scale, float alpha) {
+        if (scale <= .01F) return;
+        switch (part.kind()) {
+            case 0 -> {
+                if (c.solid()) c.shard(part.a(), part.a().lerp(part.b(), scale), part.r(), 5, i, i == 8 ? CORE : i >= 5 ? CRYSTAL : AMBER, 1);
+                if (c.glow() && i >= 5) c.line(part.a(), part.a().lerp(part.b(), scale), .02F, SEAM, .5F * alpha, .5F * alpha);
+            }
+            case 1 -> {
+                if (c.solid()) c.box(part.a(), (float) part.b().x * scale, (float) part.b().y * scale, (float) part.b().z * scale, part.yaw(), part.pitch(), 0, i == 3 ? DEEP : AMBER, 1);
+                if (c.glow() && i == 4) c.glow(part.a(), .3F, HONEY, .35F * alpha);
+            }
+            default -> { }
+        }
+    }
+
+    /** The bow's string: from each limb tip to the nock (the bolt's tail). */
+    private static void ballistaString(Canvas c, Part[] p, float alpha) {
+        if (!c.glow() || alpha < .01F) return;
+        Vec3 nock = p[8].a();
+        c.line(p[7].a(), nock, .018F, CORE, alpha, alpha);
+        c.line(p[7].b(), nock, .018F, CORE, alpha, alpha);
+    }
+
+    /**
+     * Ballista folding together ({@code assembly/Ballista}): its blueprint drawn in seams of light over the spot, then
+     * each of its nine parts leaving the engineer's hand along an arc with a hot tail and snapping into place at the tick
+     * {@code Ballista.lands} gives, a bright seam flashing as it lands and a lattice sheen over the finished engine.
+     * Origin its foot, target a point it faces; bound to the engineer.
+     */
+    static void ballista(Canvas c, Active a, float t) {
+        Vec3 base = a.origin();
+        Part[] parts = ballistaParts(base, a.target().add(0, com.jayptucker.heroesevolved.assembly.Ballista.MUZZLE, 0), 1);
+        int build = com.jayptucker.heroesevolved.assembly.Ballista.BUILD;
+        float f = Canvas.fade(t, a.piece().ticks, 1, 1);
+        Vec3 from = source(c, a, base);
+        // The blueprint, fading as the real parts arrive.
+        float plan = smooth(0, 4, t) * (1 - smooth(build - 4, build, t));
+        if (c.glow() && plan > .01F) {
+            for (Part p : parts) {
+                if (p.kind() == 0 || p.kind() == 2) c.line(p.a(), p.b(), .015F, SEAM, plan * .6F, plan * .6F);
+                else {
+                    Vec3 half = p.b();
+                    c.line(p.a().add(-half.x, -half.y, 0), p.a().add(half.x, half.y, 0), .015F, SEAM, plan * .5F, plan * .5F);
+                }
+            }
+            c.ring(base.add(0, .04, 0), UP, .75F, .02F, 0, Mth.TWO_PI, SEAM, plan * .6F);
+        }
+        for (int i = 0; i < parts.length; i++) {
+            float land = com.jayptucker.heroesevolved.assembly.Ballista.lands(i), leave = Math.max(0, land - 6);
+            Part p = parts[i];
+            Vec3 seat = p.kind() == 1 ? p.a() : p.a().lerp(p.b(), .5);
+            if (t < land) {
+                flight(c, from, seat, (t - leave) / (land - leave), .9F, .09F, i, f);
+                continue;
+            }
+            ballistaPart(c, p, i, smooth(land, land + 1.5F, t) * .9F + .1F, f);
+            float snap = 1 - smooth(land, land + 4, t);
+            if (c.glow() && snap > 0) {
+                c.glow(seat, .35F, CORE, snap * f);
+                if (p.kind() == 0) c.line(p.a(), p.b(), .05F, SEAM, snap * f, snap * f);
+            }
+        }
+        if (t >= com.jayptucker.heroesevolved.assembly.Ballista.lands(7)) ballistaString(c, parts, f);
+        if (c.glow() && t >= build - 3) {
+            float k = smooth(build - 3, build + 2, t);
+            c.ring(base.add(0, .2 + 1.1 * k, 0), UP, .7F, .04F, 0, Mth.TWO_PI, HONEY, .7F * (1 - k));
+        }
+    }
+
+    /**
+     * One beat of a standing Ballista: the engine turned on its target, the string drawn, and (seed 1) the bolt loosed:
+     * the string snaps forward, a crystal bolt flies at {@code Ballista.BOLT_SPEED} with a seam tail, and the next is
+     * folded onto the stock before the beat ends. Origin its foot, target where it aims.
+     */
+    static void turret(Canvas c, Active a, float t) {
+        Vec3 base = a.origin(), aim = a.target();
+        boolean fired = a.seed() == 1;
+        float life = a.piece().ticks, reload = smooth(life - 4, life - 1, t);
+        float draw = fired ? Math.max(1 - smooth(0, 1.2F, t), reload) : 1;
+        Part[] parts = ballistaParts(base, aim, draw);
+        for (int i = 0; i < 8; i++) ballistaPart(c, parts[i], i, 1, 1);
+        if (!fired || t >= life - 4) {
+            ballistaPart(c, parts[8], 8, fired ? reload : 1, 1);
+            if (fired && c.glow()) c.glow(parts[8].a().lerp(parts[8].b(), .5), .25F, CORE, 1 - reload);
+        }
+        ballistaString(c, parts, 1);
+        if (c.glow()) c.glow(base.add(0, 1.05, 0), .3F, HONEY, .4F);
+        if (!fired) return;
+        Vec3 muzzle = base.add(0, com.jayptucker.heroesevolved.assembly.Ballista.MUZZLE, 0);
+        double dist = muzzle.distanceTo(aim);
+        int lands = com.jayptucker.heroesevolved.assembly.Ballista.flight(dist);
+        if (c.glow() && t < 2.5F) c.glow(muzzle.add(aim.subtract(muzzle).normalize().scale(.7)), .5F, CORE, 1 - t / 2.5F);
+        if (t <= lands) {
+            float k = Mth.clamp(t / lands, 0, 1);
+            Vec3 head = muzzle.lerp(aim, k), dir = aim.subtract(muzzle).normalize();
+            if (c.solid()) c.shard(head.subtract(dir.scale(.45)), head.add(dir.scale(.3)), .06F, 5, t, CORE, 1);
+            if (c.glow()) {
+                c.line(muzzle.lerp(aim, Math.max(0, k - .25F)), head, .07F, AMBER, 0, .6F);
+                c.line(muzzle.lerp(aim, Math.max(0, k - .15F)), head, .02F, CORE, 0, .9F);
+                c.glow(head, .2F, HONEY, .6F);
+            }
+        }
+    }
+
     /**
      * A sentinel's head: a crystal turning over its pillar, a ring of light round it tilting as it turns, and a
      * pale beam sweeping slowly round as it searches. Gone with the pillar.

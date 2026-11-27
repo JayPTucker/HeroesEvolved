@@ -286,14 +286,7 @@ public final class CryoService {
         AbilityEffects.send(level, shatter ? Kind.CRYO_SHATTER : Kind.CRYO_CHILL,
                 target.position(), target.position().add(0, target.getBbHeight(), 0), target.getBbWidth());
         if (shatter) {
-            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK,
-                            Blocks.BLUE_ICE.defaultBlockState()),
-                    target.getX(), target.getY() + target.getBbHeight() / 2, target.getZ(),
-                    50, target.getBbWidth() / 2, target.getBbHeight() / 2,
-                    target.getBbWidth() / 2, 0.25D);
-            level.sendParticles(ParticleTypes.SNOWFLAKE, target.getX(),
-                    target.getY() + target.getBbHeight() / 2, target.getZ(),
-                    25, 0.4D, 0.5D, 0.4D, 0.15D);
+            // The shatter itself (chips, a flash, the rim, falling snow) is CryoArt's CRYO_SHATTER: no particle burst.
             level.playSound(null, target.getX(), target.getY(), target.getZ(),
                     SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.2F, 0.7F);
         } else {
@@ -329,8 +322,6 @@ public final class CryoService {
             }
             coldHit(player, target, 3.0F + powerLevel);
             chill(target, 80 + powerLevel * 15, player);
-            level.sendParticles(ParticleTypes.ITEM_SNOWBALL, end.x, end.y, end.z,
-                    12, 0.2D, 0.3D, 0.2D, 0.1D);
         } else if (blockHit.getType() == HitResult.Type.BLOCK) {
             // Skimming water leaves a small raft of ice behind.
             BlockPos hit = blockHit.getBlockPos();

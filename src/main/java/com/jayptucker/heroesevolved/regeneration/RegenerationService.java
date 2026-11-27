@@ -111,11 +111,27 @@ public final class RegenerationService {
         int downed = BodyService.downedRemaining(player);
         int recovery = RegenSkills.recovery(player, BodyService.recoveryTicks(powerLevel, regrowth(player)));
         int giveUp = BodyService.canGiveUp(player) ? BodyService.giveUpProgress(player) : -1;
+        broadcastRegrowth(player, false);
         int key = java.util.Objects.hash(regrowth(player), downed / 20, recovery / 20, giveUp);
         if (SENT.getOrDefault(player.getUUID(), Integer.MIN_VALUE) == key) return;
         SENT.put(player.getUUID(), key);
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
                 new com.jayptucker.heroesevolved.network.RegenerationStatePayload(regrowth(player), downed, recovery, giveUp));
+    }
+
+    private static final Map<UUID, Integer> SHOWN_REGROWTH = new HashMap<>();
+
+    /**
+     * Tells everyone who can see her how much Regrowth she carries (it glows in her veins), when it moves by a step of
+     * four, or always when {@code force}.
+     */
+    public static void broadcastRegrowth(ServerPlayer player, boolean force) {
+        int now = regrowth(player), step = now / 4;
+        Integer last = SHOWN_REGROWTH.get(player.getUUID());
+        if (!force && last != null && last == step) return;
+        SHOWN_REGROWTH.put(player.getUUID(), step);
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,
+                new com.jayptucker.heroesevolved.network.RegrowthPayload(player.getId(), now));
     }
 
     /** Passive healing burns stored Regrowth: up to 10 a tick, each 5 of it one more point of healing. */

@@ -426,6 +426,41 @@ final class AmpArt {
         }
     }
 
+    /**
+     * Overdrive ({@code amplify/Overdrive}): a linked body held open, red lightning crawling up it in short forks and a
+     * ring turning at its waist, and (for a friend) a live channel jumping between the amplifier's hand and its chest.
+     * Bound to the linked body, the amplifier's id in the seed (-1 on the amplifier himself), scale its height; re-sent
+     * each second.
+     */
+    static void overdrive(Canvas c, Active a, float t) {
+        if (SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.AMP_OVERDRIVE), c.level.getGameTime())) return;
+        Entity body = a.bound(c);
+        if (body == null) return;
+        float h = Math.max(.6F, a.scale()), life = a.piece().ticks, f = Math.min(1, t / 3 + .4F) * Math.clamp((life - t) / 2, 0, 1);
+        Vec3 feet = body.getPosition(c.partial);
+        float clock = (c.level.getGameTime() % 2400 + c.partial);
+        int flick = (int) (clock / 2);
+        climb(c, feet, h, Math.max(.3F, body.getBbWidth() * .7F), f, a.seed() * 31 + flick, minimal() ? 2 : 4);
+        ring(c, feet.add(0, h * .5, 0), new Vec3(sin(clock * .1F) * .2, 1, cos(clock * .13F) * .2).normalize(), .55F + .05F * sin(clock * .3F), .04F, f * .8F);
+        if (c.glow()) c.glow(feet.add(0, h * .55, 0), h * .6F, RED, f * .18F);
+        if (a.seed() >= 0 && c.level.getEntity(a.seed()) instanceof Player amp) {
+            Vec3 from = AmpGeometry.hand(amp, c.partial), to = feet.add(0, h * .6, 0);
+            fork(c, from, to, .05F, f * (.6F + .4F * hash(flick, 3)), a.seed() + flick, 1);
+        }
+    }
+
+    /** One fork of an Overdrive's discharge, from a linked body to a foe, with a flash where it lands. */
+    static void discharge(Canvas c, Active a, float t) {
+        Vec3 from = a.origin(), to = a.target();
+        float life = a.piece().ticks, f = Math.clamp((life - t) / 5, 0, 1), k = smooth(0, 2, t);
+        fork(c, from, from.lerp(to, k), .09F, f, a.seed() + (int) (t / 2), 2);
+        if (t >= 2) {
+            float b = smooth(2, 9, t);
+            ring(c, to, to.subtract(from).normalize(), .2F + .9F * b, .05F, f * (1 - b));
+            if (c.glow()) c.glow(to, .5F + .8F * (1 - b), HOT, f * (1 - b));
+        }
+    }
+
     private static void ring(Canvas c, Vec3 at, Vec3 axis, float r, float width, float alpha) {
         if (alpha < .01F || r < .02F) return;
         if (c.soft()) c.ring(at, axis, r, width * 2.2F, 0, TWO_PI, RED, alpha * .7F);

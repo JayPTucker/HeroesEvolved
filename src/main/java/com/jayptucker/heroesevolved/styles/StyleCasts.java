@@ -394,7 +394,8 @@ public final class StyleCasts {
             case "implosion" -> {
                 Vec3 point = aim(p, 24);
                 float radius = 6;
-                piece(p, Piece.IMPLOSION, at, point, radius, null);
+                com.jayptucker.heroesevolved.network.SetPiecePayload.sendSeeded(level, Piece.KINETIC_CLENCH, point, point.add(0, 1, 0), radius, null, 0, p.getId());
+                ArmPosePayload.show(p, ArmPose.KINETIC_PLUCK, 22);
                 sound(level, point, SoundEvents.BEACON_DEACTIVATE, 1.5F, 0.5F);
                 Vec3 core = point.add(0, 1.2, 0);
                 StyleRuntime.run(p, 22, age -> {
@@ -408,7 +409,7 @@ public final class StyleCasts {
                 });
             }
             case "debris_halo" -> {
-                piece(p, Piece.DEBRIS_HALO, at, at, 2.6F, p);
+                com.jayptucker.heroesevolved.network.SetPiecePayload.sendSeeded(level, Piece.KINETIC_WARD, at, at.add(0, 1, 0), 2.6F, p, 0, p.getId());
                 sound(level, at, SoundEvents.GRAVEL_BREAK, 1.5F, 0.6F);
                 StyleRuntime.run(p, 160, age -> {
                     destroy(p, p.position().add(0, 1.2, 0), 3.2);
@@ -423,12 +424,13 @@ public final class StyleCasts {
                 for (LivingEntity friend : gathered) {
                     double ang = i++ * Math.PI * 2 / Math.max(1, gathered.size());
                     Vec3 spot = at.add(Math.cos(ang) * 1.6, 0, Math.sin(ang) * 1.6);
-                    piece(p, Piece.GATHERING_HAND, friend.position(), at, 1, friend);
+                    com.jayptucker.heroesevolved.network.SetPiecePayload.sendSeeded(level, Piece.KINETIC_GATHER, friend.position(), spot, 1, friend, 0, p.getId());
                     StyleRuntime.run(p, 10, age -> { if (age == 10) friend.teleportTo(spot.x, spot.y, spot.z); });
                     effect(friend, MobEffects.DAMAGE_RESISTANCE, 110, 1);
                 }
                 effect(p, MobEffects.DAMAGE_RESISTANCE, 110, 1);
-                if (gathered.isEmpty()) piece(p, Piece.GATHERING_HAND, at, at, 1, p);
+                if (gathered.isEmpty()) com.jayptucker.heroesevolved.network.SetPiecePayload.sendSeeded(level, Piece.KINETIC_GATHER, at, at, 1, p, 0, p.getId());
+                ArmPosePayload.show(p, ArmPose.KINETIC_BECKON, 16);
             }
             // ---------------------------------------------------------- Telepathy
             case "psychic_storm" -> {

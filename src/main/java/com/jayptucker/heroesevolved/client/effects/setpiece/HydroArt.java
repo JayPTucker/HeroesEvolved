@@ -1101,6 +1101,115 @@ final class HydroArt {
         }
     }
 
+    // ------------------------------------------------------------------ Leviathan
+
+    /**
+     * The serpent of water ({@code hydro/Leviathan}): a glassy body rising out of the pool in an S, thick at the water
+     * and tapering to a blunt head, a foam crest down its back, two pale glints for eyes. {@code emerge} 0 to 1 is how
+     * much of it stands out of the pool; {@code head} is where its head is.
+     */
+    private static void serpent(Canvas c, Vec3 pool, Vec3 head, Vec3 facing, float emerge, float phase, float alpha, int seed) {
+        if (emerge <= .01F || alpha < .01F) return;
+        Vec3 side = new Vec3(-facing.z, 0, facing.x);
+        Vec3 root = pool.add(0, -.6, 0);
+        Vec3 c1 = pool.add(side.scale(.9 * sin(phase))).add(facing.scale(-.6)).add(0, 1.6 * emerge, 0);
+        Vec3 c2 = head.subtract(facing.scale(1.3)).add(side.scale(-.5 * sin(phase + 1))).add(0, .5, 0);
+        int n = 14;
+        Vec3[] spine = new Vec3[n + 1];
+        float[] r = new float[n + 1], a = new float[n + 1];
+        int shown = Math.max(2, Math.round(n * emerge));
+        for (int i = 0; i <= n; i++) {
+            float u = i / (float) n, v = 1 - u;
+            spine[i] = root.scale(v * v * v).add(c1.scale(3 * v * v * u)).add(c2.scale(3 * v * u * u)).add(head.scale(u * u * u));
+            r[i] = lerp(u, .85F, .42F) * (1 + .06F * sin(phase * 2 + u * 9));
+            a[i] = i <= shown ? alpha * .9F : 0;
+        }
+        // Only what has risen is drawn: slide the spine down so its top is the head when fully out.
+        if (shown < n) {
+            Vec3 lift = new Vec3(0, -(1 - emerge) * (head.y - pool.y + .6), 0);
+            for (int i = 0; i <= n; i++) spine[i] = spine[i].add(lift);
+        }
+        tube(c, spine, r, a, 0);
+        // The head: a blunt bulb a little ahead of the neck, and its eyes.
+        Vec3 tip = spine[n];
+        Vec3 snout = tip.add(facing.scale(.35)).add(0, -.05, 0);
+        tube(c, new Vec3[] {tip.subtract(facing.scale(.15)), tip.add(facing.scale(.1)), snout}, new float[] {.42F, .4F, .2F},
+                new float[] {alpha * .9F, alpha * .9F, alpha * .8F}, 0);
+        Vec3[] crest = new Vec3[n - 2];
+        float[] cw = new float[crest.length], ca = new float[crest.length];
+        for (int i = 2; i < n; i++) {
+            Vec3 d = spine[Math.min(n, i + 1)].subtract(spine[i - 1]);
+            Vec3 back = d.cross(side);
+            back = back.lengthSqr() < 1e-6 ? UP : back.normalize();
+            if (back.y < 0) back = back.scale(-1);
+            crest[i - 2] = spine[i].add(back.scale(r[i] * .95));
+            cw[i - 2] = .09F;
+            ca[i - 2] = a[i] * .9F;
+        }
+        foam(c, crest, cw, ca);
+        if (c.glow() && emerge > .8F) for (int s = -1; s <= 1; s += 2) {
+            Vec3 eye = tip.add(side.scale(s * .2)).add(facing.scale(.18)).add(0, .14, 0);
+            c.glow(eye, .1F, SHALLOW, alpha);
+            c.glow(eye, .04F, FOAM, alpha);
+        }
+        spray(c, pool.add(0, .1, 0), UP, 1, .12F, (phase * 6) % 10, 10, alpha * .5F, seed, 6, 0);
+        ripple(c, pool.add(0, .04, 0), 1.1F + .15F * sin(phase * 3), .06F, alpha * .8F);
+    }
+
+    /** The serpent's head at rest over the pool, swaying, looking along {@code facing}. */
+    private static Vec3 restingHead(Vec3 pool, Vec3 facing, float phase) {
+        Vec3 side = new Vec3(-facing.z, 0, facing.x);
+        return pool.add(facing.scale(.5)).add(side.scale(.35 * sin(phase * .7F))).add(0, com.jayptucker.heroesevolved.hydro.Leviathan.HEAD + .15 * sin(phase), 0);
+    }
+
+    /**
+     * Leviathan's three phases from one shape: RISE (the pool opening and the serpent coming up out of it), STRIKE (rearing
+     * back over the pool while a ring of water fills on the spot, the lunge onto it with a splash, then back to rest) and
+     * DIVE (sinking into the pool, which closes). Origin the pool; target the struck spot (or a point it faces); the
+     * seed is the strike's index. Timings are {@code Leviathan}'s.
+     */
+    static void leviathan(Canvas c, Active a, float t) {
+        Vec3 pool = a.origin().add(0, .02, 0), target = a.target();
+        Vec3 flat = target.subtract(pool).multiply(1, 0, 1);
+        Vec3 facing = flat.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : flat.normalize();
+        float clock = (c.level.getGameTime() % 2400 + c.partial) * .12F, life = a.piece().ticks;
+        int seed = a.seed() * 7 + 3;
+        switch (a.piece()) {
+            case HYDRO_LEVIATHAN_RISE -> {
+                float k = smooth(2, life, t);
+                splash(c, pool, 1.6F, t, 1, seed, 0, true);
+                serpent(c, pool, restingHead(pool, facing, clock), facing, k, clock, 1, seed);
+            }
+            case HYDRO_LEVIATHAN_STRIKE -> {
+                int windup = com.jayptucker.heroesevolved.hydro.Leviathan.WINDUP, lunge = com.jayptucker.heroesevolved.hydro.Leviathan.LUNGE;
+                float bite = Math.max(.5F, a.scale());
+                Vec3 rest = restingHead(pool, facing, clock);
+                Vec3 reared = pool.subtract(facing.scale(.9)).add(0, com.jayptucker.heroesevolved.hydro.Leviathan.HEAD + 1.1, 0);
+                Vec3 struck = target.add(0, .5, 0);
+                Vec3 head;
+                if (t < windup) head = rest.lerp(reared, smooth(0, windup * .7F, t));
+                else if (t < windup + lunge) head = reared.lerp(struck, smooth(windup, windup + lunge, t));
+                else head = struck.lerp(rest, smooth(windup + lunge + 1, life, t));
+                serpent(c, pool, head, facing, 1, clock, 1, seed);
+                // The warning: a ring of water filling on the spot until the lunge lands.
+                if (t < windup + lunge + 1) {
+                    float k = clamp(t / (windup + lunge), 0, 1);
+                    ripple(c, target.add(0, .05, 0), bite, .05F + .05F * k, .5F + .5F * k);
+                    if (c.soft()) c.disc(target.add(0, .04, 0), UP, bite * k, SEA, .18F * k, .1F * k);
+                    if (c.glow()) c.ring(target.add(0, .06, 0), UP, bite, .03F, 0, TWO_PI, SHALLOW, .4F + .5F * k);
+                }
+                if (t >= windup + lunge) splash(c, target, bite, t - windup - lunge, 1, seed + 11, 0, true);
+            }
+            case HYDRO_LEVIATHAN_DIVE -> {
+                float k = 1 - smooth(0, life - 3, t);
+                Vec3 head = restingHead(pool, facing, clock).lerp(pool.add(facing.scale(.6)).add(0, -.4, 0), smooth(0, life - 2, t));
+                serpent(c, pool, head, facing, Math.max(.05F, k), clock, 1, seed);
+                splash(c, pool, 1.4F, t - (life - 6), 1, seed + 5, 0, true);
+            }
+            default -> { }
+        }
+    }
+
     /** A ring on the ground or water: a teal band, a foam line and a faint glint. */
     private static void ripple(Canvas c, Vec3 at, float radius, float width, float alpha) {
         if (alpha < .01F || radius < .03F) return;

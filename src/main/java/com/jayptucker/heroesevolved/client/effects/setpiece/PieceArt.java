@@ -13,6 +13,10 @@ final class PieceArt {
                     END_BATTLE_REFUGE, END_BATTLE_BACKFIRE, END_BATTLE_STRIKE, END_BATTLE_NOVA,
                     END_BATTLE_IMPACT, END_BATTLE_WAVE, END_BATTLE_DASH, END_BATTLE_BOLT, END_BATTLE_POOL -> EndBattleArt.draw(c,a,t);
             case END_SEAL_WARNING, END_SEAL_KEY, END_SEAL_CRACK, END_SEAL_SHATTER, END_SEAL_SPARED -> SealArt.draw(c, a, t);
+            case KINETIC_SEND, KINETIC_SHOVE, KINETIC_GRIP, KINETIC_THROW, KINETIC_IMPACT, KINETIC_CATCH, KINETIC_SHOT,
+                    KINETIC_RETURN, KINETIC_PLUCK, KINETIC_FLING, KINETIC_STORM, KINETIC_SLAM, KINETIC_PIN, KINETIC_BECKON,
+                    KINETIC_ROUND_UP, KINETIC_POP, KINETIC_STEP, KINETIC_LEVITATE, KINETIC_CUSHION, KINETIC_SKYFALL,
+                    KINETIC_CLENCH, KINETIC_WARD, KINETIC_GATHER -> KineticArt.draw(c, a, t);
             case WITHER_FORM, WITHER_BREACH, WITHER_AURA, WITHER_WARNING, WITHER_PULSE, WITHER_IMPACT,
                     WITHER_NOVA, WITHER_BACKFIRE, WITHER_PHASE, WITHER_DEATH, WITHER_CANCEL,
                     WITHER_FIRE, WITHER_WAKE, WITHER_ARC, WITHER_HEAD_WARN, WITHER_MUZZLE,
@@ -76,9 +80,6 @@ final class PieceArt {
             case FISSURE_MAW -> ElementArt.fissure(c, a, t);
             case STONE_RAMPART -> ElementArt.rampart(c, a, t);
             case BEDROCK_STANCE -> ElementArt.bedrock(c, a, t);
-            case IMPLOSION -> MotionArt.implosion(c, a, t);
-            case DEBRIS_HALO -> MotionArt.debrisHalo(c, a, t);
-            case GATHERING_HAND -> MotionArt.gathering(c, a, t);
             case VITAL_BURST -> MindArt.vitalBurst(c, a, t);
             case UNDYING -> MindArt.undying(c, a, t);
             case LIFEBLOOM -> MindArt.lifebloom(c, a, t);
@@ -109,7 +110,35 @@ final class PieceArt {
             case GIFT_AWAKEN, GIFT_TURN, GIFT_UNBOUND -> GiftArt.draw(c, a, t);
             case OVERLOAD_EMBER, OVERLOAD_FIRESTORM, OVERLOAD_DEEP_FREEZE -> OverloadArt.draw(c, a, t);
             case METEOR_IMPACT, METEOR_SHATTER -> MeteorArt.draw(c, a, t);
-            case CRYO_BLAST, CRYO_QUENCH, CRYO_CAST, CRYO_TERRAIN_FROST -> CryoBlastArt.draw(c, a, t);
+            case CRYO_BLAST, CRYO_QUENCH, CRYO_CAST, CRYO_TERRAIN_FROST -> CryoArt.draw(c, a, t);
+            case STYLE_ICE_STRIP -> CryoArt.strip(c, a.origin(), a.target(), t, a.piece().ticks, a.seed());
+            case CRYO_FX -> CryoArt.fx(c, a, t);
+            case REGEN_FX -> RegenArt.fx(c, a, t);
+            case REGEN_STAND -> RegenArt.stand(c, a, t);
+            case REGEN_TAUNT -> RegenArt.taunt(c, a, t);
+            case REGEN_RELEASE -> RegenArt.release(c, a, t);
+            case QUAKE_EPICENTER -> QuakeArt.epicenter(c, a, t);
+            case FLIGHT_MICROBURST -> FlightArt.microburst(c, a, t);
+            case TELEPATHY_STRINGS -> TelepathyArt.strings(c, a, t);
+            case TELEPATHY_SNIP -> TelepathyArt.snip(c, a, t);
+            case RAD_STAR_CHARGE, RAD_STAR, RAD_STAR_BLAST -> RadiationArt.draw(c, a, t);
+            case SONIC_STANDING -> SonicArt.standing(c, a, t);
+            case SONIC_STANDING_BREAK -> SonicArt.breakWave(c, a, t);
+            case SPEED_ROUND -> SpeedArt.round(c, a, t);
+            case SPEED_ROUND_HIT -> SpeedArt.roundHit(c, a, t);
+            case FORCE_BASTION -> ForceArt.bastion(c, a, t);
+            case FORCE_BASTION_BURST -> ForceArt.bastionBurst(c, a, t);
+            case DENSITY_ARMOR -> DensityArt.mountain(c, a, t);
+            case DENSITY_ARMOR_BURST -> DensityArt.mountainBurst(c, a, t);
+            case MIMIC_CHORUS -> MimicArt.chorus(c, a, t);
+            case MIMIC_VOICE -> MimicArt.voice(c, a, t);
+            case MATTER_BALLISTA -> AssemblyArt.ballista(c, a, t);
+            case MATTER_TURRET -> AssemblyArt.turret(c, a, t);
+            case HYDRO_LEVIATHAN_RISE, HYDRO_LEVIATHAN_STRIKE, HYDRO_LEVIATHAN_DIVE -> HydroArt.leviathan(c, a, t);
+            case AMP_OVERDRIVE -> AmpArt.overdrive(c, a, t);
+            case AMP_DISCHARGE -> AmpArt.discharge(c, a, t);
+            case CRYO_ZERO -> CryoArt.zero(c, a, t);
+            case CRYO_EMBER -> CryoArt.ember(c, a, t);
             case RAD_HEAT, RAD_LEAP, RAD_SLAM, RAD_ZONE, RAD_EMP, RAD_BEAM, RAD_CHARGE, RAD_LANCE -> RadiationArt.draw(c, a, t);
             case RAD_SHOCK, RAD_FIELD, RAD_FLAKE, RAD_DISINTEGRATE -> HazardArt.draw(c, a, t);
             case SPEED_VACUUM -> CycloneArt.vacuum(c, a, t);
@@ -144,12 +173,12 @@ final class PieceArt {
                     HYDRO_DELUGE, HYDRO_LASH, HYDRO_DAGGER, HYDRO_WHEEL, HYDRO_FLOW, HYDRO_VAULT, HYDRO_UNDERTOW, HYDRO_LOADED,
                     HYDRO_GEYSER_MARK, HYDRO_GEYSER, HYDRO_JET, HYDRO_WALL, HYDRO_HEAL, HYDRO_RAIN, HYDRO_DOME, HYDRO_SPRING,
                     HYDRO_AWAKEN -> HydroArt.draw(c, a, t);
-            case STYLE_LENS_JAB, STYLE_SHARDS, STYLE_FORCE_BURST, STYLE_FIELD_SLAM, STYLE_LENS_SLIDE, STYLE_BOUNCE,
-                    STYLE_ICE_STRIP, STYLE_TK_PALM, STYLE_TK_GRASP -> StyleArt.draw(c, a, t);
+            case STYLE_LENS_JAB, STYLE_SHARDS, STYLE_FORCE_BURST, STYLE_FIELD_SLAM, STYLE_LENS_SLIDE,
+                    STYLE_BOUNCE -> StyleArt.draw(c, a, t);
+            case STYLE_TK_PALM, STYLE_TK_GRASP, FINISH_STRINGS, FINISH_CRUSH, FINISH_TOSS -> KineticArt.draw(c, a, t);
             case FINISH_SHORT -> ElectroArt.finisher(c, a, t);
             case FINISH_BREAKER -> HydroArt.finisher(c, a, t);
-            case FINISH_WARMTH -> StyleArt.warmth(c, a, t);
-            case FINISH_STRINGS -> StyleArt.strings(c, a, t);
+            case FINISH_WARMTH -> CryoArt.warmth(c, a, t);
             case FINISH_THUNDER -> SpeedArt.finisher(c, a, t);
             case FINISH_DOWNBURST -> FlightArt.finisher(c, a, t);
             case FINISH_BEAT -> QuakeArt.finisher(c, a, t);
@@ -167,12 +196,11 @@ final class PieceArt {
             case FINISH_PRESSURE, FINISH_THOUGHT -> TelepathyArt.alternates(c, a, t);
             case FINISH_ROD, FINISH_OVERLOAD -> ElectroArt.alternates(c, a, t);
             case FINISH_BUBBLE, FINISH_RIPTIDE -> HydroArt.alternates(c, a, t);
-            case FINISH_COFFIN, FINISH_ICICLES -> StyleArt.cryoFinishers(c, a, t);
+            case FINISH_COFFIN, FINISH_ICICLES -> CryoArt.cryoFinishers(c, a, t);
             case FINISH_FISTS, FINISH_FLICK -> SpeedArt.alternates(c, a, t);
             case FINISH_CLAP, FINISH_UPDRAFT -> FlightArt.alternates(c, a, t);
             case FINISH_FAULT, FINISH_SHATTER -> QuakeArt.alternates(c, a, t);
             case FINISH_NOTE, FINISH_SILENCE -> SonicArt.alternates(c, a, t);
-            case FINISH_CRUSH, FINISH_TOSS -> StyleArt.kineticFinishers(c, a, t);
             case FINISH_PHASE, FINISH_HEAVY -> DensityArt.alternates(c, a, t);
             case FINISH_BUBBLE_CRUSH, FINISH_LENS -> ForceArt.alternates(c, a, t);
             case FINISH_NO_PAIN, FINISH_GRIP -> RegenArt.alternates(c, a, t);

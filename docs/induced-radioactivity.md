@@ -96,6 +96,14 @@ Builds to try: **Fallout** for a leap-and-slam brawler (Fallout Boots → Second
 patch for a Catastrophe); **Meltdown** for running Critical and chaining kills (Heat Vent the sick, then
 Supercritical bursts); **Reactor** to live at 100 Core in Overdrive and vent it into stamina.
 
+### Signature: Fission Star
+
+Under Meltdown, after Focused Beam. Cup your hands and a **white-hot core grows between them** for a
+second and a half, rings of heat falling in on it, then you throw it. It **drifts out slowly**, a ring on the ground beneath
+it showing what it will cover, and goes off when it touches a wall, the ground or a foe, after 27 blocks, or when you
+**press again**: a white sphere bursts, and everyone within **5 blocks** with a clear line to it takes **8 + tier**, is
+dosed with radiation sickness, and the ground there **stays contaminated** for five seconds.
+
 ## Look and feel
 
 Every move is drawn in 3D on every nearby client (`client/effects/setpiece/RadiationArt`), in three colours:

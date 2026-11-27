@@ -40,8 +40,98 @@ final class RadiationArt {
             case RAD_BEAM -> beam(c, a, t);
             case RAD_CHARGE -> charge(c, a, t);
             case RAD_LANCE -> lance(c, a, t);
+            case RAD_STAR_CHARGE -> critical(c, a, t);
+            case RAD_STAR -> core(c, a, t);
+            case RAD_STAR_BLAST -> criticalBlast(c, a, t);
             default -> { }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Fission Star: a core grown in cupped hands, thrown, and going off
+    // ------------------------------------------------------------------
+
+    /** Between the cupped hands: in front of the chest in third person, low in the view in first. */
+    private static Vec3 cupped(Canvas c, Entity e) {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (e == mc.player && mc.options.getCameraType() == net.minecraft.client.CameraType.FIRST_PERSON) {
+            Vec3 look = e.getViewVector(c.partial);
+            return c.camera().add(look.scale(.7)).add(0, -.32, 0);
+        }
+        float yaw = (e instanceof net.minecraft.world.entity.LivingEntity l ? l.yBodyRot : e.getYRot()) * Mth.DEG_TO_RAD;
+        return e.getPosition(c.partial).add(-Mth.sin(yaw) * .5, 1.1, Mth.cos(yaw) * .5);
+    }
+
+    /** The hot heart of the core: a white bead in a heat glow, rings of light orbiting it on tilted planes. */
+    private static void bead(Canvas c, Vec3 at, float size, float spin, float alpha) {
+        if (!c.glow()) return;
+        c.glow(at, size * 3.2F, HEAT, alpha * .35F);
+        c.glow(at, size * 1.6F, WHITE_HOT, alpha * .8F);
+        c.glow(at, size * .6F, WHITE_HOT, alpha);
+        for (int i = 0; i < 3; i++) {
+            Vec3 axis = new Vec3(sin(spin * (1 + i * .4F) + i * 2), 1.2 - i * .5, cos(spin * (.8F + i * .3F) + i)).normalize();
+            c.ring(at, axis, size * (1.3F + i * .35F), .025F + size * .02F, 0, TWO_PI, i == 1 ? TOXIC : HEAT, alpha * .8F);
+        }
+    }
+
+    /** Fission Star charging: the core grows in the cupped hands while hot rings fall in on it. Bound to the caster. */
+    private static void critical(Canvas c, Active a, float t) {
+        Entity e = a.bound(c);
+        if (e == null) return;
+        float charge = Math.max(1, a.scale()), k = Mth.clamp(t / charge, 0, 1), f = Mth.clamp((a.piece().ticks - t) / 2, 0, 1);
+        Vec3 at = cupped(c, e);
+        bead(c, at, .06F + .16F * k, t * .2F, f * (.5F + .5F * k));
+        if (c.glow()) for (int i = 0; i < 3; i++) {
+            float phase = (t * (.05F + .1F * k) + i / 3F) % 1;
+            Vec3 axis = new Vec3(sin(i * 2.1F), 1, cos(i * 1.3F)).normalize();
+            c.ring(at, axis, 1.6F * (1 - phase) + .15F, .03F, 0, TWO_PI, i % 2 == 0 ? HEAT : WHITE_HOT, f * phase * (.4F + .5F * k));
+        }
+        if (c.glow() && k > .6F) {
+            // Arcs of heat jumping off it as it nears critical.
+            for (int i = 0; i < 3; i++) {
+                float ang = hash(a.seed(), (int) t + i * 7) * TWO_PI;
+                Vec3 d = new Vec3(cos(ang), hash(a.seed(), (int) t + i) - .5, sin(ang)).scale(.35 + .3 * k);
+                c.bolt(at, at.add(d), a.seed() + (int) t + i, .2F, .015F, EMBER, f * (k - .6F) * 2);
+            }
+        }
+    }
+
+    /** The thrown core drifting out, with a heat trail behind it and a ring on the ground under it showing its blast. */
+    private static void core(Canvas c, Active a, float t) {
+        Vec3 from = a.origin(), to = a.target();
+        float k = Mth.clamp(t / 2, 0, 1), now = now(c, t);
+        Vec3 at = from.lerp(to, k);
+        Vec3 back = from.subtract(to).normalize();
+        bead(c, at, .22F, now * .25F, 1);
+        if (c.glow()) {
+            c.line(at, at.add(back.scale(2.2)), .2F, HEAT, .5F, 0);
+            c.line(at, at.add(back.scale(1.2)), .07F, WHITE_HOT, .8F, 0);
+        }
+        // Where it would go off: a ring on the ground beneath.
+        var hit = c.level.clip(new net.minecraft.world.level.ClipContext(at, at.add(0, -12, 0), net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, net.minecraft.world.phys.shapes.CollisionContext.empty()));
+        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            Vec3 ground = hit.getLocation().add(0, .06, 0);
+            float near = 1 - Mth.clamp((float) (at.y - ground.y) / 12, 0, 1), r = a.scale();
+            if (c.glow()) {
+                c.ring(ground, UP, r, .07F, now * .05F, now * .05F + 4.6F, TOXIC, .45F * near + .15F);
+                c.ring(ground, UP, r * .2F, .05F, 0, TWO_PI, HEAT, .5F * near);
+            }
+            if (c.soft()) c.disc(ground, UP, r, TOXIC_DEEP, .1F * near, 0);
+        }
+    }
+
+    /** Fission Star going off: a white sphere bursting where it was, and the slam's blast on the ground under it. */
+    private static void criticalBlast(Canvas c, Active a, float t) {
+        Vec3 at = a.origin(), ground = a.target();
+        float r = Math.max(2, a.scale()), life = a.piece().ticks;
+        if (c.glow()) {
+            float k = out(t / 6), f = 1 - smooth(2, 12, t);
+            c.glow(at, r * (.4F + .9F * k), WHITE_HOT, f);
+            c.shell(at, r * k, r * k, r * k, Mth.PI, HEAT, .4F * f, .02F, Canvas.PLAIN, 0);
+            c.shell(at, r * k * .7F, r * k * .7F, r * k * .7F, Mth.PI, WHITE_HOT, .3F * f, .02F, Canvas.PLAIN, 0);
+        }
+        blast(c, ground, r, t, life, a.seed(), true);
     }
 
     private static float now(Canvas c, float t) { return c.level == null ? t : (c.level.getGameTime() % 24000L) + c.partial; }

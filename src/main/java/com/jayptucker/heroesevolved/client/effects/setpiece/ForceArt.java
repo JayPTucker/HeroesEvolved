@@ -397,6 +397,59 @@ final class ForceArt {
         }
     }
 
+    /**
+     * Bastion ({@code invisibility/Bastion}): a dome of force over the spot, a hexagonal lattice brightest where you see
+     * it edge-on, a sheen band climbing it, three arches crossing at the crown and a hard rim on the ground. The first
+     * sending (seed 0) raises it out of the ground with a flash. Origin the centre on the ground, scale the radius;
+     * re-sent each second.
+     */
+    static void bastion(Canvas c, Active a, float t) {
+        if (SetPieceClient.superseded(a, java.util.Set.of(com.jayptucker.heroesevolved.styles.Piece.FORCE_BASTION, com.jayptucker.heroesevolved.styles.Piece.FORCE_BASTION_BURST), c.level.getGameTime())) return;
+        Vec3 at = a.origin();
+        float r = Math.max(1, a.scale()), life = a.piece().ticks;
+        boolean first = a.seed() == 0;
+        float rise = first ? out(t / 8) : 1, alpha = (first ? 1 : Mth.clamp(t / 1.5F + .7F, 0, 1)) * Mth.clamp((life - t) / 2, 0, 1);
+        float time = clock(c, t);
+        if (!c.glow() && !c.soft()) return;
+        float ry = r * rise;
+        if (c.glow()) {
+            c.shell(at, r, ry, r, Mth.HALF_PI, FIELD, alpha * .36F, .03F, Canvas.hexes(9, .06F, .2F), time * .004F);
+            c.shell(at, r * 1.01F, ry * 1.01F, r * 1.01F, Mth.HALF_PI, EDGE, alpha * .5F, .35F, Canvas.hexes(9, .03F, 0), time * .004F);
+            // A sheen band climbing the dome.
+            float u = (time * .012F) % 1, phi = Mth.HALF_PI * (1 - u);
+            c.ring(at.add(0, ry * cos(phi), 0), UP, r * sin(phi), .12F, 0, TWO_PI, SHEEN, alpha * .45F * sin(u * PI));
+            // Three arches crossing at the crown.
+            for (int i = 0; i < 3; i++) {
+                float yaw = i * PI / 3 + time * .003F;
+                Vec3 axis = new Vec3(cos(yaw), 0, sin(yaw));
+                c.ring(at, axis, r, .025F, 0, PI, EDGE, alpha * .45F);
+            }
+            // The rim on the ground.
+            c.ring(at.add(0, .05, 0), UP, r, .1F, 0, TWO_PI, EDGE, alpha * .8F);
+            c.ring(at.add(0, .05, 0), UP, r, .35F, 0, TWO_PI, DEEP, alpha * .3F);
+            if (first && t < 5) c.glow(at.add(0, 1, 0), r * .7F, EDGE, .5F * (1 - t / 5));
+        }
+        if (c.soft()) c.disc(at.add(0, .04, 0), UP, r, DEEP, alpha * .06F, alpha * .12F);
+    }
+
+    /** Bastion bursting: the dome flies outward as a breaking cage, facets torn off it, a shock ring over the ground. */
+    static void bastionBurst(Canvas c, Active a, float t) {
+        Vec3 at = a.origin();
+        float reach = Math.max(1, a.scale()), life = a.piece().ticks, k = out(t / 8), fade = 1 - smooth(4, life, t);
+        if (c.glow()) {
+            if (t < 4) c.glow(at.add(0, 1, 0), 4 * (1 - t / 4) + 1, EDGE, .6F * (1 - t / 4));
+            c.shell(at, reach * k, reach * k * .7F, reach * k, Mth.HALF_PI, FIELD, .4F * fade, .03F, Canvas.hexes(9, .07F, .1F), t * .02F);
+            Vec3 ground = at.add(0, .06, 0);
+            c.ring(ground, UP, reach * k, .5F, 0, TWO_PI, DEEP, .3F * fade);
+            c.ring(ground, UP, reach * k, .16F, 0, TWO_PI, FIELD, .7F * fade);
+            c.ring(ground, UP, reach * k, .05F, 0, TWO_PI, EDGE, fade);
+        }
+        if (c.glow() && !minimal()) {
+            int n = detail() ? 24 : 12;
+            for (int i = 0; i < n; i++) facet(c, at.add(0, 1.5, 0), a.seed(), i, reach * .8F * k, t, reach * .06F, fade * .8F);
+        }
+    }
+
     private static void crush(Canvas c, Active a, float t) {
         if (gone(c, a, Piece.FORCE_SHATTER)) return;
         Vec3 at = bubbleAt(c, a);

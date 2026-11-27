@@ -148,7 +148,7 @@ public final class FlightSkillGameTests {
 
     @GameTest(template = "rewind_empty", batch = "flight.skills_persistence")
     public static void allEighteenNodesCanBePurchasedByBranchAndKeepSavedActionIds(GameTestHelper h) {
-        var nodes = SkillCatalog.nodes("flight");
+        var nodes = SkillCatalog.nodes("flight").stream().filter(n -> !n.signature()).toList();
         h.assertTrue(nodes.size() == 18 && nodes.stream().filter(SkillCatalog.Node::active)
                         .map(SkillCatalog.Node::id).collect(Collectors.toSet()).equals(ACTIVES),
                 "The redesign must retain all eighteen nodes and the six existing loadout IDs");

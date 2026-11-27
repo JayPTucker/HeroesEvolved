@@ -194,11 +194,9 @@ public final class SkillActionService {
     public static void forget(ServerPlayer player) {
         FIELDS.remove(player.getUUID());
         com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.forget(player);
-        com.jayptucker.heroesevolved.telekinesis.TelekineticArsenalService.forget(player);
     }
     public static void clear() {
         FIELDS.clear();
         com.jayptucker.heroesevolved.telekinesis.TelekinesisSkillService.clear();
-        com.jayptucker.heroesevolved.telekinesis.TelekineticArsenalService.clear();
     }
 }

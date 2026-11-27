@@ -210,6 +210,99 @@ final class QuakeArt {
     private static boolean minimal() { return Minecraft.getInstance().options.particles().get() == ParticleStatus.MINIMAL; }
 
     /**
+     * Epicenter ({@code quake/Epicenter}): the double-fisted strike flashes; eight faults race out to a jagged ring and
+     * glow brighter as the plates load (the warning); at {@code HEAVE} every wedge of ground tips up and out in slabs while
+     * a pressure ring rips outward; at {@code DROP} the slabs slam back and a dust ring rolls in to the centre. Origin the
+     * centre on the ground, scale the radius; the timings are {@code Epicenter}'s.
+     */
+    static void epicenter(Canvas c, Active a, float t) {
+        int heave = com.jayptucker.heroesevolved.quake.Epicenter.HEAVE, drop = com.jayptucker.heroesevolved.quake.Epicenter.DROP;
+        int seams = com.jayptucker.heroesevolved.quake.Epicenter.SEAMS;
+        float life = a.piece().ticks, r = Math.max(2, a.scale()), alpha = fade(t, life, .5F, 10);
+        int seed = a.seed();
+        Vec3 centre = a.origin(), floor = centre.add(0, .04, 0);
+        // The strike itself.
+        if (t < 8) {
+            float p = t / 8;
+            pressure(c, floor.add(0, .02, 0), UP, .3F + 2.4F * p, .1F, 1 - p, .1F, t);
+            if (c.glow() && t < 3) c.glow(centre.add(0, .6, 0), 1.6F, CORE, .7F * (1 - t / 3));
+            grit(c, centre.add(0, .2, 0), UP.scale(.5), minimal() ? 6 : 14, .8F, t, 10, seed);
+        }
+        // The faults: jagged seams racing out, then a ring joining their ends.
+        float run = smooth(0, 10, t), warn = smooth(4, heave, t), settle = smooth(drop + 4, life, t);
+        Vec3[] ends = new Vec3[seams];
+        for (int i = 0; i < seams; i++) {
+            float yaw = i * TWO_PI / seams + (hash(seed, i) - .5F) * .35F;
+            Vec3 dir = new Vec3(cos(yaw), 0, sin(yaw));
+            ends[i] = floor.add(dir.scale(r * (.93 + .1 * hash(seed, i + 40))));
+            Vec3 prev = floor;
+            for (int k = 1; k <= 5; k++) {
+                float u = k / 5F;
+                if (u > run + .001F) break;
+                Vec3 side = new Vec3(-dir.z, 0, dir.x);
+                Vec3 next = k == 5 ? ends[i] : floor.add(dir.scale(r * u)).add(side.scale((hash(seed, i * 7 + k) - .5) * .9));
+                crack(c, prev, next, seed + i * 11 + k, .1F + .05F * warn, alpha * (1 - settle * .6F));
+                if (c.glow() && t < drop + 2) {
+                    float pulse = (.5F + .5F * sin(t * (.5F + 1.5F * warn) + i)) * (.35F + .65F * warn);
+                    c.line(prev.add(0, .02, 0), next.add(0, .02, 0), .22F, DEEP, alpha * pulse * .6F, alpha * pulse * .6F);
+                    c.line(prev.add(0, .03, 0), next.add(0, .03, 0), .07F, CORE, alpha * pulse, alpha * pulse);
+                }
+                prev = next;
+            }
+        }
+        if (t > 8) for (int i = 0; i < seams; i++) {
+            Vec3 a0 = ends[i], b0 = ends[(i + 1) % seams];
+            Vec3 mid = a0.lerp(b0, .5).subtract(floor).scale(1.03).add(floor);
+            float show = smooth(8, 14, t) * alpha * (1 - settle * .6F);
+            crack(c, a0, mid, seed + 300 + i, .09F, show);
+            crack(c, mid, b0, seed + 400 + i, .09F, show);
+            if (c.glow() && t < heave) {
+                float pulse = .3F + .7F * warn;
+                c.line(a0.add(0, .02, 0), mid.add(0, .02, 0), .05F, WAVE, show * pulse, show * pulse);
+                c.line(mid.add(0, .02, 0), b0.add(0, .02, 0), .05F, WAVE, show * pulse, show * pulse);
+            }
+        }
+        // The plates loading: rumble rings creeping in from the rim.
+        if (t < heave) for (int i = 0; i < 2; i++) {
+            float u = frac(t / 12F + i * .5F);
+            pressure(c, floor.add(0, .03, 0), UP, r * (1 - u) + .3F, .05F, alpha * warn * u * .6F, .04F, t + i);
+        }
+        // The heave: every wedge tips up and out in slabs, then they slam back at the drop.
+        if (t >= heave - 1) {
+            float up = smooth(heave - 1, heave + 4, t), down = smooth(drop - 1, drop + 3, t);
+            float tilt = up * (1 - down), lift = tilt * .7F;
+            if (c.solid()) for (int i = 0; i < seams; i++) {
+                float yaw = (i + .5F) * TWO_PI / seams;
+                Vec3 dir = new Vec3(cos(yaw), 0, sin(yaw));
+                for (int k = 0; k < 4; k++) {
+                    float rr = r * (.22F + .22F * k), size = .45F + .18F * k;
+                    float wob = (hash(seed, i * 5 + k) - .5F) * .3F;
+                    Vec3 at = floor.add(dir.scale(rr)).add(0, lift * (.6 + .25 * k) - .12 * down * (1 - smooth(drop + 3, drop + 10, t)) - .1, 0);
+                    c.box(at, size, .22F, size * .8F, -yaw + wob, -(.6F + .5F * hash(seed, i + k * 9)) * tilt, wob * 2 * tilt, k % 2 == 0 ? STONE : CRACK, 1);
+                }
+            }
+            if (t < heave + 12) {
+                float p = smooth(heave, heave + 12, t);
+                pressure(c, floor.add(0, .4, 0), UP, .5F + r * 1.15F * p, .12F, alpha * (1 - p), .08F, t);
+                if (c.glow() && t < heave + 3) c.glow(centre.add(0, 1, 0), r * .5F, WAVE, .5F * (1 - (t - heave) / 3));
+                for (int i = 0; i < seams; i++) {
+                    float yaw = i * TWO_PI / seams;
+                    grit(c, floor.add(cos(yaw) * r * .55, .2, sin(yaw) * r * .55), UP.scale(1.4), minimal() ? 3 : 7, r * .25F, t - heave, 16, seed + i);
+                }
+            }
+        }
+        // The drop: a dust ring rolling in to the centre.
+        if (t >= drop) {
+            float p = smooth(drop, drop + 12, t);
+            pressure(c, floor.add(0, .1, 0), UP, r * (1 - p) + .3F, .1F, alpha * (1 - p * .7F), .1F, t);
+            for (int i = 0; i < seams; i++) {
+                float yaw = (i + .5F) * TWO_PI / seams;
+                grit(c, floor.add(cos(yaw) * r * (1 - p) * .9, .15, sin(yaw) * r * (1 - p) * .9), UP.scale(.3), minimal() ? 2 : 5, .5F, t - drop, 12, seed + 50 + i);
+            }
+        }
+    }
+
+    /**
      * The alternate finishers ({@code quake/QuakeFinishers}). Fault Line: a stomp ring at her feet, a crack running along
      * the ground to the foe, slabs tilting up round it as it heaves, then folding in over it in dust. Shatter Point:
      * pressure rings shivering on the body, cracks of light spreading over it, then a burst into a ring of dust. Origin
