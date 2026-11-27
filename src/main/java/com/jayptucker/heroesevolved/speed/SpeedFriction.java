@@ -90,7 +90,7 @@ public final class SpeedFriction {
 
     /**
      * Heat a tick from a Cyclone at {@code setting} of the runner's {@code fastest}. The laps are a fixed path round a
-     * 6.5-block ring (about 55 blocks a second at every setting), so measuring them as a run burned even the slowest
+     * 6.5-block ring (about 35 to 115 blocks a second, by setting), so measuring them as a run burned even the slowest
      * vacuum in under two seconds. The setting is what the runner chose, so it decides the heat.
      */
     public static float cycloneHeat(int setting, int fastest) {

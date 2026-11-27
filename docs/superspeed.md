@@ -107,18 +107,34 @@ Lightspeed spends all your Momentum.
 | G | 1 (Level 1) | **Accelerate** | Toggle, then sprint. Scroll while sprinting to adjust speed. Walk or crouch for precision. Press again to stop. | Free; 3 stamina per running second |
 | H | 1 (Level 1) | **Blitz** | Rush the enemy you look at, up to 12 + 2 per tier blocks, and land four blows in a fraction of a second. **Press again within a moment** and you are already on the next enemy within 10 blocks, up to the tier in extra links (six enemies at tier 5). 30 Momentum makes every blow 2 harder. With no one in sight it is a straight **dash**, the old Quickstep. | 14 / 2 s; chained presses are free |
 | Z | 2 (Level 3) | **Snatch** | In one blink, take every dropped item within reach (up to 16 stacks), pluck enemy shots out of the air (arrows go in your pocket), and take the weapon from the hand you look at. Another player's weapon is knocked to their feet instead. An afterimage holds your place: to anyone watching, you never moved. | 20 / 10 s |
-| X | 4 (Level 10) | **Cyclone** | Run rings around where you stand for three seconds. You are seen out on the ring, running laps, not standing in the middle. The wind drags enemies around and up, flings their shots away and hurts them every half second, then throws them all up and out. **Hold the key** for nine and a half seconds and the ring rises into a **tornado** (see below). **Scroll** while it runs to set its speed (1 up to your fastest run setting, starting at your current one): at **1-2** it's a **vacuum** that drags the air out of the ring, so whatever is caught is held where it is, can't breathe and suffocates, and burns out, and it never rises (held, it lasts up to ten seconds for stamina each second); at **3 and up** it's the wind, harder the faster, and rises when held. Slow an unanchored tornado back to 2 and it comes down into a vacuum. It never rises round a radioactive player or a villager in meltdown. A ring on the HUD shows its speed: VACUUM, WIND, TORNADO or NO LIFT. | 30 to start + 4/s while active / 12 s |
+| X | 4 (Level 10) | **Cyclone** | Run rings around where you stand for three seconds. You are seen out on the ring, running laps, not standing in the middle, and your view pulls back so you can watch yourself run them. The wind drags enemies around and up, flings their shots away and hurts them every half second, then throws them all up and out. **Hold the key** for nine and a half seconds and the ring rises into a **tornado** (see below). **Scroll** while it runs to set its speed (1 up to your fastest run setting, starting at your current one): at **1-2** it's a **vacuum** that drags the air out of the ring, so whatever is caught is held where it is, can't breathe and suffocates, and burns out, and it never rises (held, it lasts up to ten seconds for stamina each second); at **3 and up** it's the wind, harder the faster, and rises when held. Slow an unanchored tornado back to 2 and it comes down into a vacuum. It never rises round a radioactive player or a villager in meltdown. A ring on the HUD shows its speed: VACUUM, WIND, TORNADO or NO LIFT. | 30 to start + 4/s while active / 12 s |
 | Shift + X | 4 (Level 10) | **Wind Arms** | Spin both arms out in front so fast they become two funnels of wind, for as long as you hold the key (up to three seconds). **Look ahead** and everything in front of you, out to 14 blocks, is blown away (harder the closer it is): creatures, dropped items, primed TNT and TNT minecarts. Shots flying into the funnels are turned round, blown back the way they came at their own speed, and become yours: arrows, potions, a ghast's fireball (back at the ghast), a wither skull, an EMP grenade, and TaCZ bullets and explosive rounds, which are caught even though they cross the whole funnel in a single tick. A shot from behind still hits your back, and your friends' shots pass. A puff of air and a gold streak show where each one turned. Clouds are carried off: a lingering potion's or dragon's breath cloud drifts away and thins until it is gone, and smoke (a smoke bomb, a campfire, an explosion's smoke) and any other particles in the funnels are torn out into a plume and fade within three seconds; pointed down, the downdraft throws them out in a ring. It does no harm and puts out flames. **Look down** (more than about 45 degrees) and the funnels lift you up to 7 blocks off the ground, where you hover, drifting the way you face; let go and you float down. | 12 to start + 4/s while held / 4 s (its own cooldown, separate from Cyclone's) |
 | V | 5 (Level 15) | **Lightspeed** | Streak up to 48 blocks forward along a clear path. Everything on the line takes 8 + tier + Momentum / 5, is set alight for two seconds and is thrown aside. You leave a scorched scar and a sonic boom where you stop. Spends all your Momentum. | 50 / 45 s |
 
 ### Cyclone and its tornado
 
-Your real body runs laps of the ring, about one every three-quarters of a second. Enemies can hit you
-where they see you running. Your camera stays at the eye so you can watch the whole ring; your arms
-are hidden in first person. The runner wears your skin, armour, held items and cape, leans into the run
-and toward the eye, with six fading afterimages strung out behind it. A blocked lap ends the Cyclone safely. A
-gold trail with lightning jumping off it follows the runner. Pale bands of wind are dragged round
-after it, and dust and grit circle the rim.
+Your real body runs laps of the ring. Enemies can hit you where they see you running. The runner wears your
+skin, armour, held items and cape, leans into the run and toward the eye, with fading afterimages strung out
+behind it. A blocked lap ends the Cyclone safely. A gold trail with lightning jumping off it follows the runner.
+Pale bands of wind are dragged round after it, and dust and grit circle the rim.
+
+- **Your view.** For the whole run, ring or tornado, your view glides back out of your eyes to stand behind the
+  ring, about 15 blocks back from its middle and 7 up, so you watch yourself running it. It turns when
+  you turn. When the ring rises into a tornado, the view glides further out and up with the funnel (about 26
+  blocks back and 12 up once it is full height), so you see the whole funnel, what it has caught and your runner
+  at its foot. When the run is over (or you step out of an anchored tornado) the view stays a moment on the end of
+  it, then glides back into your eyes. A containment run is watched the same way.
+- **Faster settings look faster.** The speed you scroll to is the speed you run, and you can see it:
+
+  | Setting | Laps | What you see |
+  | --- | --- | --- |
+  | 1 | a little under one a second | a short gold trail, a few afterimages, a slight lean |
+  | 3 | about one every three-quarters of a second | the trail a third of the way round, a string of afterimages |
+  | 6 | nearly three a second | the trail all but a full ring of light the height of your body, afterimages most of the way round, a hard lean, torn air streaking past, a bow of pressed air ahead of you, lightning crawling over you and the track glowing hot and scorched |
+
+  Your legs blur, the wind bands, dust and grit are dragged round faster, and the rush of the wind climbs in pitch.
+  Each step up leaves a gold boom ring hanging in the air where you broke into the faster pace; each step down
+  throws a skid of dust off your feet. The speed never jumps: you speed up or ease off over a fraction of a second.
 
 Keep the key held for **9½ seconds** and the ring **rises into a tornado**. A quick press still makes a three-second ring:
 
@@ -139,9 +155,6 @@ Keep the key held for **9½ seconds** and the ring **rises into a tornado**. A q
   still drains your stamina. Let go before anchoring, or run out of stamina at any point, and it comes down at once.
 - **Coming down.** It lifts off the ground and thins away from the bottom up, and everything it carried is
   thrown out of it from wherever it was, so the fall does the rest.
-- **Your view.** While you are running your own tornado, the camera steps well back from it, about 26
-  blocks behind it along the way you are looking and 12 up, and holds still, so you can see the whole funnel,
-  what it has caught and your runner circling its foot. It returns to you when you step out or it comes down.
 
 A quick press is still the three-second ring. The server's wind and the drawing share one shape
 (`TornadoShape`) and one wind (`TornadoWind`), and Flight's Tempest uses the same tornado in the sky's colours.

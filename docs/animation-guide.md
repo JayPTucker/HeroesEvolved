@@ -49,9 +49,11 @@ The Flash's lightning and Daphne's blur (`client/effects/SpeedEffects.java`,
 - **Running** leaves a gold ribbon at waist height with a jagged white-gold bolt through it. Lightning
   crawls over the body, more of it with more Momentum.
 - **Afterimages** are the player's real skin and pose, frozen in the world and fading. They aren't sprites.
-- **Cyclone** hides the real body at the eye and runs a stand-in with the player's skin, armour and cape round
-  the ring, leaning into the turn, with six fading ghosts behind it. Wind bands are dragged round after the
-  runner.
+- **Cyclone** carries the real body round the ring but draws a stand-in with the player's skin, armour and cape on
+  the same lap schedule every frame, leaning into the turn, with fading ghosts behind it. **The speed setting is
+  visible:** faster laps, a harder lean, more ghosts further round, a longer trail that fills the body's height,
+  torn-air streaks, a bow of pressed air, and at the top a hot, scorched track and lightning on the body. A step up
+  leaves a boom ring in the air; a step down, a skid of dust. Wind bands are dragged round after the runner.
 - **The tornado** is one shape (`TornadoShape`) shared by the server's physics and the drawing, so what is
   caught rides the wall you see. It pinches to a neck, flares into a lid of storm cloud, turns faster near the
   ground, and comes down by lifting off and thinning away from the bottom up.
@@ -189,7 +191,7 @@ geyser) follow it, each with its own character. Not every power should: a telepa
 | An animation timed by a state change | Bit flags in the power's visual-state payload; the client stamps the time a flag changes and animations read the phase's age | Flight's `FlightVisualStatePayload` flags and `ClientFlightVisualState.phaseAge` |
 | The player's body | `ArmPose` + `PowerArmPoses` (third person) + `FirstPersonArmGeometry` (first person), sent with `ArmPosePayload.show` | Wind Arms, Flight's coil, brace, roll, clap and cast, Quake strain, cryo lance |
 | The player seen elsewhere | A stand-in or afterimage rendering the real player model | Cyclone runner, afterimages, `TimeGhosts` |
-| The view | A camera mixin (`TornadoCameraMixin` + `TempestCamera`) | tornado's pulled-back camera |
+| The view | A camera mixin (`TornadoCameraMixin` + `TempestCamera`) | the pulled-back view for every Cyclone run and Tempest, gliding out and home |
 
 ### LightningRenderer (short strokes)
 

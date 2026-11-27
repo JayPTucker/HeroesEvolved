@@ -1,0 +1,25 @@
+// Cyclone's pulled-back camera (ring, speed changes, tornado, coming home) and Flight's Tempest camera, photographed in a
+// flat world from the player's own view. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('cycloneCameraPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/cyclone-camera-preview')
+                        programArguments.addAll('--width', '1100', '--height', '800')
+                        systemProperty('heroes.preview.cycloneCamera', 'true')
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('cycloneCameraPreviewClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

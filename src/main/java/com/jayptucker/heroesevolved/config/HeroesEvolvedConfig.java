@@ -669,7 +669,7 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("grabCooldownTicks", 20 * 5, 0, 20 * 60 * 10);
 
                 flightCycloneDurationSeconds = builder
-                        .comment("Active seconds of Tempest after its one-second wind-up.")
+                        .comment("Active seconds of Tempest once its funnel has formed from the flyer's laps.")
                         .defineInRange("cycloneDurationSeconds", 5, 1, 60);
 
                 flightCycloneRadius = builder
@@ -677,7 +677,7 @@ public final class HeroesEvolvedConfig {
                         .defineInRange("cycloneRadius", 8.0D, 1.0D, 32.0D);
 
                 flightCycloneOrbitRadius = builder
-                        .comment("Radius, in blocks, of the Flight user's path around Cyclone.")
+                        .comment("How far ahead, in blocks, Tempest touches down; the flyer then circles it at most 4.5 blocks out (less if this is smaller), outside its wall.")
                         .defineInRange("cycloneOrbitRadius", 6.5D, 1.0D, 32.0D);
 
                 flightCycloneOrbitSpeed = builder

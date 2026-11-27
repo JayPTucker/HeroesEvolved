@@ -3,6 +3,8 @@ package com.jayptucker.heroesevolved.client.effects.setpiece;
 import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient.Active;
 import com.jayptucker.heroesevolved.flight.FlightService;
 import com.jayptucker.heroesevolved.flight.FlightVisualGeometry;
+import com.jayptucker.heroesevolved.client.effects.intro.CloudMesh;
+import com.jayptucker.heroesevolved.speed.TornadoShape;
 import com.jayptucker.heroesevolved.network.ClientFlightVisualState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
@@ -328,11 +330,14 @@ final class FlightArt {
         }
     }
 
-    static void tempest(Canvas c, Vec3 center, float age, float alpha) {
+    /**
+     * The reach a Tempest pulls from, drawn on the ground as bands spiralling inward; {@code warning} (1 while it is
+     * still forming, fading once it pulls) makes them stronger, so targets see it coming.
+     */
+    static void tempest(Canvas c, Vec3 center, float age, float alpha, float warning) {
         if (c.solid()) return;
         float reach = (float) FlightService.TEMPEST_PULL;
         Vec3 ground = center.add(0, .13, 0);
-        float warning = 1 - smooth(FlightService.TEMPEST_WINDUP_TICKS - 3, FlightService.TEMPEST_WINDUP_TICKS + 4, age);
         int count = minimal() ? 3 : 6;
         for (int i = 0; i < count; i++) {
             float phase = i * TWO_PI / count + age * .035F;
@@ -343,6 +348,99 @@ final class FlightArt {
                         .18F, phase + progress * .6F, 1.05F, alpha * sin(progress * PI) * .52F);
             }
         }
+    }
+
+    /**
+     * A Tempest forming: the flyer laps the eye and the wind they whip up shows the funnel to come, then builds it.
+     * The plan first, a faint outline of the whole funnel ({@link #plan}), lit ring by ring from the bottom as the laps
+     * build the wind up to it. A wake runs round the orbit behind the flyer and condensation is laid down from them
+     * spiralling to the ground, more of it the further it has formed; a skirt of cloud gathers on the ground and a low
+     * foot rises from it; the reach it will pull from is warned on the ground. {@code flyer} is null before the laps
+     * begin. If a lap is blocked ({@code broke} 0 to 1, else -1), all of it blows apart and thins away.
+     */
+    static void forming(Canvas c, Vec3 center, Vec3 flyer, float progress, float age, float alpha, float broke, float ring) {
+        if (c.solid() || alpha < .003F) return;
+        float open = broke < 0 ? 0 : broke, a = alpha * (1 - open) * (1 - open), spread = 1 + open * 1.8F;
+        plan(c, center, ring, progress, a, spread, age);
+        if (flyer != null) {
+            Vec3 off = flyer.subtract(center);
+            float r = (float) Math.sqrt(off.x * off.x + off.z * off.z), at = (float) atan2(off.x, off.z);
+            float height = (float) (flyer.y + .9 - center.y);
+            // The wake round the orbit behind the flyer, longer as the laps spin up.
+            arc(c, new Vec3(center.x, flyer.y + .9, center.z), UP, r * spread, .2F + .12F * progress, at + .12F,
+                    1.4F + 2.2F * progress, a);
+            // Condensation dragged down from the flyer to the ground, a strand a lap, its top end on the flyer.
+            int strands = minimal() ? 1 : 1 + (int) (progress * 4.99F);
+            float twist = -(3.6F + 3F * progress);
+            for (int k = 0; k < strands; k++)
+                spiral(c, center.add(0, .2, 0), UP, height, 1.3F * spread, r * spread, at - twist + k * TWO_PI / strands, twist,
+                        .11F + .08F * progress, a * (.35F + .45F * progress));
+        }
+        if (c.soft()) {
+            CloudMesh.Shade cloud = Shades.smoke(c, CONDENSATION, 0);
+            int count = minimal() ? 6 : 8 + (int) (progress * 10);
+            for (int j = 0; j < count; j++) {
+                float ang = j * TWO_PI / count + age * (.06F + .18F * progress) + hash(31, j);
+                float rr = (ring * .9F + (hash(37, j) - .5F) * 2) * spread, size = (.5F + hash(41, j) * .5F) * (.6F + .6F * progress);
+                c.cloud(center.add(sin(ang) * rr, .2 + size * .25, cos(ang) * rr), size * 1.4F, size * .35F, size * 1.4F, j, ang,
+                        a * (.12F + .25F * progress), cloud);
+            }
+            // The foot of the funnel, rising to the height it will stand up from.
+            int foot = (int) (progress * 8);
+            for (int j = 0; j < foot; j++) {
+                float h = j * .38F, ang = j * 2.1F + age * .3F;
+                float rr = TornadoShape.radius(h, TornadoShape.height(0), ring) * .55F * spread;
+                c.cloud(center.add(sin(ang) * rr * .4, h + .3, cos(ang) * rr * .4), rr * .7F, .45F, rr * .7F, j + 50, ang,
+                        a * .22F * progress, cloud);
+            }
+        }
+        tempest(c, center, age, a * (.4F + .6F * progress), 1);
+    }
+
+    /**
+     * The plan of a Tempest's funnel: faint rings at its full shape, ring over ring with a few meridians, each ring
+     * lit with a bright seam as {@code lit} (0 to 1) reaches its height from the bottom. {@code spread} pushes it out as
+     * it blows apart.
+     */
+    static void plan(Canvas c, Vec3 center, float ring, float lit, float alpha, float spread, float age) {
+        if (c.solid() || alpha < .003F) return;
+        int rings = minimal() ? 5 : 10;
+        for (int i = 0; i < rings; i++) {
+            float u = (i + .5F) / rings, h = u * TornadoShape.HEIGHT;
+            float r = TornadoShape.radius(h, TornadoShape.HEIGHT, ring) * spread;
+            float reached = smooth(u - .1F, u, lit), seam = reached * (1 - smooth(u, u + .14F, lit));
+            Vec3 at = center.add(0, h, 0);
+            if (c.soft()) c.ring(at, UP, r, .07F + .05F * reached, 0, TWO_PI, VAPOR, alpha * (.1F + .22F * reached));
+            if (c.glow()) {
+                c.ring(at, UP, r, .025F, 0, TWO_PI, CORE, alpha * (.12F + .26F * reached));
+                if (seam > .01F) c.ring(at, UP, r, .1F, 0, TWO_PI, CORE, alpha * .75F * seam);
+            }
+        }
+        if (minimal() || !c.glow()) return;
+        for (int m = 0; m < 6; m++) {
+            float ang = m * TWO_PI / 6 + age * .01F;
+            Vec3[] p = new Vec3[12];
+            for (int k = 0; k < 12; k++) {
+                float h = k / 11F * TornadoShape.HEIGHT, r = TornadoShape.radius(h, TornadoShape.HEIGHT, ring) * spread;
+                p[k] = center.add(sin(ang) * r, h, cos(ang) * r);
+            }
+            c.ribbon(p, .02F, CORE, alpha * .16F, alpha * .05F);
+        }
+    }
+
+    /**
+     * The moment a Tempest forms ({@code built} ticks ago): a bright seam runs out round its foot and a ring of pressed
+     * air bursts outward, while the plan's lit outline fades as the real funnel rises inside it.
+     */
+    static void formed(Canvas c, Vec3 center, float ring, float built, float alpha) {
+        if (c.solid() || built > 20) return;
+        plan(c, center, ring, 1, alpha * (1 - smooth(2, 20, built)), 1, built);
+        float k = Math.clamp(built / 10, 0, 1);
+        if (k >= 1) return;
+        float r = ring * (.6F + 1.4F * (1 - (1 - k) * (1 - k)));
+        if (c.glow()) c.ring(center.add(0, .25, 0), UP, r, .08F, 0, TWO_PI, CORE, alpha * (1 - k));
+        if (c.soft()) c.ring(center.add(0, .25, 0), UP, r * 1.2F, .45F, 0, TWO_PI, VAPOR, alpha * .5F * (1 - k));
+        arc(c, center.add(0, 8.9, 0), UP, (float) FlightService.TEMPEST_TIGHT_ORBIT * (1 + k), .3F, built * .2F, TWO_PI, alpha * (1 - k));
     }
 
     private static void gather(Canvas c, int id, Vec3 center, Vec3 look, float age) {

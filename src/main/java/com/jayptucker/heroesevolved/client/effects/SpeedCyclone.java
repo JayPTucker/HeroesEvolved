@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.client.effects;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.network.SpeedCyclonePayload;
+import com.jayptucker.heroesevolved.speed.CycloneGeometry;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -34,10 +35,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Cyclone as everyone sees it: the speedster is not standing at the eye of their own wind, they are the blur
- * running laps round its rim, leaning into the turn with a string of fading afterimages behind them. Their body
- * (and the camera, for them) stays at the eye; it is hidden there, and a stand-in with their skin, armour and
- * cape runs the ring instead. The wind and the tornado are drawn by {@code SpeedArt} from the same clock.
+ * Cyclone as everyone sees it: the speedster is the blur running laps round the rim of their own wind, leaning into
+ * the turn with a string of fading afterimages behind them. Their real body is carried round the ring by the server
+ * (so it can be hit where it is seen) but is not drawn: a client hears of a teleported body only once a tick, so it
+ * would jump a whole stride each tick. A stand-in with their skin, armour and cape runs the ring instead, on the
+ * same {@link CycloneGeometry.Laps} schedule the server moves the body along, every frame. The faster the Cyclone's
+ * setting, the faster those laps, the harder the lean and the longer the string of afterimages. The wind and the
+ * tornado are drawn by {@code SpeedArt} from the same clock, and the runner's own view is pulled back to watch it
+ * ({@code TempestCamera}).
  */
 @EventBusSubscriber(modid = HeroesEvolved.MOD_ID, value = Dist.CLIENT)
 public final class SpeedCyclone {
@@ -49,6 +54,13 @@ public final class SpeedCyclone {
     public static final float STOP_TICKS = 80;
     private static final int GHOSTS = 6;
     private static final float GHOST_GAP = 0.2F;
+    /** A speedster's afterimages: how many at the slowest setting and how many more at the fastest, and ticks apart. */
+    private static final int GHOSTS_SLOW = 5, GHOSTS_MORE = 7;
+    private static final float GHOST_TICKS = 0.5F;
+    /** Ticks a new schedule takes to absorb the little it differs from the one the client was already running. */
+    private static final float BLEND_TICKS = 6;
+    /** How fast a runner is taken to be when nothing says (a containment run): the old fixed pace, setting 3. */
+    private static final float USUAL_PACE = CycloneGeometry.pace(CycloneGeometry.LAP_SPEED);
 
     /** One cyclone on this client's clock. */
     public static final class View {
@@ -71,7 +83,26 @@ public final class SpeedCyclone {
             return failAt == Long.MIN_VALUE ? 0 : Mth.clamp((now - failAt + partial) / STOP_TICKS, 0, 1);
         }
         Puppet puppet;
+        /** A speedster's laps, as the server last said (null for every other style). */
+        public CycloneGeometry.Laps laps;
+        /** What the drawn angle still differs from the new schedule by, and when that difference began to fade. */
+        float blend; long blendAt = Long.MIN_VALUE;
+        /** The last time the runner broke into a faster or slower pace (or MIN), and how far into the run that was. */
+        public long surgeAt = Long.MIN_VALUE, brakeAt = Long.MIN_VALUE;
+        public float surgeAge, brakeAge;
+        /** A Tempest: when its flyer began lapping the eye to form the funnel (MIN before they start). */
+        public long formStart = Long.MIN_VALUE;
         View(int entity) { this.entity = entity; }
+
+        /**
+         * How far a Tempest's funnel has formed from its flyer's laps, 0 to 1 (1 once it has risen, -1 before they
+         * start lapping).
+         */
+        public float forming(long now, float partial) {
+            if (rose()) return 1;
+            if (formStart == Long.MIN_VALUE) return -1;
+            return Mth.clamp((now - formStart + partial) / com.jayptucker.heroesevolved.flight.FlightService.TEMPEST_FORM_TICKS, 0, 1);
+        }
 
         public boolean ended() { return end != Long.MAX_VALUE; }
         public boolean rose() { return tornado != Long.MIN_VALUE; }
@@ -84,8 +115,12 @@ public final class SpeedCyclone {
         /** Where it is between ticks. */
         public Vec3 at(float partial) { return previous.lerp(center, partial); }
         public float angle(float age) {
-            if (style == SpeedCyclonePayload.SPEED)
-                return com.jayptucker.heroesevolved.speed.CycloneGeometry.angle(phase, age);
+            if (style == SpeedCyclonePayload.SPEED && laps != null) {
+                float angle = laps.angle(age);
+                if (blendAt == Long.MIN_VALUE) return angle;
+                float k = 1 - (age - (blendAt - start)) / BLEND_TICKS;
+                return k <= 0 ? angle : angle + blend * Math.min(1, k);
+            }
             // A containment run goes round about twice as fast as any Cyclone.
             boolean contain = style == SpeedCyclonePayload.CONTAIN || style == SpeedCyclonePayload.CONTAIN_FAIL;
             float lap = contain ? LAP_SPEED * 2.1F : LAP_SPEED;
@@ -104,11 +139,28 @@ public final class SpeedCyclone {
         }
         /** Where the runner is on the ring at this age. */
         public Vec3 runner(float age) {
-            if (style == SpeedCyclonePayload.SPEED)
-                return com.jayptucker.heroesevolved.speed.CycloneGeometry.runner(center, radius, phase, age);
             float a = angle(age);
+            if (style == SpeedCyclonePayload.SPEED) {
+                // Opening out from the eye over the first ticks, as the server carries the body.
+                float ramp = Mth.clamp(age / CycloneGeometry.SPIN_UP, 0, 1);
+                ramp = ramp * ramp * (3 - 2 * ramp);
+                return center.add(Mth.cos(a) * radius * ramp, 0, Mth.sin(a) * radius * ramp);
+            }
             return center.add(Mth.cos(a) * radius, 0, Mth.sin(a) * radius);
         }
+
+        /** Radians a tick round the ring at this age (a containment run counts as the old pace). */
+        public float omega(float age) {
+            return style == SpeedCyclonePayload.SPEED && laps != null ? laps.omega(age) : CycloneGeometry.LAP_SPEED;
+        }
+
+        /** How fast the runner is going, 0 at the slowest setting to 1 at the fastest, for everything drawn to follow. */
+        public float pace(float age) {
+            return style == SpeedCyclonePayload.SPEED && laps != null ? CycloneGeometry.pace(laps.omega(age)) : USUAL_PACE;
+        }
+
+        /** True for a speedster's own run, which has a schedule to draw it on. */
+        public boolean scheduled() { return style == SpeedCyclonePayload.SPEED && laps != null; }
     }
 
     /** A stand-in for the runner: their profile (so their skin and cape), never added to the world. */
@@ -146,6 +198,8 @@ public final class SpeedCyclone {
             v.phase = owner == null ? 0 : (owner.getYRot() + 90) * Mth.DEG_TO_RAD;
             VIEWS.put(p.entity(), v);
         } else if (Math.abs(now - p.age() - v.start) > 3) v.start = now - p.age();
+        if (p.laps() != null) laps(v, p.laps(), now);
+        if (p.forming() >= 0 && (v.formStart == Long.MIN_VALUE || Math.abs(now - p.forming() - v.formStart) > 3)) v.formStart = now - p.forming();
         if (v.goal == Vec3.ZERO || v.goal.distanceToSqr(p.center()) > 64) { v.center = p.center(); v.previous = p.center(); }
         v.goal = p.center();
         v.free = p.free();
@@ -158,6 +212,24 @@ public final class SpeedCyclone {
             else if (v.held == Long.MIN_VALUE || Math.abs(now - p.tornadoAge() - v.held) > 3) v.held = now - p.tornadoAge();
         } else if (p.tornadoAge() >= 0 && (!v.rose() || Math.abs(now - p.tornadoAge() - v.tornado) > 3)) v.tornado = now - p.tornadoAge();
         v.heard = now;
+    }
+
+    /**
+     * A new schedule for a speedster's laps. The client was a little behind the server's change (by the time the
+     * packet took), so the difference is faded out over a few ticks rather than jumped; a faster or slower pace is
+     * stamped for the drawing's boom ring or skid.
+     */
+    private static void laps(View v, CycloneGeometry.Laps laps, long now) {
+        CycloneGeometry.Laps before = v.laps;
+        float age = now - v.start;
+        if (before != null && !before.equals(laps)) {
+            float drawn = v.angle(age), next = laps.angle(age);
+            float off = (float) Math.IEEEremainder(drawn - next, Mth.TWO_PI);
+            if (Math.abs(off) < 1.5F) { v.blend = off; v.blendAt = now; }
+            if (laps.target() > before.target() + 1e-3F) { v.surgeAt = now; v.surgeAge = age; }
+            else if (laps.target() < before.target() - 1e-3F) { v.brakeAt = now; v.brakeAge = age; }
+        }
+        v.laps = laps;
     }
 
     /** Is this entity running a cyclone right now (so its body at the eye is hidden)? */
@@ -180,8 +252,9 @@ public final class SpeedCyclone {
             // A steered Tempest glides to where the server has it.
             v.previous = v.center;
             v.center = v.center.lerp(v.goal, 0.35);
-            // Legs going as fast as they can carry a body round the ring.
-            if (v.puppet != null && !v.ended() && !v.free) v.puppet.walkAnimation.update(2.2F * (1 - v.stillness(now, 0)), 1);
+            // Legs going as fast as they can carry a body round the ring: a blur at the top settings.
+            float stride = Mth.clamp(v.omega(v.age(now, 0)) / CycloneGeometry.LAP_SPEED, 0.7F, 1.7F);
+            if (v.puppet != null && !v.ended() && !v.free) v.puppet.walkAnimation.update(2.2F * stride * (1 - v.stillness(now, 0)), 1);
         }
     }
 
@@ -216,10 +289,14 @@ public final class SpeedCyclone {
         else ghosts(mc, camera, partial, now);
     }
 
-    /** The lean of a body running the ring: forward into the run and in toward the eye. */
-    static Quaternionf lean(float angle) {
+    /**
+     * The lean of a body running the ring: forward into the run and in toward the eye, harder the faster they go
+     * (about 20 degrees at the slowest setting, 36 at the fastest).
+     */
+    static Quaternionf lean(float angle, float pace) {
+        float forward = 0.22F + 0.16F * pace, inward = 0.26F + 0.24F * pace;
         float fx = -Mth.sin(angle), fz = Mth.cos(angle), ix = -Mth.cos(angle), iz = -Mth.sin(angle);
-        float tx = fx * 0.26F + ix * 0.32F, tz = fz * 0.26F + iz * 0.32F, tilt = Mth.sqrt(tx * tx + tz * tz);
+        float tx = fx * forward + ix * inward, tz = fz * forward + iz * inward, tilt = Mth.sqrt(tx * tx + tz * tz);
         return new Quaternionf().rotationAxis(tilt, tz / tilt, 0, -tx / tilt);
     }
 
@@ -240,13 +317,14 @@ public final class SpeedCyclone {
                 Puppet puppet = v.puppet;
                 puppet.dress(owner);
                 float age = v.age(now, partial), angle = v.angle(age), yaw = yaw(angle);
-                Vec3 at = v.style == SpeedCyclonePayload.SPEED ? owner.getPosition(partial)
+                // A speedster's body is where the schedule has it this frame (the server carries it there each tick).
+                Vec3 at = v.scheduled() ? v.runner(age)
                         : v.runner(age).add(0, owner.getY() - v.center.y > 0 ? Math.min(0.5, owner.getY() - v.center.y) : 0, 0);
                 place(puppet, at, yaw);
                 pose.pushPose();
                 pose.translate(at.x - camera.x, at.y - camera.y, at.z - camera.z);
                 // A runner who has stopped straightens up and stands.
-                pose.mulPose(lean(angle).slerp(new Quaternionf(), v.stillness(now, partial)));
+                pose.mulPose(lean(angle, v.pace(age)).slerp(new Quaternionf(), v.stillness(now, partial)));
                 dispatcher.render(puppet, 0, 0, 0, yaw, partial, pose, buffers, dispatcher.getPackedLightCoords(puppet, partial));
                 pose.popPose();
             }
@@ -283,16 +361,22 @@ public final class SpeedCyclone {
             var parts = SpeedAfterimages.parts(m);
             float age = v.age(now, partial);
             float limb = puppet.walkAnimation.position(partial);
-            for (int k = GHOSTS; k >= 1; k--) {
-                float angle = v.angle(age) - k * GHOST_GAP, yaw = yaw(angle);
-                if (age < k * 1.5F) continue;
-                Vec3 at = v.center.add(Mth.cos(angle) * v.radius, 0, Mth.sin(angle) * v.radius);
+            // A speedster's afterimages are where they really were a moment ago, so the faster they run the further
+            // round the ring the string reaches, and the more of them there are: at the top setting, nearly a full ring.
+            boolean scheduled = v.scheduled();
+            float pace = v.pace(age), stride = Mth.clamp(v.omega(age) / CycloneGeometry.LAP_SPEED, 0.7F, 1.7F);
+            int count = scheduled ? GHOSTS_SLOW + Math.round(GHOSTS_MORE * pace) : GHOSTS;
+            for (int k = count; k >= 1; k--) {
+                float was = age - k * GHOST_TICKS;
+                if (scheduled ? was < 0.5F : age < k * 1.5F) continue;
+                float angle = scheduled ? v.angle(was) : v.angle(age) - k * GHOST_GAP, yaw = yaw(angle);
+                Vec3 at = scheduled ? v.runner(was) : v.center.add(Mth.cos(angle) * v.radius, 0, Mth.sin(angle) * v.radius);
                 if (at.add(0, 1, 0).distanceToSqr(camera) < 1.5 * 1.5) continue;
                 for (var part : parts) part.visible = true;
                 m.young = false; m.crouching = false; m.riding = false; m.attackTime = 0; m.swimAmount = 0;
                 m.leftArmPose = net.minecraft.client.model.HumanoidModel.ArmPose.EMPTY;
                 m.rightArmPose = net.minecraft.client.model.HumanoidModel.ArmPose.EMPTY;
-                m.setupAnim(puppet, limb - k * 1.6F, 1, puppet.tickCount + partial, 0, 12);
+                m.setupAnim(puppet, limb - k * 1.6F * (scheduled ? stride : 1), 1, puppet.tickCount + partial, 0, 12);
                 m.hat.visible = puppet.isModelPartShown(PlayerModelPart.HAT);
                 m.jacket.visible = puppet.isModelPartShown(PlayerModelPart.JACKET);
                 m.leftSleeve.visible = puppet.isModelPartShown(PlayerModelPart.LEFT_SLEEVE);
@@ -301,11 +385,11 @@ public final class SpeedCyclone {
                 m.rightPants.visible = puppet.isModelPartShown(PlayerModelPart.RIGHT_PANTS_LEG);
                 PoseStack pose = new PoseStack();
                 pose.translate(at.x - camera.x, at.y - camera.y, at.z - camera.z);
-                pose.mulPose(lean(angle));
+                pose.mulPose(lean(angle, pace));
                 pose.mulPose(Axis.YP.rotationDegrees(180 - yaw));
                 pose.scale(-0.9375F, -0.9375F, 0.9375F);
                 pose.translate(0, -1.501, 0);
-                SpeedAfterimages.draw(m, pose, ghostBuffers, puppet.getSkin().texture(), 0.42F * (1 - (k - 1) / (float) GHOSTS));
+                SpeedAfterimages.draw(m, pose, ghostBuffers, puppet.getSkin().texture(), (0.42F + 0.1F * pace) * (1 - (k - 1) / (float) count));
             }
         }
         ghostBuffers.endBatch();
