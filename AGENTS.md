@@ -53,7 +53,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Adding or changing any item, block, entity, mob, machine, recipe or disguise; JEI or Jade themselves | [compat.md](docs/agents/compat.md) (its checklist) |
 | Spawning, replacing or special-casing a villager; Minecraft Comes Alive | [mca.md](docs/agents/mca.md). **Never `EntityType.VILLAGER.create` plus `addFreshEntity`:** use `Villagers.actor` or `Villagers.enter` |
 | Dedicated servers, hosted worlds (LAN, Essential), packets and codecs, other mods' mixins, Essential | [servers.md](docs/agents/servers.md) |
-| Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
+| Writing, running or fixing game tests, or the effect geometry check | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |
 | A trailer, teaser or any video of the mod (shots, camera moves, slow motion, grade, titles, its music) | **the trailer skill**: [.claude/skills/minecraft-trailer/SKILL.md](.claude/skills/minecraft-trailer/SKILL.md), then the plan in [docs/trailer/storyboard.md](docs/trailer/storyboard.md) and the lessons in [previews.md](docs/agents/previews.md), "Filming the trailer". Its music: the skill's "Scoring" and [trailer-music.md](.claude/skills/minecraft-trailer/references/trailer-music.md) (researched trailer composition), or "A finished track instead" for a Suno track |
 

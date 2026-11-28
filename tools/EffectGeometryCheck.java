@@ -60,6 +60,22 @@ public class EffectGeometryCheck {
         public VertexConsumer setUv2(int u,int v) { return this; }
         public VertexConsumer setNormal(float x,float y,float z) { return this; }
     }
+    /**
+     * Runs checks of client code that reads the running client's world. Outside the game there is no client, and
+     * building a real one opens a window, so this puts in one allocated without running its constructor (every
+     * field empty, so no world, as between worlds in game) and takes it away again, so later checks have none.
+     */
+    static void withClientOutsideAWorld(Runnable checks) throws ReflectiveOperationException {
+        var instance = net.minecraft.client.Minecraft.class.getDeclaredField("instance");
+        instance.setAccessible(true);
+        if (instance.get(null) != null) throw new AssertionError("A client is already running");
+        var theUnsafe = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
+        theUnsafe.setAccessible(true);
+        Object unsafe = theUnsafe.get(null);
+        instance.set(null, unsafe.getClass().getMethod("allocateInstance", Class.class)
+                .invoke(unsafe, net.minecraft.client.Minecraft.class));
+        try { checks.run(); } finally { instance.set(null, null); }
+    }
     public static void main(String[] args) throws Exception {
         // Carry now distinguishes a reclining person, cradled cargo and an overhead lift.
         // Check the current seat/pivot contract rather than the retired side-carry offset API.
@@ -205,35 +221,38 @@ public class EffectGeometryCheck {
                 }
             } finally { flightBuffer.release(); }
         }
-        com.jayptucker.heroesevolved.network.ClientFlightVisualState.update(781, true, false, true, 4, 100 | 256);
-        if (!com.jayptucker.heroesevolved.network.ClientFlightVisualState.isFlightEnabled(781)
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 4
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.momentum(781) != 100
-                || !com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(781)
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isCharging(781))
-            throw new AssertionError("Client failed to retain selected Flight speed");
-        for (int phase : new int[]{0, 6, 12}) for (int side : new int[]{-1, 1}) {
-            int telemetry = 64 | 512 | (phase << 10) | (side < 0 ? 16384 : 0);
-            RegistryFriendlyByteBuf rollBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
-            try {
-                var source = new com.jayptucker.heroesevolved.network.FlightVisualStatePayload(781, true, false, true, 2, telemetry);
-                com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.encode(rollBuffer, source);
-                if (!source.equals(com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.decode(rollBuffer)))
-                    throw new AssertionError("Barrel Roll direction/phase did not round-trip");
-            } finally { rollBuffer.release(); }
-            com.jayptucker.heroesevolved.network.ClientFlightVisualState.update(781, true, false, true, 2, telemetry);
-            if (!com.jayptucker.heroesevolved.network.ClientFlightVisualState.isRolling(781)
-                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.rollDirection(781) != side
-                    || Math.abs(com.jayptucker.heroesevolved.network.ClientFlightVisualState.rollProgress(781) - phase / 12.0F) > .001)
-                throw new AssertionError("Client lost Barrel Roll direction or phase");
-        }
-        com.jayptucker.heroesevolved.network.ClientFlightVisualState.clear();
-        if (com.jayptucker.heroesevolved.network.ClientFlightVisualState.isFlightEnabled(781)
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 0
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.momentum(781) != 0
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(781)
-                || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isRolling(781))
-            throw new AssertionError("Flight wheel state leaked across worlds");
+        // ClientFlightVisualState stamps each animated phase with the client level's game time.
+        withClientOutsideAWorld(() -> {
+            com.jayptucker.heroesevolved.network.ClientFlightVisualState.update(781, true, false, true, 4, 100 | 256);
+            if (!com.jayptucker.heroesevolved.network.ClientFlightVisualState.isFlightEnabled(781)
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 4
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.momentum(781) != 100
+                    || !com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(781)
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isCharging(781))
+                throw new AssertionError("Client failed to retain selected Flight speed");
+            for (int phase : new int[]{0, 6, 12}) for (int side : new int[]{-1, 1}) {
+                int telemetry = 64 | 512 | (phase << 10) | (side < 0 ? 16384 : 0);
+                RegistryFriendlyByteBuf rollBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
+                try {
+                    var source = new com.jayptucker.heroesevolved.network.FlightVisualStatePayload(781, true, false, true, 2, telemetry);
+                    com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.encode(rollBuffer, source);
+                    if (!source.equals(com.jayptucker.heroesevolved.network.FlightVisualStatePayload.STREAM_CODEC.decode(rollBuffer)))
+                        throw new AssertionError("Barrel Roll direction/phase did not round-trip");
+                } finally { rollBuffer.release(); }
+                com.jayptucker.heroesevolved.network.ClientFlightVisualState.update(781, true, false, true, 2, telemetry);
+                if (!com.jayptucker.heroesevolved.network.ClientFlightVisualState.isRolling(781)
+                        || com.jayptucker.heroesevolved.network.ClientFlightVisualState.rollDirection(781) != side
+                        || Math.abs(com.jayptucker.heroesevolved.network.ClientFlightVisualState.rollProgress(781) - phase / 12.0F) > .001)
+                    throw new AssertionError("Client lost Barrel Roll direction or phase");
+            }
+            com.jayptucker.heroesevolved.network.ClientFlightVisualState.clear();
+            if (com.jayptucker.heroesevolved.network.ClientFlightVisualState.isFlightEnabled(781)
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.speedStep(781) != 0
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.momentum(781) != 0
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isDiving(781)
+                    || com.jayptucker.heroesevolved.network.ClientFlightVisualState.isRolling(781))
+                throw new AssertionError("Flight wheel state leaked across worlds");
+        });
         System.out.println("PASS: Wheel directions, all five Flight speed states, Momentum/maneuver telemetry and client world cleanup.");
         for (float radius : new float[]{20, 24}) for (boolean detail : new boolean[]{false, true})
                 for (float time : new float[]{0, 40, 10000}) for (Vec3 viewPosition : new Vec3[]{new Vec3(2, 3, 4), new Vec3(180, 100, -90)}) {
