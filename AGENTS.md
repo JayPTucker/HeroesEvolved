@@ -12,7 +12,7 @@ the first 32 KiB of AGENTS.md). This file holds what applies to every task. Ever
 
 - **`docs/agents/`**: how things are built and the patterns to reuse, by topic, with one file per power in
   `docs/agents/powers/`.
-- **`.claude/skills/`**: step-by-step skills for bosses and mobs, building, and armor. Claude loads them by itself;
+- **`.claude/skills/`**: step-by-step skills for bosses and mobs, building, armor, and trailers. Claude loads them by itself;
   other agents read the `SKILL.md` named in the table below.
 - **`docs/*.md`**: what the player sees, one page per power or system. These are the specifications.
 
@@ -55,6 +55,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Dedicated servers, hosted worlds (LAN, Essential), packets and codecs, other mods' mixins, Essential | [servers.md](docs/agents/servers.md) |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |
+| A trailer, teaser or any video of the mod (shots, camera moves, slow motion, grade, titles, its music) | **the trailer skill**: [.claude/skills/minecraft-trailer/SKILL.md](.claude/skills/minecraft-trailer/SKILL.md), then the plan in [docs/trailer/storyboard.md](docs/trailer/storyboard.md) and the lessons in [previews.md](docs/agents/previews.md), "Filming the trailer" |
 
 ### Powers
 
@@ -135,9 +136,9 @@ The user's favourite effects (November 2026) are Matter Assembly's, and new effe
 - `src/main/resources/data/heroesevolved/`: `blueprints/`, `power_balance.json`, `skill_trees.json`, tags, damage types.
 - `src/gametest/` (game tests) and `src/uitest/` (preview drivers) load only through init scripts in `tools/`, so they
   never ship in the jar.
-- `tools/`: init scripts for tests and previews, `balance.py`, `blueprint.py`, and the generators for every texture
-  and sound (`generate-*.py`, `Generate*.java`). **Generated files are changed by changing their generator**, never by
-  hand.
+- `tools/`: init scripts for tests and previews, `balance.py`, `blueprint.py`, the generators for every texture
+  and sound (`generate-*.py`, `Generate*.java`), and `trailer/` (the trailer's Blender edit, score and stills scripts).
+  **Generated files are changed by changing their generator**, never by hand.
 
 ## Commands
 
@@ -147,11 +148,16 @@ The user's favourite effects (November 2026) are Matter Assembly's, and new effe
 - **Previews:** `./gradlew runClient --init-script tools/<name>-preview.init.gradle`; screenshots land in
   `build/<name>-preview/screenshots/`. A new preview script applies `tools/preview-result.gradle` so it passes or fails
   honestly. Rules and the list: [previews.md](docs/agents/previews.md).
+- **Trailer:** film with `./gradlew runClient --init-script tools/trailer-preview.init.gradle -Pshots=<names>`, cut with
+  Blender 5.0 (`blender.exe -b --factory-startup -P tools/trailer/cut.py -- tools/trailer/teaser.json`). The trailer
+  skill has the rest.
 - **Checks GitHub also runs:** `python3 tools/blueprint.py validate <blueprints>`, `python3 tools/verify-skill-content.py`.
   After changing any cost: `py -3 tools/balance.py --check`.
 - **On this Windows machine** Python is `py -3` (or `python`, not `python3`), `JAVA_HOME` is already a Java 21 JDK, and
   `PYTHONIOENCODING=utf-8` is needed for scripts that print Greek letters. Write scripts to a file and run them; Python
-  pasted into a shell heredoc has had its `\n` escapes turned into real newlines.
+  pasted into a shell heredoc has had its `\n` escapes turned into real newlines. Blender 5.0 is in
+  `C:\Program Files\Blender Foundation\Blender 5.0\`; its bundled Python (`5.0\python\bin\python.exe`, numpy included)
+  also runs scripts when `py` is missing.
 
 ## Rules that apply everywhere
 

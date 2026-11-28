@@ -1,0 +1,33 @@
+// Films the trailer's shots (trailer/TrailerPreview) as 24 fps video frames with motion blur, in a normal world at
+// 1920x1080: frames in build/trailer-preview/film/<shot>/, one still a second in build/trailer-preview/screenshots/.
+// Then cut them with Blender: tools/trailer/cut.py (see docs/agents/previews.md, "Filming the trailer").
+// -Pshots=13-epicenter,ballista (names from trailer/Shots, with or without their number; all by default),
+// -Pseed=<world seed>, -Prate=<ticks a second while filming, default 1.5>.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('trailerPreview') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = project.file('build/trailer-preview')
+                        programArguments.addAll('--width', '1920', '--height', '1080')
+                        jvmArguments.addAll('-Xmx6G')
+                        systemProperty('heroes.preview.trailer', 'true')
+                        if (project.hasProperty('seed')) systemProperty('heroes.trailer.seed', project.property('seed'))
+                        if (project.hasProperty('rate')) systemProperty('heroes.trailer.rate', project.property('rate'))
+                        if (project.hasProperty('shots')) systemProperty('heroes.trailer.shots', project.property('shots'))
+                    }
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('trailerPreviewClasses')) }
+            // Pass when the driver finished and its checks and photographs are sound, not on the halt's exit code.
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

@@ -161,6 +161,90 @@ Write checks with `PreviewQuiet.check(prefix, ok, what)` and guard scene steps w
 they were routed through `report`). A script that compiles only its driver (`java.include(...)`) must also include
 `uitest/PreviewQuiet.java`, or it does not compile.
 
+## Filming the trailer
+
+The trailer ([storyboard](../trailer/storyboard.md)) is filmed in the game and cut in Blender, never generated. **How
+to add and cut a shot is the trailer skill** ([SKILL.md](../../.claude/skills/minecraft-trailer/SKILL.md)); this section
+keeps why it works the way it does. In short:
+
+1. **Film:** `./gradlew runClient --init-script tools/trailer-preview.init.gradle -Pshots=<names>` (driver
+   `trailer/TrailerPreview`, catalog `trailer/Shots`, flag `heroes.preview.trailer`). Frames land in
+   `build/trailer-preview/film/<shot>/` with a `shot.txt` (frame count, captures, markers); one still a second goes to
+   `screenshots/` for the audit. `tools/trailer/contact.py` tiles chosen raw frames of many shots into one sheet.
+2. **Cut:** `"C:/Program Files/Blender Foundation/Blender 5.0/blender.exe" -b --factory-startup -P tools/trailer/cut.py
+   -- tools/trailer/teaser.json` grades the frames, lays out cards, shots and the title from the edit file, writes
+   the cue sheet, generates the score (`tools/trailer/score.py`) and renders the MP4.
+3. **Look at it:** `tools/trailer/stills.py` saves chosen frames of the MP4 as half-size PNGs. Look at the card, the
+   shot and the title, not only the graded frames.
+
+What it paid to learn:
+
+- **Film slowed, blend to 24 fps.** `FilmRecorder` captures every rendered frame while the game runs at 1.5 ticks a
+  second, stamps it with `FilmCamera.now()` (client ticks plus the partial tick) and averages the captures inside each
+  video frame's half-frame shutter, which gives motion blur and lets slow motion (a playback speed per shot tick) still
+  blend several captures a frame. The recorder fails the run when more than a quarter of its frames only repeat the
+  last one. The log prints `TRAILER_REPEAT` with the clock jump that caused each.
+- **One tick rate for the whole shot.** Changing it mid-shot (to follow the playback speed) reached the client later
+  than the server, and the two clocks drifted.
+- **Write raw frames.** PNG encoding was slow enough that the writer pool fell behind and the render thread encoded
+  frames itself, stalling, so the clock jumped and frames repeated (52 of 252). The recorder writes raw RGB
+  (`00001.rgb`, top row first, size in `shot.txt`) and `cut.py` reads it with `np.fromfile`. That's 6 MB a frame, so
+  a whole trailer is about 15 GB under `build/`.
+- **Forgive the server's backlog before rolling.** After loading a new place the integrated server was 28 seconds behind
+  its own tick schedule. At a slow rate vanilla makes that up in a burst (it forgives a backlog only past about 15
+  seconds, and at most once a minute or so): 45 server ticks in the first 10 client ones, husks racing. The driver sets
+  `MinecraftServer.nextTickTimeNanos` to now by reflection (`TrailerPreview.resync`, this driver only), then rolls once
+  the server ticks one for one with the client and is under a second behind (`TRAILER_STEADY`). `TRAILER_CLOCK` lines
+  log both clocks and the backlog.
+- **A shot's moves run on the server's ticks** (`TrailerPreview.serverTick`, counted from the roll). With the clocks in
+  lockstep every marker lands on its planned frame. Markers, shakes and widenings go back to the client through a
+  queue. Every strike and dodge is a `PreviewQuiet.check`, so a refused one (`PyroCombat.strike` returning 0 for too
+  soon, -1 for can't fight) fails the run.
+- **Follow the subject, two speeds.** A camera circling a fixed point lost the fighter after a jet step and a flip.
+  `FilmCamera.play(move, target, rate, near)` carries the move with the fighter: the aim keeps up quickly, vertically
+  too (a lagging aim lost the flip off the top of the frame), the camera body trails (an operator panning before they
+  walk) and never comes within `near` blocks. A fighter faces their foes, so to see a face the arc must end on the
+  foes' side. The camera keeps 0.9 blocks over the ground under it and rises until it can see the subject's feet (a
+  follow drifted down a terrace and filmed the fighter's legs hidden behind its edge). `FilmCamera.widen` opens the
+  view for a big move: at 38 degrees only about 1.8 blocks of height fit inside the letterbox.
+- **Every clock is the film clock.** The camera move and the recorder's shutter count client ticks, so slow motion slows
+  the camera like a high-speed camera. The mod's art runs on game time, so it slows too; only sounds use real time (and
+  previews are silent).
+- **A moving camera is `TempestCamera.fix` every frame** (`FilmCamera`, from `RenderFrameEvent.Pre`), with the field of
+  view and roll set through `ViewportEvent`. No shipped code changes.
+- **Scout real land; a flat world is no trailer.** `Scout` asks the world generator for heights and biomes
+  (`getBaseHeight`, `getNoiseBiome`) without generating chunks, **in parallel and off the server thread** (each height
+  is a whole noise column, a millisecond or more; a serial scan of 22,000 places outlived its two-minute limit). The
+  first scan only covered 1,200 blocks of a mostly-sea seed, found nothing, and filmed the fighter underwater, where
+  `PyroCombat.canFight` refuses every strike (`-1`). The driver now fails a stage in water. It clears trees off the
+  stage, thins the grass on the fighting floor with a ragged edge (`Scout.thinGrass`), and keeps the scout's pick per
+  seed in `build/trailer-preview/scout-<seed>.txt` so a retake skips the 45-second scan (delete it to scout again).
+- **Reuse a preview's staging, not its camera.** The signature shots (`trailer/SignatureShot`) keep
+  `SignaturesPreview`'s places, foes and beats unchanged in the shot frame (`Stage.at`: the fighter facing +Z, turned
+  to face the sunset). Its cameras are wide stills at a field of view of 80, so a moving arc at 50 to 58 needs its own
+  spot: the Ballista's side view lost the fighter, and Mountain Armor's foes stood between the camera and the fighter
+  and filled half the frame. Over the shoulder down the line of action, and foes on the far side of the camera's line,
+  fixed both. Look at a contact sheet of every shot before cutting.
+- **Every shot starts clean** (`TrailerPreview.reset`): `Stage.clear` (actors, projectiles, drops), `Signatures.forget`
+  and the other powers' `forget`, cooldowns, effects and fire cleared, the power granted with
+  `HydroService.powerChanged` (or the last power's drawing stays), any running Ultimate stopped, and the shot's time of
+  day. Eight shots filmed in one eleven-minute run, eleven in twenty-five minutes, all in lockstep.
+- **Let an Ultimate direct.** The seven powers without a signature are filmed by their Offense Ultimate
+  (`trailer/UltimateShot`), and an Ultimate already flies a keyed camera made for it (`client/UltimateCamera`), which
+  gave better frames than any arc would: the shot plays no move of its own (`TempestCamera.fix` would win over it). The
+  Ultimate's letterbox bars are a tenth of the screen and the grade's are 12.8%, so they never show, nor does a label
+  drawn in the top corner (Hour Hand's "PRESENT"). A shot at dusk needs `"look": {"exposure": 1.1 to 1.2}` in the edit.
+- **Husks that walk in but never hit:** AI on (so knockback works), every goal removed, `setAggressive(true)` for raised
+  arms, steered each tick with `getNavigation().moveTo`. An invulnerable player is never targeted
+  (`Player.canBeSeenAsEnemy`), and a hit would flash the hero red, so the hero only has Resistance.
+- **The fighter turns like a mouse would:** the client sets the local player's yaw a little each tick
+  (`TrailerPreview.aim`), so the body turns smoothly; a server teleport snaps it.
+- **Blender 5.0.1 crashes when a script adds a strip modifier** (`StripModifiers.new` →
+  `relations_invalidate_cache`), so the grade (split tone, S-curve, glow, soft shoulder, vignette that spares light
+  sources, grain, 2.39:1 bars) is numpy in `cut.py`. The 5.0 API is `sequence_editor.strips` (not `sequences`),
+  `new_effect(..., length=)` and `image_settings.media_type = "VIDEO"`. Only 5.0 is installed (the 4.2 folder has
+  no executable).
+
 ## Photographing skills (`tools/skill-anim-preview.init.gradle`)
 
 `uitest/SkillAnimationsPreview` casts every Electrokinesis and Superspeed skill in a flat world and saves front, back
@@ -249,3 +333,5 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `client-mods-check.init.gradle` | the mod next to client mods you supply as jars (written for Essential): title screen, a power in use from the front, first person, the pause menu, the Powers screen ([servers.md](servers.md)) | `-PclientMods=a.jar;b.jar -PcheckMods=essential`; nothing is downloaded |
 | `multiplayer-check.init.gradle` | not a preview but two runs: `runServer` (a dedicated server that fires every power at the player who joins) and `runClient` (a client that joins it); photographs the client ([servers.md](servers.md)) | `-PcheckPort=N`; start the server first |
 | `suit-preview.init.gradle`, `body-preview.init.gradle`, `carry-preview.init.gradle` | protective suits; severed limbs and the downed body; carrying | |
+| **Trailer** | | |
+| `trailer-preview.init.gradle` | Films the trailer's shots (`trailer/Shots`: every power so far, by firebending, twelve signatures and seven Offense Ultimates) as 24 fps frames with motion blur in a normal world at 1920x1080 (see "Filming the trailer" and the trailer skill) | `-Pshots=epicenter,ballista`, `-Pseed`, `-Prate` (ticks a second while filming, 1.5) |
