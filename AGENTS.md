@@ -46,7 +46,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Village distress calls, the radio, villager meltdowns, overloads, Starfall (meteors), what villages remember, scars, rebuilding, the Company noticing players (attention, investigators, convoys, raids), the living radio, gifted villagers' work and favours, power traces, travellers on the road, villages that grow (notice boards, tiers, homes of your own, market days, leaving players' blocks alone) | [village-events.md](docs/agents/village-events.md) |
 | TaCZ guns, Forge Energy machines, the Ability Dampener | [weapons-and-dampener.md](docs/agents/weapons-and-dampener.md) |
 | Meltdown hazards, protective suits, HUD ring gauges | [hazards-and-suits.md](docs/agents/hazards-and-suits.md) |
-| Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat |
+| Sounds, music, OGG files, voice chat | [audio.md](docs/agents/audio.md): start from the user's reference library it describes (`C:\Users\jaypa\OneDrive\Desktop\Gemini Heroes Reborn Audio`), never ship any of it; [powers/telepathy.md](docs/agents/powers/telepathy.md) for voice chat. Real orchestral instruments: the CC0 sampler `tools/trailer/orchestra.py` (its section in audio.md) |
 | Costs, cooldowns, drains, unlock levels | "Stamina and balance" below, and [docs/stamina-balance.md](docs/stamina-balance.md) |
 | Mastery, Power Levels, max stamina, anything that rewards play (and stopping farms) | [progression.md](docs/agents/progression.md) |
 | Player guidance, the Guide tab, contextual tips, civilian journals, admin controls or debug commands | [guidance-and-admin.md](docs/agents/guidance-and-admin.md), [player-guidance.md](docs/player-guidance.md) |
@@ -55,7 +55,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Dedicated servers, hosted worlds (LAN, Essential), packets and codecs, other mods' mixins, Essential | [servers.md](docs/agents/servers.md) |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |
-| A trailer, teaser or any video of the mod (shots, camera moves, slow motion, grade, titles, its music) | **the trailer skill**: [.claude/skills/minecraft-trailer/SKILL.md](.claude/skills/minecraft-trailer/SKILL.md), then the plan in [docs/trailer/storyboard.md](docs/trailer/storyboard.md) and the lessons in [previews.md](docs/agents/previews.md), "Filming the trailer" |
+| A trailer, teaser or any video of the mod (shots, camera moves, slow motion, grade, titles, its music) | **the trailer skill**: [.claude/skills/minecraft-trailer/SKILL.md](.claude/skills/minecraft-trailer/SKILL.md), then the plan in [docs/trailer/storyboard.md](docs/trailer/storyboard.md) and the lessons in [previews.md](docs/agents/previews.md), "Filming the trailer". Its music: the skill's "Scoring" and [trailer-music.md](.claude/skills/minecraft-trailer/references/trailer-music.md) (researched trailer composition), or "A finished track instead" for a Suno track |
 
 ### Powers
 
@@ -137,7 +137,8 @@ The user's favourite effects (November 2026) are Matter Assembly's, and new effe
 - `src/gametest/` (game tests) and `src/uitest/` (preview drivers) load only through init scripts in `tools/`, so they
   never ship in the jar.
 - `tools/`: init scripts for tests and previews, `balance.py`, `blueprint.py`, the generators for every texture
-  and sound (`generate-*.py`, `Generate*.java`), and `trailer/` (the trailer's Blender edit, score and stills scripts).
+  and sound (`generate-*.py`, `Generate*.java`), and `trailer/` (the trailer's Blender edit, its composed score and orchestral sampler, a music
+  analyzer, stills).
   **Generated files are changed by changing their generator**, never by hand.
 
 ## Commands
@@ -149,8 +150,9 @@ The user's favourite effects (November 2026) are Matter Assembly's, and new effe
   `build/<name>-preview/screenshots/`. A new preview script applies `tools/preview-result.gradle` so it passes or fails
   honestly. Rules and the list: [previews.md](docs/agents/previews.md).
 - **Trailer:** film with `./gradlew runClient --init-script tools/trailer-preview.init.gradle -Pshots=<names>`, cut with
-  Blender 5.0 (`blender.exe -b --factory-startup -P tools/trailer/cut.py -- tools/trailer/teaser.json`). The trailer
-  skill has the rest.
+  Blender 5.0 (`blender.exe -b --factory-startup -P tools/trailer/cut.py -- tools/trailer/trailer.json`); add
+  `--score-only` to write only the music. `trailer-suno.json` is the same cut to a Suno track, measured first by
+  `tools/trailer/analyze.py`. The trailer skill has the rest.
 - **Checks GitHub also runs:** `python3 tools/blueprint.py validate <blueprints>`, `python3 tools/verify-skill-content.py`.
   After changing any cost: `py -3 tools/balance.py --check`.
 - **On this Windows machine** Python is `py -3` (or `python`, not `python3`), `JAVA_HOME` is already a Java 21 JDK, and

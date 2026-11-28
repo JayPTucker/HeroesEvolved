@@ -234,6 +234,32 @@ What it paid to learn:
   gave better frames than any arc would: the shot plays no move of its own (`TempestCamera.fix` would win over it). The
   Ultimate's letterbox bars are a tenth of the screen and the grade's are 12.8%, so they never show, nor does a label
   drawn in the top corner (Hour Hand's "PRESENT"). A shot at dusk needs `"look": {"exposure": 1.1 to 1.2}` in the edit.
+- **Story shots stage their own places at normal speed** (`trailer/StoryShots`, one class per place, each staged as
+  that place's preview stages it). `Shot.stage` goes there, `ready` says when it is built or open, `settle` is the
+  least wait, `leave` cleans up after the cut, and `impossible` skips a shot whose place cannot exist. The runner stages
+  at 20 ticks a second (Odessa's ruins build and the Last Day runs by the tick; at 1.5 they would take minutes) and
+  slows only once the place is ready and drawn. Their cameras are fixed `dolly` moves with no follow, because the
+  ground lift reads the surface heightmap and inside the bunker or Level 5 threw the camera through the ceiling.
+- **What each place needed** (every one cost a take):
+  - *The trailer world needs structures on* (`WorldOptions(seed, true, false)`): with them off there was no village to
+    find. The village is `findNearestMapStructure(StructureTags.VILLAGE, ...)` plus a search for its bell, kept per
+    seed in `village-<seed>.txt`.
+  - *The bunker's power comes back only when the waking player leaves their pod*, which a trailer's player never does:
+    `BunkerPower.start`, and about eight seconds for the wave of lights. On emergency power the hall filmed black.
+  - *A convoy reads only once it has marched* (about ten seconds after `Convoy.start`). Filmed at once it was one
+    agent among houses.
+  - *The End films in Creative*, as its preview does: the Unmaking killed a survival fighter, and the death screen
+    (a screen, which `hideGui` does not hide) covered the next shot. The Unmaking is the last phase's finale: cast in
+    phase one it barely showed (`TrailerEnd.finale`). The encounter's parts are package-private, so the helper lives
+    in `src/uitest/.../endgame/TrailerEnd`, as `EndgamePreview` does.
+  - *The Last Day* is `PrologueService.join`, then `skipTo(server, "evening" | "light", 0)` and readiness gated on
+    `PrologueService.age()` (the clash is at `LastDayFight.CLASH`, 574 ticks into the light). Anything filmed
+    elsewhere afterwards first leaves it with `skip` and `CryoChamberService.release`.
+  - *An awakening* needs what the awakening preview has: Normal difficulty, no Resistance, a hurt fighter and the
+    creeper close, or the blast is not a danger and nothing wakes.
+  - *No bare TaCZ rounds:* a bullet made without a gun has no start point, and `EntityKineticBullet.getDamage` crashed
+    the server when one hit after Still World ended. *Mob griefing is off* in the trailer world, so fireballs, creepers
+    and the Wither leave the next shot's ground alone.
 - **Husks that walk in but never hit:** AI on (so knockback works), every goal removed, `setAggressive(true)` for raised
   arms, steered each tick with `getNavigation().moveTo`. An invulnerable player is never targeted
   (`Player.canBeSeenAsEnemy`), and a hit would flash the hero red, so the hero only has Resistance.
@@ -334,4 +360,4 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `multiplayer-check.init.gradle` | not a preview but two runs: `runServer` (a dedicated server that fires every power at the player who joins) and `runClient` (a client that joins it); photographs the client ([servers.md](servers.md)) | `-PcheckPort=N`; start the server first |
 | `suit-preview.init.gradle`, `body-preview.init.gradle`, `carry-preview.init.gradle` | protective suits; severed limbs and the downed body; carrying | |
 | **Trailer** | | |
-| `trailer-preview.init.gradle` | Films the trailer's shots (`trailer/Shots`: every power so far, by firebending, twelve signatures and seven Offense Ultimates) as 24 fps frames with motion blur in a normal world at 1920x1080 (see "Filming the trailer" and the trailer skill) | `-Pshots=epicenter,ballista`, `-Pseed`, `-Prate` (ticks a second while filming, 1.5) |
+| `trailer-preview.init.gradle` | Films the trailer's shots (`trailer/Shots`: every power, by firebending, twelve signatures and seven Offense Ultimates, and the story in its own places, `trailer/StoryShots`) as 24 fps frames with motion blur in a normal world at 1920x1080 (see "Filming the trailer" and the trailer skill) | `-Pshots=epicenter,ballista`, `-Pseed`, `-Prate` (ticks a second while filming, 1.5) |

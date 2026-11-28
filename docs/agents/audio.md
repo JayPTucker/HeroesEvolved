@@ -183,3 +183,20 @@ bass and a rising sub. What the player hears is in [wither.md](../wither.md#musi
   thirds and fifths beat a few times a second in the low band. The aftermath measures 22% percussion against the
   reference's 11% though it has no drums to speak of; judge it by the spectrogram's blocks, not that number.
 
+## Reusable patterns from the trailer's score
+
+The trailer is scored with real orchestral samples. How to use them is in the trailer skill
+([SKILL.md](../../.claude/skills/minecraft-trailer/SKILL.md), "Scoring"), and the composition rules researched for it
+are in its [trailer-music.md](../../.claude/skills/minecraft-trailer/references/trailer-music.md).
+
+- **VSCO 2 CE is public domain (CC0)**, unlike the reference library: a sound rendered from it may ship. The library
+  itself (about 1 GB in `build/vsco2`) is never committed. `tools/trailer/orchestra.py` is a sampler over it (strings in
+  three styles, brass, harp, glock, piano, timpani, bass and tenor drums) that any generator can import for in-game
+  music too. Real recorded players beat additive synthesis for anything orchestral.
+- **Velocity picks a dynamic layer as well as a gain.** A pianissimo sample is quiet and soft, so parts written under
+  about 0.4 vanished after mastering (the prologue and the awakening's pulse measured -40 dB). Check each section's
+  RMS after rendering and raise the quiet ones, rather than turning the whole score up.
+- **A solo brass sample is not a section.** Play it two or three times, about 11 ms and 6 cents apart, spread a little.
+- **The library numbers octaves one lower** for most instruments, and not for all of them, so measure each one's pitch
+  and shift (`orchestra.measured`); tremolos are too noisy to measure.
+

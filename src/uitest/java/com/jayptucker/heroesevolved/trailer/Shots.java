@@ -35,7 +35,14 @@ final class Shots {
 
     private static Vec3 v(double x, double y, double z) { return new Vec3(x, y, z); }
 
+    /** The powers (Act II) and then the story's shots in their own places ({@link StoryShots}). */
     static List<Shot> all() {
+        var all = new java.util.ArrayList<>(powers());
+        all.addAll(StoryShots.all());
+        return all;
+    }
+
+    static List<Shot> powers() {
         return List.of(
                 // 10. Matter Assembly: the Ballista's blueprint, its parts flying in, built and shooting, folding home.
                 new SignatureShot("10-ballista", ModAbilities.MATTER_ASSEMBLY_ID, "matter_assembly_ballista", SUNSET, 74, p -> {

@@ -100,9 +100,15 @@ it). The shot names are the ones in `trailer/Shots`.
   through their own cameras. The powers reel `tools/trailer/powers.json` cuts all twenty into
   `build/trailer/heroes-evolved-powers.mp4` (38.5 s: a card, twenty cuts shrinking from about two seconds to one, the
   biggest blast last, a beat of black, the title). Its clip ranges are the frames to use in the full trailer.
-- Still to stage: shot 9 (an awakening), and Acts I and III and the finale, which need their own places (Odessa, the
-  bunker, Level 5, the Collection, a village, the End) rather than the hilltop. Each scene named in the tables shows
-  how it is set up.
+- **The story is filmed** in its own places (`trailer/StoryShots`): the Last Day's evening street, Ted's light and
+  Peter and Sylar's clash; the pod hall; Odessa's ruins from the street to the sky; the awakening; a Company convoy,
+  a village wildfire and Starfall in a real village; Level 5; the Collection; the Wither's breach; Still World; the
+  Unmaking and the Inheritance in the End; and the stinger's glass case.
+- **The full trailer** is `tools/trailer/trailer.json`, rendered to `build/trailer/heroes-evolved-trailer.mp4` (about
+  1:37). It runs every act in the order above, with the drop's stopped time (the `freeze` and `drop` cues) and the
+  stinger after the title.
+- Not filmed: Sylar coming for you at dusk (`SylarStory.comeFor`), and the light's white flash (the trailer cuts to
+  black instead). The convoy is the weakest shot: the agents read as scattered figures, so it is kept short.
 
 ## Still to decide
 
@@ -110,4 +116,6 @@ it). The shot names are the ones in `trailer/Shots`.
   would make every shot better.
 - **Shaders:** vanilla lighting is what the footage has. A shader mod (Iris on NeoForge) would add real shadows and
   light, if the user wants to install one.
-- **Music:** an original score from a generator script, or a licensed track the user supplies.
+- **Music:** the trailer has a composed orchestral score (`tools/trailer/compose.py`, on VSCO 2 CE samples, with the
+  mod's own power sounds on every impact), cut to its 96 bpm beat. A Suno track is the alternative to try:
+  [suno-prompt.md](suno-prompt.md) has the prompt and the times its sections should hit.

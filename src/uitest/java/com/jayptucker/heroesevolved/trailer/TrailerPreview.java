@@ -67,7 +67,7 @@ public final class TrailerPreview {
      * blends several captures): a rate changed mid-shot reaches the client later than the server, and the two drift.
      */
     private static final float RATE = Float.parseFloat(System.getProperty("heroes.trailer.rate", "1.5"));
-    private static final long SEED = Long.getLong("heroes.trailer.seed", 20261127L);
+    static final long SEED = Long.getLong("heroes.trailer.seed", 20261127L);
 
     private enum Phase { BOOT, STAGING, LOADING, SETTING, FILMING, DONE }
 
@@ -113,7 +113,8 @@ public final class TrailerPreview {
         List<Shot> all = Shots.all();
         if (wanted.isEmpty() || wanted.equals("all")) return all;
         Set<String> names = Set.of(wanted.split(","));
-        List<Shot> picked = all.stream().filter(s -> names.contains(s.name) || names.contains(s.name.replaceFirst("^\\d+-", ""))).toList();
+        // A shot answers to its whole name or to it without its storyboard number ("04b-the-clash" to "the-clash").
+        List<Shot> picked = all.stream().filter(s -> names.contains(s.name) || names.contains(s.name.replaceFirst("^\\d+[a-z]?-", ""))).toList();
         if (picked.size() != names.size())
             PreviewQuiet.report("TRAILER FAIL unknown shot in -Pshots=" + wanted + "; the shots are "
                     + all.stream().map(s -> s.name).toList());
@@ -164,28 +165,56 @@ public final class TrailerPreview {
         }
     }
 
-    /** Before a shot: clear the last one away, change the power, bring the clocks into step, cast the scene, roll. */
+    /** Whether the shot's place says it is ready (set on the server thread). */
+    private static volatile boolean placeReady;
+    /** The setting tick the game was slowed for filming at, or -1 while the shot's place is still being staged. */
+    private static int slowAt = -1;
+
+    /**
+     * Before a shot: clear the last one away and stage its place at normal speed (cities build and chunks load by the
+     * tick), wait until it is ready and drawn, then slow the game, bring the clocks into step, cast the scene and roll.
+     */
     private static void setting(Minecraft mc) {
         Shot shot = current;
         if (phaseAge == 1) {
             mc.options.hideGui = true;
             mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-            pace(mc, RATE);
-            castAt = -1;
+            pace(mc, 20);
+            castAt = slowAt = -1;
+            placeReady = false;
             SERVER_TICKS.clear();
-            server(mc, p -> reset(p, shot));
+            server(mc, p -> { reset(p, shot); shot.stage(p); });
         }
+        if (slowAt < 0) {
+            if (shot.impossible) {
+                PreviewQuiet.report("TRAILER FAIL " + shot.name + " skipped: its place could not be staged");
+                server(mc, shot::leave);
+                nextShot(mc);
+                return;
+            }
+            if (phaseAge > 2 && phaseAge % 10 == 0) server(mc, p -> placeReady = shot.ready(p));
+            boolean drawn = mc.levelRenderer.hasRenderedAllSections();
+            if (phaseAge >= shot.settle() && placeReady && drawn || phaseAge > 3600) {
+                if (!placeReady) PreviewQuiet.report("TRAILER FAIL " + shot.name + "'s place was never ready");
+                System.out.printf(Locale.ROOT, "TRAILER_PLACE %s ready after %d ticks in %s%s%n", shot.name, phaseAge,
+                        mc.level.dimension().location(), drawn ? "" : ", not every section drawn");
+                slowAt = phaseAge;
+                pace(mc, RATE);
+            }
+            return;
+        }
+        int since = phaseAge - slowAt;
         // Roll only once the server keeps time with the client: its backlog forgiven (see behind), then a tick of its
         // own for every tick of the client's, and under a second behind.
-        if (phaseAge == 4 || phaseAge > 4 && castAt < 0 && phaseAge % 20 == 0) server(mc, TrailerPreview::resync);
+        if (since == 4 || since > 4 && castAt < 0 && since % 20 == 0) server(mc, TrailerPreview::resync);
         SERVER_TICKS.addLast(mc.getSingleplayerServer().getTickCount());
         if (SERVER_TICKS.size() > 9) SERVER_TICKS.removeFirst();
         double late = behind(mc);
         boolean steady = SERVER_TICKS.size() == 9 && Math.abs(SERVER_TICKS.peekLast() - SERVER_TICKS.peekFirst() - 8) <= 1
                 && (Double.isNaN(late) || late < 1000);
-        if (castAt < 0 && phaseAge > 8 && (steady || phaseAge > 200)) {
+        if (castAt < 0 && since > 8 && (steady || since > 200)) {
             if (!steady) PreviewQuiet.report("TRAILER FAIL the server never kept steady time (" + late + " ms behind)");
-            System.out.printf(Locale.ROOT, "TRAILER_STEADY %s after %d ticks: server ticks %s, %.0f ms behind%n", shot.name, phaseAge, SERVER_TICKS, late);
+            System.out.printf(Locale.ROOT, "TRAILER_STEADY %s after %d ticks: server ticks %s, %.0f ms behind%n", shot.name, since, SERVER_TICKS, late);
             server(mc, shot::cast);
             castAt = phaseAge;
         }
@@ -211,6 +240,11 @@ public final class TrailerPreview {
         serverShot = -1;
         FilmRecorder.cut();
         FilmCamera.stop();
+        server(mc, shot::leave);
+        nextShot(mc);
+    }
+
+    private static void nextShot(Minecraft mc) {
         if (++shotIndex < queue.size()) {
             current = queue.get(shotIndex);
             next(Phase.SETTING);
@@ -235,6 +269,11 @@ public final class TrailerPreview {
      * running state forgotten, full health and stamina, no cooldowns, the shot's time of day.
      */
     private static void reset(ServerPlayer p, Shot shot) {
+        // Out of the Last Day for anything filmed elsewhere: woken in the bunker, out of the pod, as the story does.
+        if (!(shot instanceof StoryShots.LastDay) && PrologueService.isMember(p)) {
+            PrologueService.skip(p);
+            CryoChamberService.release(p);
+        }
         com.jayptucker.heroesevolved.combat.Ultimates.stop(p);
         Stage.clear(p);
         Signatures.forget(p);
@@ -247,8 +286,8 @@ public final class TrailerPreview {
         p.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 20 * 600, 4, false, false));
         p.setHealth(p.getMaxHealth());
         p.getFoodData().setFoodLevel(20);
+        p.setNoGravity(false);
         p.server.overworld().setDayTime(shot.time);
-        Stage.place(p, 0, 0);
     }
 
     /**
@@ -340,9 +379,13 @@ public final class TrailerPreview {
         rules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);
         rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
         rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
+        // Shots follow one another on the same ground and in the same village: no fireball, creeper or Wither may
+        // burn or blow holes in what the next shot films.
+        rules.getRule(GameRules.RULE_MOBGRIEFING).set(false, null);
         mc.createWorldOpenFlows().createFreshLevel("Trailer-" + System.currentTimeMillis(),
                 new LevelSettings("Trailer", GameType.SURVIVAL, false, Difficulty.EASY, true, rules, WorldDataConfiguration.DEFAULT),
-                new WorldOptions(SEED, false, false),
+                // Structures on: the village scenes film a real village (with them off, there are none to find).
+                new WorldOptions(SEED, true, false),
                 access -> access.registryOrThrow(Registries.WORLD_PRESET).getOrThrow(WorldPresets.NORMAL).createWorldDimensions(), mc.screen);
     }
 

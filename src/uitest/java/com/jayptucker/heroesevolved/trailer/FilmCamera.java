@@ -214,7 +214,9 @@ public final class FilmCamera {
             }
         }
         liftOld = lift;
-        if (raw != null) {
+        // Only a move that follows someone over open ground keeps clear of it: the heightmap is the surface, so inside
+        // the bunker or Level 5 it would lift the camera through the ceiling.
+        if (raw != null && follow != null) {
             double y = Math.max(raw.y, ground(mc, raw) + CLEARANCE);
             Vec3 feet = follow == null ? null : follow.get();
             if (feet != null) {

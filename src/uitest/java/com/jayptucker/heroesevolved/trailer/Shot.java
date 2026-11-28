@@ -27,10 +27,28 @@ abstract class Shot {
         this.time = time;
     }
 
-    /** Server, just before the roll: the fighter's power and place, and every actor in the scene. */
+    /**
+     * Server, at normal speed before anything else: puts the fighter where the shot happens. The hilltop by default; a
+     * story shot goes to its own place (the bunker, a village, Level 5, the End) and builds or opens it here.
+     */
+    void stage(ServerPlayer p) { Stage.place(p, 0, 0); }
+
+    /** Server: whether the place is ready to film (a city still building, an arena still opening). */
+    boolean ready(ServerPlayer p) { return true; }
+
+    /** Set when the place cannot be staged at all (no village to be found): the runner skips the shot. */
+    volatile boolean impossible;
+
+    /** At least this many ticks at normal speed between staging and filming, for the place to load and settle. */
+    int settle() { return 20; }
+
+    /** Server, after the cut: leaves the place cleanly (an arena ended, power restored, back from a dimension). */
+    void leave(ServerPlayer p) {}
+
+    /** Server, just before the roll: the fighter's power and every actor in the scene. */
     abstract void cast(ServerPlayer p);
 
-    /** Client, at the roll: the camera's move, in world coordinates ({@link Stage#at}). */
+    /** Client, at the roll: the camera's move, in world coordinates ({@link Stage#at}), or null to leave the view alone. */
     abstract FilmCamera.Move camera();
 
     /** What the move is carried along with, or null for a fixed move. The camera also keeps this in sight. */

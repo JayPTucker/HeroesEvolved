@@ -6,7 +6,8 @@ impacts, a hard stop before the title and the biggest hit on it, all through one
 
 It is driven by a cue sheet the edit writes (tools/trailer/cut.py): the length in seconds and the moments to hit, e.g.
     {"length": 14.2, "cues": [{"at": 1.7, "kind": "hit"}, {"at": 9.8, "kind": "title"}]}
-Kinds: "braam" (the big one), "hit" (a smaller impact), "title" (silence just before, then the biggest hit).
+Kinds: "braam" (the big one), "hit" (a smaller impact), "title" (silence just before, then the biggest hit),
+"freeze" and "drop" (stopped time: the drone and pulse cut to a thin held tone until the drop's hit).
 
 Run on its own with Blender's Python (numpy is bundled):
     "C:/Program Files/Blender Foundation/Blender 5.0/5.0/python/bin/python.exe" tools/trailer/score.py cues.json out.wav
@@ -135,15 +136,25 @@ def score(sheet):
     bed_level = np.clip(t / 2.5, 0, 1) * np.where(t > title - .4, np.clip((title - t) / .15, 0, 1), 1)
     after = t >= title
     bed_level = np.where(after, np.clip((t - title - .2) / 1.5, 0, 1) * np.clip((length - t) / 1.5, 0, 1) * .8, bed_level)
-    bed = (drone * .55 + shimmer * .05) * bed_level
+    # Stopped time ("freeze" to "drop"): the drone and the pulse cut out and only a thin held tone remains, until the
+    # biggest hit lands as time starts again.
+    frozen = np.zeros(n, bool)
+    for start in (c["at"] for c in cues if c["kind"] == "freeze"):
+        end = next((c["at"] for c in cues if c["kind"] == "drop" and c["at"] > start), start + 3)
+        frozen |= (t >= start - .05) & (t < end)
+    edge = np.convolve(frozen.astype(float), np.ones(int(.08 * SR)) / int(.08 * SR), mode="same")
+    bed_level = bed_level * (1 - edge)
+    held = (np.sin(2 * np.pi * 1760 * t) * .6 + np.sin(2 * np.pi * 2637 * t) * .4) * (.55 + .45 * np.sin(2 * np.pi * 3.1 * t))
+    bed = (drone * .55 + shimmer * .05) * bed_level + held * edge * .045
 
     hits = np.zeros(n)
-    # The pulse: every 0.6 s, twice as fast after the first big hit, stopping before the title.
+    # The pulse: every 0.6 s, twice as fast after the first big hit, stopping before the title and in stopped time.
     first = big[0] if big else title
     at = .6
     while at < title - .6:
         fast = at > first
-        place(hits, tick(.35 + .4 * min(1, at / max(first, 1))), at, .9)
+        if not frozen[min(n - 1, int(at * SR))]:
+            place(hits, tick(.35 + .4 * min(1, at / max(first, 1))), at, .9)
         at += .3 if fast else .6
     for cue in cues:
         kind, at = cue["kind"], cue["at"]
@@ -158,6 +169,13 @@ def score(sheet):
             place(hits, riser(2.0), at - 2.4, .8)
             place(hits, braam(4.5, 1.25), at, 1.15)
             place(hits, boom(3.0, 1.2), at, 1.1)
+        elif kind == "drop":
+            place(hits, braam(4.0, 1.2), at, 1.1)
+            place(hits, boom(3.0, 1.2), at, 1.1)
+        elif kind == "freeze":
+            place(hits, boom(1.2, .5), at, .6)
+    # Nothing but the held tone rings through stopped time.
+    hits[frozen] *= 0
     # Silence just before the title: cut everything for a beat.
     gap = (t > title - .4) & (t < title)
     hits[gap] *= np.clip((title - .4 - t[gap]) / .02 + 1, 0, 1)
