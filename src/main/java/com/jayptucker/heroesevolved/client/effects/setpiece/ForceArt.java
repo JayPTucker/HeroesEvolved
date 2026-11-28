@@ -27,13 +27,14 @@ import static net.minecraft.util.Mth.sin;
  * geodesic cage of great circles, the push and the nova are the same lens travelling outward. Making something
  * invisible is the lens closing round it until even its rim is gone.
  *
- * <p>Palette: {@code 9CC8FF} field (the body of every sheet), {@code E8F4FF} edge (rims and facet seams),
- * {@code 3F6FD8} deep (halos), {@code B6A2FF} sheen (the violet iridescence on bubbles and pressure), and
- * {@code 1E2A44} stress (cracks as a bubble crushes, drawn with normal blending).</p>
+ * <p>Palette ({@link ForcePalette}, shared with the Fade's strokes and the cloaked body): {@code 9CC8FF} field (the
+ * body of every sheet), {@code E8F4FF} edge (rims and facet seams), {@code 3F6FD8} deep (halos), {@code B6A2FF} sheen
+ * (the violet iridescence on bubbles and pressure), and {@code 1E2A44} stress (cracks as a bubble crushes, drawn with
+ * normal blending).</p>
  */
 final class ForceArt {
-    static final float[] FIELD = rgb(0x9CC8FF), EDGE = rgb(0xE8F4FF), DEEP = rgb(0x3F6FD8), SHEEN = rgb(0xB6A2FF),
-            STRESS = rgb(0x1E2A44);
+    static final float[] FIELD = rgb(ForcePalette.FIELD), EDGE = rgb(ForcePalette.EDGE), DEEP = rgb(ForcePalette.DEEP),
+            SHEEN = rgb(ForcePalette.SHEEN), STRESS = rgb(ForcePalette.STRESS);
 
     private ForceArt() {}
 

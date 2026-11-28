@@ -9,7 +9,7 @@ Every power sounds like itself. Each one has a small palette of original, synthe
 | --- | --- |
 | **Cast** | Most presses: a core move, a skill-tree active. |
 | **Heavy** | An ultimate (the fifth key), a class Ultimate, a signature move, Earthquake, Dive Bomb, Lightspeed. Louder, and heard further away. |
-| **Charge** | The press that starts a wind-up: Cinder Spear, Inferno, Skyburst, Critical Mass, Cyclone, Sunfall, Crescendo. Letting go plays the move itself. |
+| **Charge** | The press that starts a wind-up: Cinder Spear, Inferno, Skyburst, Critical Mass, Cyclone, Sunfall, Crescendo, Supercharge, Red Lightning. Letting go plays the move itself. |
 | **Impact** | Where a power's blow lands on someone, and the free second press of a two-stage move (a slam, a crush, a shatter). |
 | **End** | Letting go of something held, or dismissing it with Shift. |
 | **Strike / Dodge** | Fighting-style blows and dodges, for the ten powers that fight hand to hand. |
@@ -37,6 +37,7 @@ Each power has its own material, so you can tell who is fighting by ear:
 | Telepathy | whispers and bells |
 | Space-Time | clockwork ticking and a toll |
 | Vibe | chirps and grit, like Vibe's existing sounds |
+| Power Amplification | an amplifier's growl driven into distortion, a rising power-up whine as Supercharge or Red Lightning builds, overloaded (bit-crushed) red crackle, and a stuttering power-down |
 
 ## Rules
 

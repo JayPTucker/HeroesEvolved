@@ -64,6 +64,11 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
 ## Staging a scene
 
+- **A preview player never enters the Last Day now (November 2026).** `PreviewQuiet.joined` marks every preview's new
+  player as having slept through it at login, so the bunker wakes them in the overworld instead (only
+  `heroes.preview.prologue` keeps the prologue). About forty drivers never skipped it, and those that teleport within
+  `p.serverLevel()` put the player at y=-60 under the prologue city (the Invisibility preview did). A player below the
+  world fails the run (`PreviewQuiet.fell`). Teleport into `server.overworld()` explicitly all the same.
 - **Stage in the overworld, 50 or more blocks from spawn.** A new preview player starts in the Last Day's city, which is
   another dimension, and near spawn the bunker's walls trap the player. Call `PrologueService.skip` and then
   `CryoChamberService.release`, teleport into `server.overworld()` explicitly, force-load the staging chunks, and keep
@@ -140,6 +145,22 @@ preview whose init script applies it (`apply from: rootProject.file('tools/previ
   game's output; files and providers read at execution time are fine.
 - Start the first scene a few seconds after the Last Day's black hold lifts, or its photos come out dark.
 
+**Every preview script applies it now (November 2026).** A review found only seven previews could fail; the rest (Pyro
+and Electro among them) passed whatever happened. All 103 scripts apply `preview-result.gradle`, and
+`PreviewQuiet.quit` audits every run before writing the result:
+
+- a **crash report** written during the run (`crash-reports/`, newer than the run) is a FAIL, so a driver step that
+  threw on the integrated server fails honestly even if the driver later reaches `quit`;
+- **no photographs** written during the run is a FAIL;
+- **blank photographs** (sampled on a grid, every pixel within a few steps of the same brightness: the dark, the void,
+  an unloaded sky) are listed, and more than a third of the run's photos blank is a FAIL (one deliberate blackout
+  shot passes).
+
+Write checks with `PreviewQuiet.check(prefix, ok, what)` and guard scene steps with `PreviewQuiet.guard(scene, step)`;
+**a check printed with `System.out` never fails the run** (the kit previews' `*_KIT_FAIL` lines did exactly that until
+they were routed through `report`). A script that compiles only its driver (`java.include(...)`) must also include
+`uitest/PreviewQuiet.java`, or it does not compile.
+
 ## Photographing skills (`tools/skill-anim-preview.init.gradle`)
 
 `uitest/SkillAnimationsPreview` casts every Electrokinesis and Superspeed skill in a flat world and saves front, back
@@ -169,7 +190,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `flight-carry-preview.init.gradle` | Villagers and pigs carried through hover, acceleration, horizontal cruise, turns, first person, Skyburst and braking | Checks horizontal cruise and retained carry links; 16 photographs |
 | `hydro-preview.init.gradle` | Hydrokinesis: kit, waterbending, tree, classes | |
 | `invisibility-preview.init.gradle` | Fade and the force fields | |
-| `mimicry-preview.init.gradle` | attunement, touch, switching, the memory wheel | |
+| `mimicry-preview.init.gradle` | attunement, touch, switching, the memory wheel, then each of the empath's own skills from the side (Borrowed Strike also in first person) | prints `MIMIC_SKILL PASS/FAIL` |
 | `pyro-preview.init.gradle`, `firebending-preview.init.gradle` | Pyrokinesis and Flame Flight; every firebending move | |
 | `quake-preview.init.gradle`, `quake-kit-preview.init.gradle` | Quake effects; every move, follow-up, skill and style | |
 | `radiation-preview.init.gradle`, `radiation-tree-preview.init.gradle`, `radiation-intro-preview.init.gradle` | radiation effects, the tree, the first awakening | |
@@ -192,7 +213,7 @@ All are `tools/<script>`, run with `./gradlew runClient --init-script tools/<scr
 | `telekinesis-preview.init.gradle` | Telekinesis, the far hand: Shove, Grip (held, swung, thrown), Bullet Catch (and first person), Disarm and fling, the Storm, Pin, Juggle and Spike, Skyfall, Levitate, Round Up, a swat, minimal | prints `KINETIC PASS/FAIL` |
 | `fighting-preview.init.gradle` | every shared fighting style | `-Ponly=telekinesis,quake`, `-Pinput` (presses the real keys and prints `INPUT_RESULT`) |
 | `flight-roll-preview.init.gradle` | Flight's Barrel Roll on the real strafe keys: both directions, near misses, chat, the ground, a rebound key, its card in the tree, and its HUD ring ready, recharging and low | Prints `ROLL_INPUT` lines and fails on any wrong case |
-| `ultimate-preview.init.gradle` | every class Ultimate, staged with two foes and a tamed wolf, through its own camera and from the side | `-Ponly=sunfall,phase_blur` or a power's id; prints `ULTIMATE PASS/FAIL` |
+| `ultimate-preview.init.gradle` | every class Ultimate, staged with two foes and a tamed wolf, through its own camera and from the side; Between Heartbeats also from the side at the vibration, the split, an illusion struck and stepping aside, and the run home | `-Ponly=sunfall,phase_blur` or a power's id; prints `ULTIMATE PASS/FAIL` |
 | `finisher-preview.init.gradle` | the glisten, the prompt and every finisher | `-Ponly=telepathy` or `-Ponly=hearth,phoenix_kick` |
 | `projectile-preview.init.gradle` | projectile ranges | |
 | `weapons-preview.init.gradle`, `dampener-preview.init.gradle` | the TaCZ guns and EMP grenade; the Ability Dampener and Nullifier | |

@@ -77,7 +77,7 @@ public final class SkillAnimationsPreview {
 
     private static void check(boolean ok, String what) {
         // Report and carry on: one missed cast must not end the whole photo run.
-        System.out.println((ok ? "SKILL_ANIM_PASS " : "SKILL_ANIM_FAIL ") + what);
+        PreviewQuiet.report((ok ? "SKILL_ANIM_PASS " : "SKILL_ANIM_FAIL ") + what);
     }
 
     @SubscribeEvent public static void tick(ClientTickEvent.Post e) {

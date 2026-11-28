@@ -50,10 +50,14 @@ public final class StyleOps {
                 .sorted(Comparator.comparingDouble(e -> e.position().distanceToSqr(center))).limit(32).toList();
     }
 
-    /** The caster and their friends within {@code radius} (allied or, without PvP, any player; and their own pets), at most 16. */
+    /**
+     * The caster and their friends within {@code radius} (allied or, without PvP, any player; and their own pets), at most
+     * 16. Their own copies (decoys, mirages, illusions) are theirs but are shells, not friends to heal or carry.
+     */
     public static List<LivingEntity> friends(ServerPlayer p, Vec3 center, double radius) {
         List<LivingEntity> list = new ArrayList<>(p.serverLevel().getEntitiesOfClass(LivingEntity.class, new AABB(center, center).inflate(radius),
-                e -> e != p && e.isAlive() && !e.isSpectator() && isFriend(p, e) && e.position().distanceToSqr(center) <= radius * radius).stream().limit(15).toList());
+                e -> e != p && e.isAlive() && !e.isSpectator() && !(e instanceof com.jayptucker.heroesevolved.shapeshift.ShapeDecoy)
+                        && isFriend(p, e) && e.position().distanceToSqr(center) <= radius * radius).stream().limit(15).toList());
         list.addFirst(p);
         return list;
     }

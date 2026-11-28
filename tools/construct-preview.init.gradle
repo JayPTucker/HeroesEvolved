@@ -5,6 +5,7 @@ allprojects {
             def preview = sourceSets.create('constructPreview') {
                 java.srcDir('src/uitest/java')
                 java.include('**/ConstructPreview.java')
+                java.include('com/jayptucker/heroesevolved/uitest/PreviewQuiet.java')
                 compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
                 runtimeClasspath += sourceSets.main.runtimeClasspath
             }
@@ -20,6 +21,8 @@ allprojects {
                 }
             }
             tasks.named('runClient') { dependsOn(tasks.named('constructPreviewClasses')) }
+            // Pass when the driver finished and its checks and photographs are sound, not on the halt's exit code.
+            apply from: rootProject.file('tools/preview-result.gradle')
         }
     }
 }

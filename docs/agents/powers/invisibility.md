@@ -22,6 +22,11 @@ Invisibility (`invisibility/`, art in `client/effects/setpiece/ForceArt`) became
   - `facet`: a tumbling triangle shard.
 
   Palette: `9CC8FF` field, `E8F4FF` edge, `3F6FD8` deep, `B6A2FF` sheen, `1E2A44` stress cracks (normal blending).
+- **One palette for the whole power, in one place: `client/effects/setpiece/ForcePalette`.** A review found three looks
+  (blue fields in `ForceArt`, silver/cyan/violet optics in `InvisibilityEffects`, a cyan cloaked body in
+  `OpticalClient`). All three read `ForcePalette` now (the Fade's strokes and the cloaked body's tint, contours, hands and
+  HUD ring included), the Fade's broken loops are drawn in three layers like every field, and the awakening's colour is
+  the field blue. A new Invisibility visual takes its colours from `ForcePalette`, never its own constants.
 - **Held fields that end at once.** Re-sent pieces (shield, bubble, disc, bridge, wall) can linger up to ten ticks
   after the server ends them. `SetPieceClient.superseded(active, pieces, now)` lets a piece stop drawing as soon as
   a later piece replaces it on the same entity (or, if unbound, at the same origin and target). For example, the

@@ -137,7 +137,10 @@ public final class UltimatePreview {
         return kind == Ultimates.Kind.OFFENSE ? new int[]{7, 20, 40, 68, 84, 96, 108, 118} : new int[]{6, 16};
     }
 
-    private static int[] sideShots(Ultimates.Kind kind) {
+    private static int[] sideShots(Ultimates.Kind kind, String mechanic) {
+        // Between Heartbeats: the vibration, the split, the illusions fighting, one struck (at 57) and stepping aside,
+        // and the run home.
+        if (mechanic.equals("phase_blur")) return new int[]{10, 18, 22, 30, 45, 59, 60, 90, 120, 200, 250};
         return kind == Ultimates.Kind.OFFENSE ? new int[]{132} : new int[]{30, 60, 120, 200};
     }
 
@@ -185,7 +188,21 @@ public final class UltimatePreview {
                 EVENTS.merge(start + shot, () -> photo(file), (a, b) -> () -> { a.run(); b.run(); });
             }
             Vec3 eye = at(dx + 9, 3.5, 1.5), look = at(dx, 1, 2.5);
-            for (int shot : sideShots(sc.kind())) {
+            if (name.equals("phase_blur")) {
+                // A blow on an illusion: it should step aside and leave the speedster's own afterimage standing.
+                EVENTS.merge(start + 57, () -> server(mc, p -> {
+                    if (Ultimates.run(p) instanceof com.jayptucker.heroesevolved.speed.SpeedUltimates.BetweenHeartbeats run) {
+                        var illusions = run.illusions();
+                        check("phase_blur splits into three illusions", illusions.size() == 3);
+                        if (!illusions.isEmpty() && ACTORS.size() > 1) {
+                            illusions.getFirst().hurt(p.serverLevel().damageSources().mobAttack(ACTORS.get(1)), 4);
+                            check("phase_blur's struck illusion steps aside", !illusions.getFirst().isRemoved() && run.blows().getFirst() == 2);
+                        }
+                        check("phase_blur's illusions fight the pillager", foe != null && foe.getHealth() < foeHealth);
+                    } else check("phase_blur is running at 57", false);
+                }), (a, b) -> () -> { a.run(); b.run(); });
+            }
+            for (int shot : sideShots(sc.kind(), name)) {
                 String file = String.format("%02d-%s-%d", sc.index() + 1, name, n++);
                 EVENTS.merge(start + shot - 1, () -> TempestCamera.fix(eye, look), (a, b) -> () -> { a.run(); b.run(); });
                 EVENTS.merge(start + shot, () -> photo(file), (a, b) -> () -> { a.run(); b.run(); });

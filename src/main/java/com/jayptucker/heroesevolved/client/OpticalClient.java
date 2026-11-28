@@ -1,5 +1,6 @@
 package com.jayptucker.heroesevolved.client;
 
+import com.jayptucker.heroesevolved.client.effects.setpiece.ForcePalette;
 import com.jayptucker.heroesevolved.HeroesEvolved;
 import com.jayptucker.heroesevolved.network.OpticalStatePayload;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -123,7 +124,7 @@ public final class OpticalClient {
             pose.pushPose();
             pose.translate(side.x * offset * spread, Math.abs(offset) * spread * .15, side.z * offset * spread);
             OpticalSkinRenderer.draw(actor, pose, buffers, partial, alpha * (layer == 1 || layers == 1 ? .8F : .42F),
-                    layer == 0 ? 0x8CCEF0 : layer == 2 ? 0xC9AEFF : 0xE7F8FF);
+                    layer == 0 ? ForcePalette.FIELD : layer == 2 ? ForcePalette.SHEEN : ForcePalette.EDGE);
             pose.popPose();
         }
         pose.pushPose();
@@ -145,7 +146,7 @@ public final class OpticalClient {
         for (int i=0;i<edges.length;i+=2) {
             Vec3 a=v[edges[i]],b=v[edges[i+1]],n=b.subtract(a).normalize();
             for(Vec3 p:new Vec3[]{a,b})out.addVertex(pose.last().pose(),(float)p.x,(float)p.y,(float)p.z)
-                    .setColor(.70F,.89F,1,alpha).setNormal(pose.last(),(float)n.x,(float)n.y,(float)n.z);
+                    .setColor(ForcePalette.channel(ForcePalette.FIELD,16),ForcePalette.channel(ForcePalette.FIELD,8),ForcePalette.channel(ForcePalette.FIELD,0),alpha).setNormal(pose.last(),(float)n.x,(float)n.y,(float)n.z);
         }
     }
 
@@ -177,7 +178,7 @@ public final class OpticalClient {
                 }
                 arm.setPos(0,0,0); arm.setRotation(0,0,0);
                 arm.render(pose, event.getMultiBufferSource().getBuffer(RenderType.entityTranslucent(mc.player.getSkin().texture())),
-                        event.getPackedLight(), OverlayTexture.NO_OVERLAY, 0x2DC7E9FF);
+                        event.getPackedLight(), OverlayTexture.NO_OVERLAY, ForcePalette.argb(0x2D, ForcePalette.FIELD));
             } finally { arm.loadPose(original); pose.popPose(); }
         }
     }
@@ -193,10 +194,10 @@ public final class OpticalClient {
         var mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || !state.faded() || mc.level.getGameTime() - seen >= 25) return;
         int exposure = Math.clamp(state.exposure(), 0, 100);
-        int color = !state.unseen() || exposure >= 70 ? 0xFFF0B58A : exposure >= 35 ? 0xFFF2D98A : 0xFFAEDDF2;
+        int color = !state.unseen() || exposure >= 70 ? 0xFFF0B58A : exposure >= 35 ? 0xFFF2D98A : ForcePalette.argb(0xFF, ForcePalette.FIELD);
         String word = state.ghost() ? "GHOST" : state.veil() ? "VEIL" : !state.unseen() ? "SEEN" : exposure >= 35 ? "FLICKER" : "HIDDEN";
         gauges.add(com.jayptucker.heroesevolved.gui.HudGauges.Gauge.ring(exposure / 100F, color).middle(Integer.toString(exposure))
-                .label(word, state.ghost() || state.veil() ? 0xFFC6B2E8 : com.jayptucker.heroesevolved.gui.HudGauges.LABEL).notches(0.35F, 0.7F));
+                .label(word, state.ghost() || state.veil() ? ForcePalette.argb(0xFF, ForcePalette.SHEEN) : com.jayptucker.heroesevolved.gui.HudGauges.LABEL).notches(0.35F, 0.7F));
     }
     @EventBusSubscriber(modid=HeroesEvolved.MOD_ID,value=Dist.CLIENT,bus=EventBusSubscriber.Bus.MOD)
     public static final class Hud {

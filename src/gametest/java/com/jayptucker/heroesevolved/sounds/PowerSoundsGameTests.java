@@ -53,6 +53,11 @@ public final class PowerSoundsGameTests {
         } catch (java.io.IOException e) {
             throw new AssertionError(e);
         }
+        // Every power a player can have has a palette (Power Amplification had none until November 2026, and played
+        // no power cue at all).
+        for (ResourceLocation power : AbilityRegistry.ABILITIES.keySet())
+            if (com.jayptucker.heroesevolved.ability.registry.ModAbilities.rollable(power))
+                h.assertTrue(PowerCue.POWERS.contains(power.getPath()), "Every power has a sound palette: " + power.getPath() + " has none");
         for (String power : PowerCue.POWERS) {
             h.assertTrue(AbilityRegistry.ABILITIES.get(ResourceLocation.fromNamespaceAndPath("heroesevolved", power)) != null,
                     "PowerCue names a real power: " + power);

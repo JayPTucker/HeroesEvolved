@@ -2,9 +2,12 @@ package com.jayptucker.heroesevolved.client.effects.setpiece;
 
 import com.jayptucker.heroesevolved.client.effects.setpiece.SetPieceClient.Active;
 import com.jayptucker.heroesevolved.mimicry.MimicColors;
+import com.jayptucker.heroesevolved.mimicry.MimicGeometry;
+import com.jayptucker.heroesevolved.mimicry.MimicSkills;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 import static com.jayptucker.heroesevolved.client.effects.setpiece.Canvas.*;
@@ -13,7 +16,8 @@ import static net.minecraft.util.Mth.*;
 /**
  * Empathic Mimicry: a heartbeat made visible. Gold threads draw tight between the empath and someone with a power,
  * a pulse runs down them in a heartbeat's rhythm, and what is taken blooms at the empath's chest in that power's own
- * colour. Palette: {@code E8C27A} thread, {@code FFF6E0} core, {@code 6B4422} the soft halo, plus the borrowed tint.
+ * colour. Palette: {@code E8C27A} thread, {@code FFF6E0} core, {@code 6B4422} the soft halo, plus the colour of whatever
+ * is involved: a borrowed power's tint ({@code MimicColors}), or a lifted effect's own colour (Calm, Absorb Pain).
  */
 final class MimicArt {
     private static final float[] THREAD = rgb(0xE8C27A), CORE = rgb(0xFFF6E0), HALO = rgb(0x6B4422);
@@ -200,6 +204,277 @@ final class MimicArt {
             }
         }
         if (t >= 3) ring(c, to, to.subtract(from).normalize(), .2F + .8F * smooth(3, 10, t), .04F, tint, f * (1 - smooth(3, 10, t)));
+    }
+
+    // ------------------------------------------------------------------
+    // The empath's own skills (mimicry/MimicSkills)
+    // ------------------------------------------------------------------
+
+    /**
+     * Empathic Mimicry's own skills, each a thread from the hand or the heart and a bloom in the colour of the power
+     * involved: Borrowed Strike's whip, Empathic Surge's heartbeat and threads, Calm's settling ring and lifted motes,
+     * Absorb Pain's beads running into the heart, Sense Powers' heartbeat racing out and the people it finds, and
+     * Overcharge's rings closing on the hands.
+     */
+    static void skill(Canvas c, Active a, float t) {
+        if (c.solid()) return;
+        Entity bound = a.bound(c);
+        switch (a.piece()) {
+            case MIMIC_LASH -> lash(c, a, t, bound);
+            case MIMIC_SURGE -> surge(c, a, t, bound);
+            case MIMIC_CALM -> calm(c, a, t, bound);
+            case MIMIC_ABSORB -> absorb(c, a, t, bound);
+            case MIMIC_SENSE -> sense(c, a, t, bound);
+            case MIMIC_OVERCHARGE -> overcharge(c, a, t, bound);
+            default -> { }
+        }
+    }
+
+    private static boolean link(Active a) { return a.seed() >= 0 && (a.seed() & MimicSkills.LINK) != 0; }
+
+    private static Vec3 heart(Canvas c, Entity e, Vec3 fallback) { return e instanceof LivingEntity l ? MimicGeometry.heart(l, c.partial) : fallback; }
+
+    private static Vec3 feet(Canvas c, Entity e, Vec3 fallback) { return e != null ? e.getPosition(c.partial) : fallback; }
+
+    /** Dims a shape at {@code at} as it nears the camera, so the empath's own hands and heart never fill their view. */
+    private static float near(Canvas c, Vec3 at) { return (float) Math.clamp((at.distanceTo(c.camera()) - .6) / 1.2, 0, 1); }
+
+    private static Vec3 bezier(Vec3 a, Vec3 b, Vec3 c, float u) { return a.lerp(b, u).lerp(b.lerp(c, u), u); }
+
+    /**
+     * Borrowed Strike: the thread is whipped out of the open lead hand, a wave rolling along it as it flies, and pulls
+     * straight as it lands; the foe blooms in the channelled power's colour (the empath's gold with none), a ring on the
+     * plane of the blow and chips thrown back off it.
+     */
+    private static void lash(Canvas c, Active a, float t, Entity mimic) {
+        float[] tint = rgb(MimicColors.color((int) floor(a.scale())));
+        Vec3 hand = mimic instanceof LivingEntity l ? MimicGeometry.hand(l, c.partial, true, 1) : a.origin();
+        Entity foe = c.level == null ? null : c.level.getEntity(a.seed());
+        Vec3 to = foe != null ? foe.getPosition(c.partial).add(0, foe.getBbHeight() * .55, 0) : a.target();
+        float life = a.piece().ticks, reach = smooth(0, 2.5F, t), alpha = 1 - smooth(6, 14, t);
+        Vec3 d = to.subtract(hand);
+        Vec3 dir = d.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : d.normalize();
+        Vec3 side = dir.cross(UP);
+        side = side.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : side.normalize();
+        Vec3 up = side.cross(dir).normalize();
+        int n = minimal() ? 10 : 20;
+        Vec3[] p = new Vec3[n + 1];
+        float settle = 1 - smooth(1.5F, 5, t);
+        for (int i = 0; i <= n; i++) {
+            float u = i / (float) n, along = u * reach;
+            // A whip's wave rolls out along the thread and dies as it pulls straight.
+            float wave = sin(along * PI * 3 - t * 1.6F) * .35F * settle * sin(PI * u);
+            p[i] = hand.add(d.scale(along)).add(side.scale(wave)).add(up.scale(wave * .4F));
+        }
+        thread(c, p, .045F, alpha);
+        if (c.glow()) {
+            if (t < 3) {
+                c.glow(p[n], .3F, tint, alpha);
+                c.glow(p[n], .1F, CORE, alpha);
+            }
+            if (t < 4) c.glow(hand, .25F * (1 - t / 4), CORE, near(c, hand));
+        }
+        if (t < 2.5F) return;
+        float k = smooth(2.5F, 10, t), f = 1 - smooth(6, life, t);
+        ring(c, to, dir, .2F + .9F * k, .05F, tint, f);
+        ring(c, to, dir, .1F + .5F * smooth(3.5F, 12, t), .035F, THREAD, f * .7F);
+        if (c.glow()) {
+            c.glow(to, .8F * (1 - k) + .2F, tint, f * .8F);
+            if (!minimal()) for (int i = 0; i < 6; i++) {
+                float ang = i * TWO_PI / 6 + hash(a.seed(), i) * .5F;
+                Vec3 out = side.scale(cos(ang)).add(up.scale(sin(ang))).scale(.3 + .8 * k).subtract(dir.scale(.4 * k));
+                c.line(to.add(out.scale(.6)), to.add(out), .02F, tint, 0, f * .8F);
+            }
+        }
+    }
+
+    /** How strongly the heart beats {@code t} ticks in: lub at 0, dub at 6. */
+    private static float beats(float t) {
+        return Math.max(Math.max(0, 1 - Math.abs(t) / 3), Math.max(0, 1 - Math.abs(t - 6) / 3));
+    }
+
+    /**
+     * Empathic Surge. The empath (seed 0): two heartbeats, lub and dub, ring out from the chest and across the ground to
+     * the reach. A friend (a link): a gold thread from the empath's heart snaps tight to their chest, a bead runs down it
+     * on each beat, and their chest blooms when it arrives.
+     */
+    private static void surge(Canvas c, Active a, float t, Entity bound) {
+        float life = a.piece().ticks;
+        if (!link(a)) {
+            Vec3 heart = heart(c, bound, a.origin()), feet = feet(c, bound, a.target());
+            float reach = a.scale(), close = near(c, heart);
+            for (float beat : new float[]{0, 6}) {
+                float u = t - beat;
+                if (u < 0) continue;
+                float k = smooth(0, 14, u), f = (1 - k) * Math.clamp(u / 1.5F, 0, 1);
+                ring(c, heart, UP, .3F + reach * k, .06F, THREAD, f * Math.max(close, k));
+                ring(c, feet.add(0, .06, 0), UP, .3F + reach * k, .04F, THREAD, f * .6F);
+            }
+            if (c.glow()) {
+                float f = fade(t, life, 2, 8);
+                c.glow(heart, .35F + .45F * beats(t), THREAD, (.6F * beats(t) + .2F) * f * close);
+                c.glow(heart, .12F, CORE, f * close);
+            }
+            return;
+        }
+        Vec3 from = a.origin(), to = bound instanceof LivingEntity l ? MimicGeometry.chest(l, c.partial) : a.target();
+        float tight = smooth(0, 4, t), f = fade(t, life, 1, 10);
+        thread(c, strand(from, to, (1 - tight) * .6F + .04F, 0, 0), .03F, f);
+        for (float beat : new float[]{1, 7}) {
+            float u = (t - beat) / 5;
+            if (u < 0 || u > 1 || !c.glow()) continue;
+            Vec3 bead = from.lerp(to, u);
+            c.glow(bead, .22F, THREAD, f);
+            c.glow(bead, .08F, CORE, f);
+        }
+        for (float beat : new float[]{6, 12}) {
+            float u = t - beat;
+            if (u < 0 || u > 10) continue;
+            float k = smooth(0, 8, u);
+            ring(c, to, UP, .25F + .7F * k, .04F, THREAD, f * (1 - k));
+        }
+    }
+
+    /**
+     * Calm. The empath (seed 0): a soft gold ring settles slowly out across the ground to the reach, another is drawn in
+     * from the chest to the heart, and the heart glows with a slow breath. A lifted effect (a link): motes in its own
+     * colour drift up from where it was and arc into the heart, turning gold as they near.
+     */
+    private static void calm(Canvas c, Active a, float t, Entity bound) {
+        float life = a.piece().ticks;
+        Vec3 heart = heart(c, bound, a.origin());
+        float close = near(c, heart);
+        if (!link(a)) {
+            Vec3 feet = feet(c, bound, a.target());
+            float reach = a.scale(), f = fade(t, life, 2, 10), k = smooth(0, 26, t), ease = 1 - (1 - k) * (1 - k);
+            ring(c, feet.add(0, .05, 0), UP, .4F + reach * ease, .07F, THREAD, f * (1 - k * .6F));
+            ring(c, feet.add(0, .05, 0), UP, .3F + reach * .7F * smooth(4, 30, t), .03F, THREAD, f * .5F * (1 - smooth(20, life, t)));
+            float in = smooth(0, 12, t);
+            ring(c, heart, UP, 1.3F - 1.1F * in, .04F, THREAD, f * (1 - smooth(10, 14, t)) * Math.max(close, 1 - in));
+            if (c.glow()) {
+                float breathe = .5F + .5F * sin(t * .35F);
+                c.glow(heart, .3F + .2F * breathe, THREAD, f * .5F * close);
+                c.glow(heart, .1F, CORE, f * close);
+            }
+            return;
+        }
+        // Lifted toward white: a dark effect colour (Weakness is near black) would vanish drawn as light.
+        float[] tint = mix(rgb(a.seed() & 0xFFFFFF), CORE, .35F);
+        int order = (int) floor(a.scale()) - 1;
+        Vec3 from = a.origin(), mid = from.lerp(heart, .5).add(0, .6, 0);
+        int motes = minimal() ? 2 : 5;
+        for (int i = 0; i < motes; i++) {
+            float start = 3 + order * 1.5F + i * 2.2F, u = smooth(start, start + 14, t);
+            if (t < start || u >= 1 || !c.glow()) continue;
+            Vec3 at = bezier(from, mid, heart, u).add(sin(t * .4F + i) * .08F * (1 - u), 0, cos(t * .37F + i) * .08F * (1 - u));
+            float f = Math.clamp((t - start) / 3, 0, 1) * (1 - smooth(.85F, 1, u)) * near(c, at);
+            float[] col = mix(tint, THREAD, u);
+            c.glow(at, .14F, col, f * .8F);
+            c.glow(at, .05F, CORE, f);
+        }
+        if (t < 10) ring(c, from, UP, .2F + .4F * smooth(0, 10, t), .03F, tint, (1 - smooth(4, 10, t)) * near(c, from));
+    }
+
+    /**
+     * Absorb Pain: three gold strands tighten between the friend and the empath's heart (the first piece only); each
+     * harmful effect runs down them as a bead in its own colour, one after another, and rings at the heart as it goes in;
+     * gold rises round the friend's chest as they mend.
+     */
+    private static void absorb(Canvas c, Active a, float t, Entity bound) {
+        float life = a.piece().ticks;
+        Vec3 heart = heart(c, bound, a.target()), from = a.origin();
+        int order = (int) floor(a.scale()) - 1;
+        float[] tint = a.seed() < 0 ? THREAD : mix(rgb(a.seed() & 0xFFFFFF), CORE, .35F);
+        float f = fade(t, life, 2, 8);
+        if (order <= 0) {
+            float tight = smooth(0, 5, t);
+            int strands = minimal() ? 1 : 3;
+            for (int s = 0; s < strands; s++)
+                thread(c, strand(from, heart, (1 - tight) * .45F + .05F, s * TWO_PI / 3 + t * .08F, .06F * (1 - tight)), .03F, f * (s == 0 ? 1 : .55F));
+            float m = smooth(6, 22, t);
+            ring(c, from.add(0, -.4 + .8 * m, 0), UP, .45F, .04F, THREAD, f * (1 - m) * .9F);
+            if (c.glow() && t > 6) c.glow(from, .5F * (1 - m) + .1F, CORE, f * .5F * (1 - m));
+        }
+        float start = 5 + Math.max(0, order) * 4, u = smooth(start, start + 9, t);
+        if (t >= start && u < 1 && c.glow()) {
+            Vec3 bead = from.lerp(heart, u);
+            float g = f * near(c, bead);
+            c.glow(bead, .24F, tint, g);
+            c.glow(bead, .08F, CORE, g);
+        }
+        if (t >= start + 9 && t < start + 18) {
+            float k = smooth(start + 9, start + 18, t);
+            ring(c, heart, UP, .15F + .6F * k, .04F, tint, f * (1 - k) * Math.max(near(c, heart), k));
+        }
+    }
+
+    /**
+     * Sense Powers. The empath (seed 0): two heartbeats race out along the ground to 48 blocks, thinning as they go, while
+     * the heart glows and dims slowly. A person found (a link, sent to the empath alone): when the beat reaches them, a ring
+     * in their power's colour flares at their chest and a thin thread of light rises off them.
+     */
+    private static void sense(Canvas c, Active a, float t, Entity bound) {
+        float life = a.piece().ticks;
+        float reach = (float) MimicSkills.SENSE_RANGE;
+        if (!link(a)) {
+            Vec3 heart = heart(c, bound, a.origin()), feet = feet(c, bound, a.target());
+            for (float beat : new float[]{2, 9}) {
+                float u = t - beat;
+                if (u < 0) continue;
+                float k = smooth(0, 18, u), f = (1 - k) * Math.clamp(u / 2, 0, 1);
+                ring(c, feet.add(0, .08, 0), UP, .5F + reach * k, .06F + .15F * k, THREAD, f * (.9F - .5F * k));
+            }
+            if (c.glow()) {
+                float f = fade(t, life, 3, 10) * near(c, heart), pulse = .5F + .5F * sin(t * .5F);
+                c.glow(heart, .25F + .2F * pulse, THREAD, f * .6F);
+                c.glow(heart, .08F, CORE, f);
+            }
+            return;
+        }
+        float[] tint = rgb(MimicColors.color(a.seed() & 0xFFFFFF));
+        Vec3 chest = bound instanceof LivingEntity l ? MimicGeometry.chest(l, c.partial) : a.target();
+        double dist = Math.sqrt(chest.subtract(a.origin()).horizontalDistanceSqr());
+        // When the first beat's ring (radius .5 + reach * smooth(0, 18, u), from tick 2) reaches them.
+        float arrive = 20;
+        for (int i = 0; i <= 36; i++) {
+            float u = i * .5F;
+            if (.5F + reach * smooth(0, 18, u) >= dist) { arrive = 2 + u; break; }
+        }
+        float age = t - arrive;
+        if (age < 0) return;
+        float f = fade(age, life - arrive, 1, 10), k = smooth(0, 8, age);
+        ring(c, chest, UP, .3F + .8F * k, .05F, tint, f * (1 - k * .5F));
+        ring(c, chest, UP, .45F, .025F, tint, f * .6F);
+        Vec3 top = chest.add(0, 1.2 + 2.5 * k, 0);
+        thread(c, new Vec3[]{chest.add(0, .4, 0), chest.lerp(top, .5), top}, .02F, f * .6F);
+        if (c.glow()) c.glow(chest, .4F, tint, f * .5F);
+    }
+
+    /**
+     * Overcharge: rings in the channelled power's colour close onto both hands (round the wrist and across the palm) and
+     * flare there, then one opens from the heart.
+     */
+    private static void overcharge(Canvas c, Active a, float t, Entity bound) {
+        if (!(bound instanceof LivingEntity body)) return;
+        float[] tint = rgb(MimicColors.color((int) floor(a.scale())));
+        float life = a.piece().ticks, close = smooth(0, 8, t), f = fade(t, life, 1, 6), shut = 1 - smooth(7, 10, t);
+        Vec3 aim = body.getViewVector(c.partial);
+        for (boolean lead : new boolean[]{true, false}) {
+            Vec3 hand = MimicGeometry.hand(body, c.partial, lead, .55F);
+            float seen = near(c, hand);
+            ring(c, hand, UP, .6F - .48F * close, .035F, tint, f * shut * seen);
+            ring(c, hand, aim, .45F - .35F * close, .03F, tint, f * .7F * shut * seen);
+            if (t > 7 && c.glow()) {
+                float flare = 1 - smooth(7, 16, t);
+                c.glow(hand, .35F * flare + .1F, tint, f * flare * seen);
+                c.glow(hand, .1F, CORE, f * seen);
+            }
+        }
+        Vec3 heart = MimicGeometry.heart(body, c.partial);
+        if (t > 8) {
+            float k = smooth(8, 18, t);
+            ring(c, heart, UP, .2F + .7F * k, .04F, tint, f * (1 - k) * Math.max(near(c, heart), k));
+        }
     }
 
     private static float[] widths(int n, float width) {

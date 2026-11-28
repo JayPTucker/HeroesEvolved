@@ -2676,7 +2676,7 @@
         "id": "superspeed_phase_blur",
         "role": "defense",
         "name": "Between Heartbeats",
-        "description": "Defense Ultimate. Twelve seconds between heartbeats: every blow and shot finds only an afterimage while you are a step to the side, and the afterimage strikes back. Shots that come near are plucked out of the air. As it ends, every afterimage runs in on the nearest foe.",
+        "description": "Defense Ultimate. You vibrate so fast you come apart: three illusions of you tear loose and for 12 seconds fight every enemy within 32 blocks, 2 a blow, drawing everything that was hunting you onto themselves. Each takes three blows before it breaks. You take every blow at half while you vibrate, and the illusions run home into you as it ends.",
         "energy": 50,
         "cooldown": 2400,
         "cost": 3,
@@ -3448,7 +3448,7 @@
         },
         {
           "name": "Borrowed Strike",
-          "description": "Lash out with a borrowed instinct at an enemy up to 40 blocks away: 6 + level damage.",
+          "description": "Throw a gold thread from your open hand at an enemy up to 40 blocks away: 6 + level damage, with a touch of the power you are channelling (fire burns, cold slows, lightning jumps to one more foe, radiation sickens, a far hand, Quake or Flight shoves).",
           "energy": 21,
           "cooldown": 100,
           "level": 2,
@@ -3504,7 +3504,7 @@
         },
         {
           "name": "Empathic Surge",
-          "description": "You and nearby teammates feel each other's strength: Strength for eight seconds.",
+          "description": "Two heartbeats go out and gold threads snap to every friend within 8 blocks, pets too: you all feel each other's strength, Strength for eight seconds.",
           "energy": 24,
           "cooldown": 300,
           "level": 2,
@@ -3576,7 +3576,7 @@
         },
         {
           "name": "Calm",
-          "description": "Soothe yourself and nearby teammates, clearing harmful effects.",
+          "description": "A hand on your heart: every harmful effect on you and on friends within 6 blocks lifts off and drifts into you as light, and is gone.",
           "energy": 19,
           "cooldown": 240,
           "level": 2,

@@ -1252,22 +1252,6 @@ public final class SpeedArt {
     // Ultimates (speed/SpeedUltimates)
     // ------------------------------------------------------------------
 
-    /** A figure of light standing at {@code feet}: legs, torso and head filled faintly gold with a hot rim. */
-    private static void figure(Canvas c, Vec3 feet, Vec3 smear, float alpha) {
-        if (alpha <= .01F) return;
-        Vec3 legs = feet.add(0, .4, 0).add(smear), torso = feet.add(0, 1.12, 0).add(smear.scale(.6)), head = feet.add(0, 1.68, 0).add(smear.scale(.3));
-        if (c.soft()) {
-            c.shell(legs, .2F, .4F, .14F, PI, GOLD, .3F * alpha, .55F, Canvas.PLAIN, 0);
-            c.shell(torso, .27F, .36F, .16F, PI, GOLD, .32F * alpha, .55F, Canvas.PLAIN, 0);
-            c.shell(head, .19F, .2F, .19F, PI, GOLD, .32F * alpha, .55F, Canvas.PLAIN, 0);
-        }
-        if (c.glow()) {
-            c.shell(torso, .29F, .38F, .18F, PI, HOT, .45F * alpha, 0, Canvas.PLAIN, 0);
-            c.shell(legs, .22F, .42F, .16F, PI, HOT, .35F * alpha, 0, Canvas.PLAIN, 0);
-            c.shell(head, .21F, .22F, .21F, PI, HOT, .45F * alpha, 0, Canvas.PLAIN, 0);
-        }
-    }
-
     /** A line of light in three layers: a wide amber halo, the gold body and a hot core. */
     private static void triple(Canvas c, Vec3[] points, float width, float alpha) {
         if (!c.glow() || alpha <= .01F) return;
@@ -1475,8 +1459,11 @@ public final class SpeedArt {
 
     /**
      * Between Heartbeats, one second of it (re-sent each second; the second in the seed, 0 the start): a heartbeat ring
-     * across the ground, sand hanging round the speedster, and two figures of light circling them, the next places they
-     * will be. The first second opens with a boom of amber.
+     * across the ground and sand hanging round the speedster. The first second is the vibration and the split: a tight
+     * gold shimmer round the body that trembles faster and faster (the body itself blurs into real afterimages side to
+     * side, {@code SpeedIllusions}), then at {@code SPLIT} a flash at the chest, three gold streaks tearing outward and a
+     * ring thrown across the ground as the illusions come loose. The illusions themselves are the speedster's own body
+     * (a {@code ShapeDecoy}), never figures of light.
      */
     static void heart(Canvas c, Active a, float t) {
         if (UltArt.cut(c, a)) return;
@@ -1496,31 +1483,56 @@ public final class SpeedArt {
                 c.glow(p, .05F, i % 3 == 0 ? HOT : GOLD, .65F * f);
             }
         }
-        float clock = c.time();
-        for (int i = 0; i < 2; i++) {
-            float ang = clock * .21F + i * PI;
-            Vec3 spot = feet.add(cos(ang) * 1.7, 0, sin(ang) * 1.7);
-            figure(c, spot, new Vec3(-sin(ang), 0, cos(ang)).scale(-.15), .45F * f);
+        if (second != 0) return;
+        int split = SpeedUltimates.BetweenHeartbeats.SPLIT;
+        // The vibration: a shimmer hugging the body, trembling faster as it builds, gone at the split.
+        float shiver = smooth(0, split - 4, t) * (1 - smooth(split - 1, split + 2, t));
+        if (shiver > 0 && c.glow()) {
+            float clock = c.time();
+            for (int k = 0; k < 3; k++) {
+                double y = .35 + k * .6;
+                float wob = (float) Math.sin(clock * (2.4F + t * .25F) + k * 2.1F) * .07F * shiver;
+                Vec3 at = feet.add(wob, y, -wob * .6);
+                float r = .42F + .04F * k + Math.abs(wob);
+                c.ring(at, UP, r, .09F, 0, TWO_PI, AMBER, .25F * shiver * f);
+                c.ring(at, UP, r, .025F, 0, TWO_PI, HOT, .7F * shiver * f);
+            }
+            c.glow(feet.add(0, 1.1, 0), .9F + .3F * shiver, GOLD, .25F * shiver);
         }
-        if (second == 0 && c.glow()) {
+        // The split: a flash at the chest, three streaks tearing outward, and a ring thrown across the ground.
+        float burst = t - split;
+        if (burst >= 0 && burst < 12) {
+            float k = smooth(0, 6, burst), gone = 1 - smooth(3, 12, burst);
+            float yaw = body instanceof net.minecraft.world.entity.LivingEntity living ? living.yBodyRot * Mth.DEG_TO_RAD : 0;
+            if (c.glow()) {
+                c.glow(feet.add(0, 1.1, 0), 1.6F * (1 - smooth(0, 4, burst)), HOT, 1 - smooth(0, 4, burst));
+                c.ring(feet.add(0, .08, 0), UP, .5F + 4.5F * k, .18F, 0, TWO_PI, AMBER, .35F * gone);
+                c.ring(feet.add(0, .08, 0), UP, .5F + 4.5F * k, .05F, 0, TWO_PI, HOT, gone);
+            }
+            for (int i = 0; i < SpeedUltimates.BetweenHeartbeats.ILLUSIONS; i++) {
+                float ang = yaw + PI / 2 + i * TWO_PI / SpeedUltimates.BetweenHeartbeats.ILLUSIONS;
+                Vec3 out = new Vec3(cos(ang), 0, sin(ang));
+                Vec3 from = feet.add(0, .9, 0), to = from.add(out.scale(.4 + 3.2 * k));
+                triple(c, new Vec3[]{from.add(out.scale(.4 * k)), from.lerp(to, .5).add(0, .25 * (1 - k), 0), to}, .08F, gone);
+            }
+        }
+        if (c.glow()) {
             float k = smooth(0, 8, t);
             c.shell(feet.add(0, 1, 0), .5F + 3 * k, .5F + 2.4F * k, .5F + 3 * k, PI, AMBER, .3F * (1 - k), 0, Canvas.PLAIN, 0);
         }
     }
 
     /**
-     * One beat of a speedster's Ultimate: a sidestep (seed 0) leaves a figure of light where they stood and a low
-     * streak to where they went; a shot plucked out of the air (seed 1) is a quick flick of gold to the hand; a strike
-     * back (seed 2) is a streak from the afterimage into the one who swung, with a ring where it lands.
+     * One beat of a speedster's Ultimate: a sidestep (seed 0) is a low streak to where they went (the afterimage left
+     * standing is their own body, from {@code SPEED_DODGE}); a shot plucked out of the air (seed 1) is a quick flick of
+     * gold to the hand; a blow (seed 2) is a streak from the striker (an illusion, an afterimage) into the one it hits,
+     * with a ring where it lands.
      */
     static void dodge(Canvas c, Active a, float t) {
         Vec3 from = a.origin(), to = a.target();
         float life = a.piece().ticks, f = Canvas.fade(t, life, 0, 8);
         switch (a.seed()) {
             case 0 -> {
-                Vec3 smear = to.subtract(from).multiply(1, 0, 1);
-                smear = smear.lengthSqr() < 1e-4 ? Vec3.ZERO : smear.normalize().scale(-.15);
-                figure(c, from, smear, f);
                 triple(c, new Vec3[]{from.add(0, .5, 0), to.add(0, .5, 0)}, .06F, f * (1 - smooth(0, 8, t)));
             }
             case 1 -> {

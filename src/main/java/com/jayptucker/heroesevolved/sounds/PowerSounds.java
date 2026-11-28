@@ -61,7 +61,9 @@ public final class PowerSounds {
     /** Presses that start a wind-up; the release that follows plays the move. */
     private static final Set<String> CHARGES = Set.of(
             "pyro_flare", "pyro_inferno", "flight_launch", "radiation_exploding_man", "speed_cyclone",
-            "sonic_crescendo");
+            "sonic_crescendo",
+            // Power Amplification: Supercharge and Red Lightning both build while held and land on the release.
+            "amp_supercharge", "amp_red_lightning");
 
     /** Presses whose cue is set by hand rather than by tier or node kind. */
     private static final Map<String, PowerCue> PRESS = Map.of(

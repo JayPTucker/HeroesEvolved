@@ -470,7 +470,17 @@ public enum Piece {
     // heat, a dose settling on a body, sickness jumping, ash falling; the scale their size). RAD_ULT_POINT: Point of No
     // Return (bound to him, the foe's id in the seed). RAD_ULT_LEAD: Lead Heart's dome (bound; re-sent each second; -1 the
     // panels blown out; scale its radius). RAD_ULT_HEARTH: the Cherenkov Hearth (re-sent each second; scale its reach).
-    RAD_PULSE(16), RAD_DOSE(16), RAD_CHAIN(18), RAD_FALLOUT(60), RAD_ULT_POINT(120), RAD_ULT_LEAD(24), RAD_ULT_HEARTH(24);
+    RAD_PULSE(16), RAD_DOSE(16), RAD_CHAIN(18), RAD_FALLOUT(60), RAD_ULT_POINT(120), RAD_ULT_LEAD(24), RAD_ULT_HEARTH(24),
+    // Empathic Mimicry's own skills (mimicry/MimicSkills; MimicArt), all bound to the empath unless said. MIMIC_LASH:
+    // Borrowed Strike (origin the hand, target the foe, the foe's id in the seed, scale the channelled power's index).
+    // MIMIC_SURGE: Empathic Surge's heartbeat (seed 0, scale its reach) and a thread to each friend (bound to the friend,
+    // origin the empath's heart, LINK in the seed). MIMIC_CALM: Calm's settling ring (seed 0, scale its reach) and a mote
+    // of a lifted effect (origin where it rose, target the heart, LINK | its colour in the seed, scale its order).
+    // MIMIC_ABSORB: Absorb Pain (origin the friend's chest, target the heart, the effect's colour in the seed or -1, scale
+    // its order). MIMIC_SENSE: Sense Powers' heartbeat going out (seed 0, scale its reach) and, sent only to the empath, a
+    // person found (bound to them, LINK | their power's index). MIMIC_OVERCHARGE: rings closing on both hands (scale the
+    // channelled power's index).
+    MIMIC_LASH(18), MIMIC_SURGE(30), MIMIC_CALM(34), MIMIC_ABSORB(30), MIMIC_SENSE(44), MIMIC_OVERCHARGE(20);
 
     /** How long it is drawn, in ticks. */
     public final int ticks;

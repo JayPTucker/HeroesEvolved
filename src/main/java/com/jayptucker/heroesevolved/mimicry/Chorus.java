@@ -108,27 +108,38 @@ public final class Chorus {
             Vec3 chest = player.position().add(0, 1.3, 0);
             SetPiecePayload.sendSeeded(level, Piece.MIMIC_VOICE, chest, foe.getBoundingBox().getCenter(), MimicColors.index(power), player, 0, fired);
             Signatures.hit(foe, player.damageSources().indirectMagic(player, player), damage);
-            switch (power) {
-                case "pyrokinesis" -> foe.igniteForSeconds(3);
-                case "cryokinesis" -> foe.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1), player);
-                case "radiation" -> com.jayptucker.heroesevolved.radiation.RadiationService.irradiate(foe, player, 1, 80);
-                case "telekinesis", "quake", "flight" -> {
-                    Vec3 out = foe.position().subtract(player.position()).multiply(1, 0, 1);
-                    if (out.lengthSqr() > 1e-4) Signatures.fling(foe, out.normalize().scale(.8).add(0, .3, 0));
-                }
-                case "electrokinesis" -> {
-                    for (LivingEntity near : Signatures.foes(player, foe.getBoundingBox().getCenter(), 4, true)) {
-                        if (near == foe) continue;
-                        SetPiecePayload.sendSeeded(level, Piece.MIMIC_VOICE, foe.getBoundingBox().getCenter(), near.getBoundingBox().getCenter(),
-                                MimicColors.index(power), null, 0, fired + 100);
-                        Signatures.hit(near, player.damageSources().indirectMagic(player, player), damage * .5F);
-                        break;
-                    }
-                }
-                default -> { }
-            }
+            touch(player, power, foe, damage, fired);
             level.playSound(null, foe.blockPosition(), SoundEvents.AMETHYST_CLUSTER_HIT, SoundSource.PLAYERS, 1.2F, .8F + fired * .07F % .8F);
             fired++;
+        }
+    }
+
+    /**
+     * A touch of a borrowed power on a foe an empath has just struck: fire burns, cold slows, radiation sickens, a far
+     * hand (or Quake, or Flight) shoves it away, and lightning jumps to one foe close by for half of {@code damage}. Other
+     * powers add nothing. Shared by every voice of a Chorus and by Borrowed Strike ({@code MimicSkills}); {@code seed}
+     * tells a jump's bolt apart from the rest.
+     */
+    public static void touch(ServerPlayer player, String power, LivingEntity foe, float damage, int seed) {
+        if (power == null || !foe.isAlive()) return;
+        switch (power) {
+            case "pyrokinesis" -> foe.igniteForSeconds(3);
+            case "cryokinesis" -> foe.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1), player);
+            case "radiation" -> com.jayptucker.heroesevolved.radiation.RadiationService.irradiate(foe, player, 1, 80);
+            case "telekinesis", "quake", "flight" -> {
+                Vec3 out = foe.position().subtract(player.position()).multiply(1, 0, 1);
+                if (out.lengthSqr() > 1e-4) Signatures.fling(foe, out.normalize().scale(.8).add(0, .3, 0));
+            }
+            case "electrokinesis" -> {
+                for (LivingEntity near : Signatures.foes(player, foe.getBoundingBox().getCenter(), 4, true)) {
+                    if (near == foe) continue;
+                    SetPiecePayload.sendSeeded(player.serverLevel(), Piece.MIMIC_VOICE, foe.getBoundingBox().getCenter(), near.getBoundingBox().getCenter(),
+                            MimicColors.index(power), null, 0, seed + 100);
+                    Signatures.hit(near, player.damageSources().indirectMagic(player, player), damage * .5F);
+                    break;
+                }
+            }
+            default -> { }
         }
     }
 

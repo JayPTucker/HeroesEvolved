@@ -92,7 +92,7 @@ public final class TelepathyKitPreview {
     }
 
     private static void check(boolean ok, String what) {
-        System.out.println((ok ? "TELE_KIT_PASS " : "TELE_KIT_FAIL ") + what);
+        PreviewQuiet.report((ok ? "TELE_KIT_PASS " : "TELE_KIT_FAIL ") + what);
     }
 
     private static void camera(Minecraft mc, CameraType type) { mc.options.setCameraType(type); }

@@ -438,4 +438,85 @@ public final class HydroGameTests {
         forget(p);
         h.succeed();
     }
+
+    // ------------------------------------------------------------------
+    // The tree's passives (Return Current, Rain Call, Soothing Tide)
+    // ------------------------------------------------------------------
+
+    @GameTest(template = "rewind_empty", batch = "hydro.return", timeoutTicks = 40)
+    public static void returnCurrentFlingsASwallowedShotBackAtItsShooter(GameTestHelper h) {
+        ServerPlayer p = bender(h, 5, "hydro_1_1", "hydro_return_current");
+        LivingEntity shooter = foe(h, p, 12, 0);
+        Arrow arrow = EntityType.ARROW.create(h.getLevel());
+        guard(p, () -> {
+            h.assertTrue(HydroSkills.wall(context(p, false)), "The wall rises");
+            arrow.setOwner(shooter);
+            arrow.setNoGravity(true);
+            arrow.moveTo(p.getX(), p.getY() + 1.5, p.getZ() + 4.5);
+            arrow.setDeltaMovement(0, 0, -1.5);
+            h.getLevel().addFreshEntity(arrow);
+        }).run();
+        later(h, p, 3, () -> {
+            h.assertFalse(arrow.isRemoved(), "With Return Current the shot is not swallowed");
+            h.assertTrue(arrow.getOwner() == p, "It is the bender's now");
+            h.assertTrue(arrow.getDeltaMovement().z > 0, "And flies back toward its shooter, " + arrow.getDeltaMovement());
+            arrow.discard();
+            shooter.discard();
+            forget(p);
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "hydro.rain", timeoutTicks = 60)
+    public static void rainCallMendsAndPutsOutFriendsSoaksFoesAndFillsTheWater(GameTestHelper h) {
+        ServerPlayer p = bender(h, 5, "hydro_rain_call");
+        var friend = EntityType.VILLAGER.create(h.getLevel());
+        friend.setNoAi(true);
+        friend.moveTo(p.getX() + 3, p.getY(), p.getZ(), 180, 0);
+        h.getLevel().addFreshEntity(friend);
+        friend.setHealth(6);
+        friend.setRemainingFireTicks(200);
+        LivingEntity foe = foe(h, p, 0, -3);
+        guard(p, () -> {
+            HydroService.fill(p, -60);
+            h.assertTrue(HydroSkills.rainCall(context(p, false)), "The cloud gathers");
+        }).run();
+        int water = HydroService.water(p);
+        later(h, p, 45, () -> {
+            h.assertTrue(friend.getHealth() > 6, "A friend under the rain mends, " + friend.getHealth());
+            h.assertFalse(friend.isOnFire(), "And stops burning");
+            h.assertTrue(HydroService.soaked(foe), "A foe under it is Soaked");
+            h.assertTrue(HydroService.water(p) > water, "The bender's water fills, " + water + " to " + HydroService.water(p));
+            friend.discard();
+            foe.discard();
+            forget(p);
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "hydro.soothing", timeoutTicks = 100)
+    public static void soothingTideSpreadsHealingWaterToFriendsNearby(GameTestHelper h) {
+        ServerPlayer p = bender(h, 5, "hydro_2_1", "hydro_soothing_tide");
+        var aimed = EntityType.VILLAGER.create(h.getLevel());
+        var beside = EntityType.VILLAGER.create(h.getLevel());
+        aimed.setNoAi(true);
+        beside.setNoAi(true);
+        aimed.moveTo(p.getX(), p.getY(), p.getZ() + 3, 180, 0);
+        beside.moveTo(p.getX() + 2, p.getY(), p.getZ() + 4, 180, 0);
+        h.getLevel().addFreshEntity(aimed);
+        h.getLevel().addFreshEntity(beside);
+        aimed.setHealth(4);
+        beside.setHealth(4);
+        aim(p, aimed);
+        guard(p, () -> h.assertTrue(HydroSkills.healingWater(context(p, false)), "Healing Water wraps the friend in sight")).run();
+        later(h, p, 62, () -> {
+            float main = aimed.getHealth() - 4, spread = beside.getHealth() - 4;
+            h.assertTrue(main > 6, "The friend in sight heals in full, " + main);
+            h.assertTrue(spread > 2 && spread < main, "A friend within four blocks of them heals at half, " + spread + " of " + main);
+            aimed.discard();
+            beside.discard();
+            forget(p);
+            h.succeed();
+        });
+    }
 }

@@ -1111,7 +1111,68 @@ def vibe():
     return dict(cast=cast, heavy=heavy, charge=charge, impact=impact, end=end)
 
 
+def power_amplification():
+    """Ando's red lightning and the Supercharge: an amplifier's growl. Electrokinesis is a clean saw buzz; this is a
+    square-ish hum driven into soft clipping (warmer, lower, dirtier), with a rising "power-up" whine for anything it
+    winds up or hands to someone, and crackle that is bit-crushed so it sounds overloaded rather than crisp. Made from
+    scratch: the reference library has no amplifier sound, and nothing in it was used."""
+
+    def growl(t, freq, drive=2.2):
+        ph = phase(freq)
+        raw = np.sin(ph) + .45 * np.sin(2 * ph + .3) + .3 * np.sign(np.sin(ph)) * .5
+        return bp(np.tanh(raw * drive) / np.tanh(drive), 90, 5200)
+
+    def whine(t, freq):
+        ph = phase(freq)
+        return np.sin(ph) * .6 + np.sin(2 * ph) * .25 + np.sin(3 * ph) * .12
+
+    def grit(t, rate, lo=1800, hi=11000):
+        # Crushed at full scale, then put back: quiet crackle would otherwise round away to silence.
+        raw = crackle(t, rate, .0004, lo, hi)
+        scale = np.max(np.abs(raw)) + 1e-9
+        return crush(raw / scale, 4, 6) * scale
+
+    def cast(k):
+        t = T(.6)
+        surge = growl(t, path(t, [(0, 85 * k), (.12, 175 * k), (.55, 120 * k)])) * env(t, .006, .14)
+        lift = sweep(white(len(t)), path(t, [(0, 700 * k), (.18, 5200 * k)]), .5) * swell(t, .06, .3) * .45
+        spark = grit(t, 800 * np.exp(-t / .13)) * .45
+        return reverb(surge * 1.2 + lift + spark, .3, .22, 8500)
+
+    def heavy(k):
+        t = T(2.4)
+        crack = white(len(t)) * env(t, .0006, .02) * 1.8 + bp(white(len(t)), 700, 8000) * env(t, .002, .08)
+        hum = growl(t, np.full(len(t), 55 * k), 3) * env(t, .01, .9) * flutter(t, 7, .6) * 1.1
+        rise = whine(t, path(t, [(0, 220 * k), (.7, 520 * k), (2.3, 440 * k)])) * swell(t, .5, 2.2) * .35
+        sub = thump(t, 70 * k, 38 * k, .5, knock=.4)
+        spark = grit(t, 1300 * np.exp(-t / .3), 1400, 12000) * .7
+        return reverb(crack + hum + rise + sub + spark, 1.15, .4, 6500)
+
+    def charge(k):
+        t = T(1.4)
+        up = ramp(t, 0, 1.35, 1.5)
+        hum = growl(t, path(t, [(0, 48 * k), (1.4, 150 * k)]), 1.6 + 1.6 * up)
+        hum *= (1 + .55 * np.sin(phase(path(t, [(0, 4), (1.4, 26)])))) * (.35 + .65 * up)
+        pitch = whine(t, path(t, [(0, 170 * k), (1.4, 1150 * k)])) * up ** 1.3 * .4
+        return reverb(hum + pitch + grit(t, 30 + 900 * up) * .55 * up, .35, .25, 8500)
+
+    def impact(k):
+        t = T(.45)
+        snap = hp(white(len(t)), 2200) * env(t, .0005, .012) * .6
+        hit = growl(t, 160 * k * (1 + .35 * np.sin(2 * np.pi * 31 * t)), 3) * env(t, .002, .07)
+        return reverb(snap + hit * 1.25 + grit(t, 1500 * np.exp(-t / .06)) * .45, .25, .2, 9000)
+
+    def end(k):
+        t = T(.85)
+        gate = (np.sin(phase(path(t, [(0, 18), (.8, 6)]))) > -.3).astype(float)
+        down = growl(t, path(t, [(0, 190 * k), (.8, 36 * k)])) * env(t, .01, .3) * (.5 + .5 * gate)
+        return reverb(down + grit(t, 420 * np.exp(-t / .18)) * .45, .35, .25, 7500)
+
+    return dict(cast=cast, heavy=heavy, charge=charge, impact=impact, end=end)
+
+
 POWERS = dict(
+    power_amplification=power_amplification,
     cryokinesis=cryokinesis, electrokinesis=electrokinesis, flight=flight, hydrokinesis=hydrokinesis,
     invisibility=invisibility, matter_assembly=matter_assembly, empathic_mimicry=empathic_mimicry, phasing=phasing,
     pyrokinesis=pyrokinesis, quake=quake, radiation=radiation, regeneration=regeneration, shapeshifting=shapeshifting,
@@ -1122,6 +1183,7 @@ VARIANTS = {"cast": 3, "impact": 3, "strike": 3, "dodge": 2, "heavy": 2, "charge
 PITCH = (1.0, 0.94, 1.065)
 
 SUBTITLES = {
+    "power_amplification": ("Power surges", "Red lightning booms", "Power builds", "Red spark snaps", "Power drains away", None, None),
     "cryokinesis": ("Frost hisses", "Ice groans and shatters", "Frost gathers", "Ice cracks", "Ice melts away", "Ice swishes", "Skates carve"),
     "electrokinesis": ("Electricity zaps", "Thunder cracks", "Charge builds", "Shock lands", "Current fades", "Spark snaps", "Lightning flashes"),
     "flight": ("Wind gusts", "Air booms", "Wind gathers", "Air slams", "Wind settles", None, None),

@@ -373,9 +373,9 @@ reviewed("phasing_1_1", "phasing/DensitySkills#rebound", "min(18,4+.6*stored); 4
          note="Stone Skin's stored damage is paid by receiving blows; its shield gets a utility reserve.")
 reviewed("phasing_phase_fall", "phasing/Earthworks#tickSurf", "3+.5*tier once per UUID over the entire surf", 4.5, n=2, blocks=12, util=4)
 utility_reviews("phasing/DensitySkills; phasing/DensityService", [("phasing_phase_lock", "Quicksand roots; no direct hit"), ("phasing_2_1", "Tunnel moves underground; surface punch belongs to the same move")])
-reviewed("empathic_mimicry_0_1", "mimicry/MimicryService#skill", "6+tier; one Borrowed Strike", 8, util=2)
-utility_reviews("mimicry/MimicryService", [("empathic_mimicry_sense_powers", "detects powers"), ("empathic_mimicry_1_1", "Empathic Surge heals/buffs"),
-    ("empathic_mimicry_overcharge", "strengthens a copied move, which still pays its own stamina"), ("empathic_mimicry_2_1", "Calm de-aggros"), ("empathic_mimicry_absorb_pain", "takes an ally's pain")])
+reviewed("empathic_mimicry_0_1", "mimicry/MimicSkills#borrowedStrike", "6+tier; one Borrowed Strike, plus the channelled power's touch (Chorus.touch: burn, slow, sicken, shove, or half again on one foe nearby) as a conditional rider", 8, util=2)
+utility_reviews("mimicry/MimicSkills", [("empathic_mimicry_sense_powers", "detects powers"), ("empathic_mimicry_1_1", "Empathic Surge: Strength for friends within 8"),
+    ("empathic_mimicry_overcharge", "strengthens a copied move, which still pays its own stamina"), ("empathic_mimicry_2_1", "Calm lifts harmful effects within 6"), ("empathic_mimicry_absorb_pain", "takes an ally's pain")])
 reviewed("matter_assembly_scattershot", "assembly/MatterAssemblyService#activate,firePaid,tickShard", "five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability", 6, n=3, factor=.75,
          note="tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies. Ricochet and airborne bonuses are conditional rewards for setup.")
 utility_reviews("assembly/MatterAssemblyService", [("matter_assembly_faultline", "Kaleidoscope: a mirror ring that holds a foe; its damage is the Shards you fire in, each paid separately"),
@@ -463,7 +463,7 @@ utility_reviews("combat/Ultimates (Defense and Support)", [
     ("shapeshifting_masquerade", "Many Faces: four copies draw every hunter; friends mend and move quicker"),
     ("sonic_resonance_silence_dome", "Dead Air: shots drop, foes inside hushed, weakened and slowed; 4 to those inside as it breaks (conditional)"),
     ("sonic_resonance_battle_hymn", "Anthem: chords every 2 s that mend, strengthen and harden friends"),
-    ("superspeed_phase_blur", "Between Heartbeats: every blow and shot finds an afterimage; 3 back to each striker, 2 per afterimage as it ends (conditional)"),
+    ("superspeed_phase_blur", "Between Heartbeats: three illusions fight enemies within 32 for 12 s, 2 a blow (about one a second each, three blows to break one); blows on you at half (conditional)"),
     ("superspeed_relay_run", "Rescue Run: every friend within 32 brought to your side, healed 6 + tier, cleansed and quickened"),
     ("telekinesis_debris_halo", "Stop Everything: shots stopped ten blocks out and thrown back, foes held at arm's length"),
     ("telekinesis_gathering_hand", "Cradle: friends gathered under two hands that stop shots, swat foes back for 2 and halve harm"),

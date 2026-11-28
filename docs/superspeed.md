@@ -308,12 +308,27 @@ player's real afterimages rather than sprites:
 | --- | --- |
 | Reflex Focus | Fists come up into a boxer's guard. Three gold rings close in at eye height, one after another, round a still afterimage of you. |
 | A dodge | You are simply beside where you were: an afterimage stays where the shot was aimed, a low gold streak and two scorched skid lines run to where you went, and a glint flashes where it would have hit. |
-| Speed Mirage | Three copies wearing your face run separate paths around you, trailing gold lightning. Enemies can chase and strike them; a hit dissolves a copy in a harmless burst. With Time Remnant, a remnant beside each foe lashes out when it strikes. |
+| Speed Mirage | Three copies of you (your face, your armour, whatever you hold) run separate paths around you, trailing gold lightning and your own afterimages. Enemies can chase and strike them; a hit dissolves a copy in a harmless burst. With Time Remnant, a remnant beside each foe lashes out when it strikes. |
 | Momentum Strike | The rush is strung out as afterimages along a gold lane; the fist drives through, and a cone of shock rings blows out the far side of the target. |
 | Lightning Throw | The arm cocks back over the shoulder as lightning gathers in the hand, then whips through like a javelin; the bolt leaves the hand a moment later and bursts where it lands. Charged Throw's hops follow on without a wind-up. |
 | Slipstream Rescue | One arm reaches round the person beside you. Your path is a gold ribbon with afterimages; theirs is a pale ribbon of pressed wind wrapped in rings. |
 | Perception | Open hands held a little out from your sides, perfectly still, while the gold clock rings ripple out. |
 | Rescue Run (Support Ultimate) | Each friend is fetched along a gold arc, their outline fading where they stood, and a ring closes round them as they land beside you. |
+| Between Heartbeats (Defense Ultimate) | A heartbeat rings out across the ground and you start to vibrate: faint gold copies of your body flicker to either side of you, faster and faster, inside a trembling gold shimmer. Then you come apart. A flash at your chest, three gold streaks, and three illusions of you (your face, your armour, whatever you hold) tear loose and run. Every stride they take too fast to see is strung out behind them as your own afterimages, and they keep vibrating the whole time. They swing at their enemies from one side, blur round, and swing from another; a blow on one leaves your afterimage standing where it was as it steps aside, and the last blow bursts it into a ring of afterimages. At the end they run home into you. |
+
+### Between Heartbeats
+
+The Superspeed Defense Ultimate (class tree, Level 3; 50 stamina, two minutes to recover).
+
+| Beat | What happens |
+| --- | --- |
+| Vibration (under a second) | You blur in place. Blows on you land at half from now until it ends, a fall or fire as well. |
+| The split | Three illusions of you tear loose and run out in three directions. |
+| Twelve seconds | Each illusion picks an **enemy within 32 blocks of you** (a monster, anything hunting you or a friend, or whoever you just fought), one each where it can, and runs to it at a speedster's pace. It strikes for **2** about once a second, coming at it from a new side each time, and the enemy turns on the illusion instead of you. Everything else hunting you or a friend within 32 blocks turns on the nearest illusion too. With nothing to fight, the illusions run a ring round you. |
+| A blow on an illusion | It steps aside. The third blow breaks it. |
+| The end | The illusions still standing run home into you. |
+
+Villagers, animals and other creatures nobody is fighting are left alone. An illusion that can't reach its enemy (a wall, a gap) is simply beside it in a flash. Your own blows and blasts pass through your illusions.
 
 Learn and equip these with the inventory **Skills** button. Passive discounts apply to initial activation costs and cooldowns, not ongoing running or dodge costs. Running earns Mastery for actual stamina spent. Each running interval is paid upfront so toggling cannot avoid the drain; walking does not consume running stamina.
 
@@ -336,7 +351,7 @@ streak of lightning along the path; each strike flashes and rings on the body. *
 
 Dash and rescue paths check body-sized boxes every quarter block, up to forty blocks per action. They reject unloaded chunks, obstructed space, lava, fire and world boundaries. Horizontal bursts preserve downward velocity and accumulated fall distance. Normal running uses ordinary Minecraft collisions.
 
-Running trails send at most ten bounded segment descriptions per second per moving runner. Clients render amber ribbons, short lightning branches and pressure rings using the existing particle/detail budget. Afterimages capture the actual skin and running limb pose at fixed world coordinates, fading from 42% opacity over 18 ticks. Slim/wide arms and enabled skin layers are supported; armor, capes and held items are not duplicated. At most 48 ghosts are retained across the scene, with lower emission at minimal particles. Ordinary running ghosts create no extra entities or afterimage packets. Speed Mirage uses three real, targetable decoy bodies and clears them when the skill ends or the power is lost.
+Running trails send at most ten bounded segment descriptions per second per moving runner. Clients render amber ribbons, short lightning branches and pressure rings using the existing particle/detail budget. Afterimages capture the actual skin and running limb pose at fixed world coordinates, fading from 42% opacity over 18 ticks. Slim/wide arms and enabled skin layers are supported; a ghost is skin only (armor, capes and held items are not duplicated), while a copy (a Speed Mirage runner, a Between Heartbeats illusion) is a whole body in your armor, holding what you hold, and leaves ghosts of itself. At most 96 ghosts are retained across the scene, with lower emission at minimal particles. Ordinary running ghosts create no extra entities or afterimage packets. Speed Mirage uses three real, targetable decoy bodies and clears them when the skill ends or the power is lost.
 
 A whirlwind considers at most 32 affected entities per update. Transient movement modifiers and runtime combat state are removed on cleanup. Existing imported recordings remain unchanged; new speed cues use vanilla wind and sweep sounds.
 

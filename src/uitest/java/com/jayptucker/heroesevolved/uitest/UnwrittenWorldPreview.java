@@ -69,7 +69,7 @@ public final class UnwrittenWorldPreview {
                 returned = true;
             });
         }
-        if (returned && !mc.level.dimension().equals(FacilityService.DIMENSION) && ++returnedTicks == 80) mc.execute(mc::stop);
+        if (returned && !mc.level.dimension().equals(FacilityService.DIMENSION) && ++returnedTicks == 80) PreviewQuiet.quit();
         if (ticks > 3600 && !entering) throw new AssertionError("World preview did not enter the mission");
     }
     private static boolean before, after;
