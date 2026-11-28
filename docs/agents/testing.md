@@ -9,7 +9,8 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 
 - **Where tests live.** `src/gametest/java` (NeoForge game tests) and `src/gametest/resources` (test structures such as
   `rewind_empty`, and `data/minecraft/worldgen/world_preset/flat.json`, which lists every dimension the test server has).
-  They are loaded only by an init script, so they never ship in the mod's jar. There are no plain unit tests.
+  They are loaded only by an init script, so they never ship in the mod's jar. The only plain check outside the game is
+  the effect geometry check below.
 - **The whole suite** is what GitHub runs on every push (`.github/workflows/build.yml`):
   `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`. Every run starts from a fresh world and
   the mod's default config. Failures are in `build/rewind-gametest-world/logs/gametest`.
@@ -51,6 +52,19 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **Game tests call the server directly.** They never press a key, so a broken click, double-tap or key binding passes
   every test. The fighting preview's `-Pinput` run and `flight-roll-preview` are the checks of real input (see
   [previews.md](previews.md)).
+- **The effect geometry check** (`tools/verify-effect-geometry.ps1`) compiles the mod and runs
+  `tools/EffectGeometryCheck.java` against its classes with no game open: meshes, poses, particles and payload
+  round-trips, one `PASS:` line each. GitHub doesn't run it, so it rots: by November 2026 it was broken two ways at
+  once and nobody had noticed. Run it after changing anything it calls, and when you delete a class, delete its block
+  too.
+  - **There is no client in it.** `Minecraft.getInstance()` is null, so client code it reaches that reads the client's
+    world throws. Wrap that block in `withClientOutsideAWorld`, which puts in a client with no world for the block's
+    length. Don't add a null-client guard to the game's code for it: a client always exists in game
+    (`ClientFlightVisualState.update` crashed it this way).
+  - **It must run in Windows PowerShell 5.1,** the one Windows ships (`pwsh`, version 7, may be missing). 5.1 has no
+    `-Encoding utf8NoBOM` (and its `utf8` writes a BOM, which java reads as part of the first argument): write files
+    with `[IO.File]::WriteAllText` and `UTF8Encoding($false)`. When output is redirected, 5.1 turns a native tool's
+    stderr (javac's warnings) into errors, so run tools through `Invoke-EffectTool` and judge them by exit code.
 
 ## Before you blame your change
 

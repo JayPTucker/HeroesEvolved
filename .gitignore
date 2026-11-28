@@ -39,3 +39,6 @@ run/
 **/src/generated/**/.cache/
 repo/
 !**/src/**/repo/
+
+# A game run started from the repository root writes its log here.
+logs/

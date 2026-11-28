@@ -1,0 +1,13 @@
+{
+  "film": "build/trailer-preview/film",
+  "work": "build/trailer/work",
+  "out": "build/trailer/heroes-evolved-test-shot.mp4",
+  "timeline": [
+    {"card": "SOME OF US WOKE UP DIFFERENT.", "seconds": 2.6},
+    {"shot": "11-firebending-sunset", "fade_in": 6,
+     "cues": {"kick": {"kind": "braam", "shift": 6}, "blue-kick": {"kind": "hit", "shift": 2},
+              "flip": {"kind": "braam", "shift": 5}}},
+    {"title": "HEROES EVOLVED", "sub": "Twenty powers. One world that remembers.",
+     "small": "Minecraft 1.21.1  ·  NeoForge", "seconds": 4.5}
+  ]
+}

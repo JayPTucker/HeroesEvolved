@@ -1,0 +1,31 @@
+{
+  "film": "build/trailer-preview/film",
+  "work": "build/trailer/work",
+  "out": "build/trailer/heroes-evolved-powers.mp4",
+  "timeline": [
+    {"card": "SOME OF US WOKE UP DIFFERENT.", "seconds": 2.2},
+    {"shot": "10-ballista", "from": 40, "to": 90, "fade_in": 8, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "11-firebending-sunset", "from": 34, "to": 92, "cues": {"kick": {"kind": "braam", "shift": 6}}},
+    {"shot": "23-hailstorm", "from": 24, "to": 70},
+    {"shot": "12-lightning-round", "from": 30, "to": 72, "look": {"exposure": 1.15}, "cues": {"impact": {"kind": "hit", "shift": 2}}},
+    {"shot": "13-epicenter", "from": 36, "to": 76, "cues": {"impact": {"kind": "braam", "shift": 3}}},
+    {"shot": "25-implosion", "from": 30, "to": 70},
+    {"shot": "14-leviathan", "from": 40, "to": 78, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "24-tesla-spire", "from": 22, "to": 58, "look": {"exposure": 1.1}, "cues": {"cast": {"kind": "braam", "shift": 18}}},
+    {"shot": "15-mountain-armor", "from": 44, "to": 76, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "26-hour-hand", "from": 70, "to": 106},
+    {"shot": "19-puppeteer", "from": 64, "to": 96, "look": {"exposure": 1.1}, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "20-bastion", "from": 52, "to": 84, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "28-many-hands", "from": 22, "to": 54},
+    {"shot": "21-chorus", "from": 66, "to": 96, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "27-vital-burst", "from": 96, "to": 126, "look": {"exposure": 1.1}},
+    {"shot": "17-microburst", "from": 30, "to": 60, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "22-overdrive", "from": 52, "to": 80, "look": {"exposure": 1.1}, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "29-crosswave", "from": 38, "to": 64, "look": {"exposure": 1.2}},
+    {"shot": "18-standing-wave", "from": 96, "to": 124, "cues": {"impact": {"kind": "hit", "shift": 3}}},
+    {"shot": "16-fission-star", "from": 52, "to": 100, "look": {"exposure": 1.15}, "cues": {"impact": {"kind": "braam", "shift": 3}}},
+    {"card": "", "seconds": 0.4},
+    {"title": "HEROES EVOLVED", "sub": "Twenty powers. One world that remembers.",
+     "small": "Minecraft 1.21.1  ·  NeoForge", "seconds": 4.5}
+  ]
+}
