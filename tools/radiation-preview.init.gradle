@@ -18,6 +18,8 @@ allprojects {
                 }
             }
             tasks.named('runClient') { dependsOn(tasks.named('radiationPreviewClasses')) }
+            // Pass when the driver finished and its checks and photographs are sound, not on the halt's exit code.
+            apply from: rootProject.file('tools/preview-result.gradle')
         }
     }
 }

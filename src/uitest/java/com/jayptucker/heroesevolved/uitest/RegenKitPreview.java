@@ -72,7 +72,7 @@ public final class RegenKitPreview {
     }
 
     private static void check(boolean ok, String what) {
-        System.out.println((ok ? "REGEN_KIT_PASS " : "REGEN_KIT_FAIL ") + what);
+        PreviewQuiet.report((ok ? "REGEN_KIT_PASS " : "REGEN_KIT_FAIL ") + what);
     }
 
     private static void camera(Minecraft mc, CameraType type) { mc.options.setCameraType(type); }

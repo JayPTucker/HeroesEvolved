@@ -13,7 +13,7 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 | Hosted world (Open to LAN, Essential's Host World, e4mc) | the host's game; friends join over the network | everything below for the guests, and server code reading the host's client state |
 | Dedicated server | a server install with no client classes at all | everything below, plus any server path that loads a client class crashes the server |
 
-The mod is required on both sides (the payload registrar's version string in `ModPayloads`, now `"133"`, must match),
+The mod is required on both sides (the payload registrar's version string in `ModPayloads` must match),
 as are TaCZ, Simple Voice Chat and Simple Radio. Essential, JEI and Jade are optional.
 
 ## Dedicated servers: never load a client class

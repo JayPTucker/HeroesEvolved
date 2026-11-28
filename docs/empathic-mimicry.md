@@ -66,6 +66,9 @@ borrowed power shown in its own colour:
 - **Switching:** a hand drawn to the heart, then opened outward; the gold ring is drawn in, and the new power's
   colour opens out.
 - Threads fade where they pass close to the camera, so a front view or your own first-person view isn't flooded.
+- **Your own skills** (Borrowed Strike, Empathic Surge, Calm, Sense Powers, Overcharge, Absorb Pain) speak the same
+  language: a thread from your hand or heart, a heartbeat, and a bloom in the colour of the power or sickness involved
+  (see "Your own skills" below).
 
 ## Skill tree
 
@@ -76,6 +79,20 @@ borrowed power shown in its own colour:
 | Empathy | Calm | **Absorb Pain** (take a friend's harmful effects at half duration and heal them), then Shared Healing, then **Empath's Calm** (immune to poison and wither) |
 
 **Passive:** near anyone with a power you regain stamina. Overexertion scrambles which set answers.
+
+### Your own skills
+
+These are the empath's own, not borrowed: each is a gold thread from your hand or your heart, and the colour of whatever
+power is involved where it lands. Each has its own gesture, in third and first person.
+
+| Skill | What it does | What you see |
+| --- | --- | --- |
+| **Borrowed Strike** (active) | Strikes an enemy you aim at, up to 40 blocks away, for 6 + level, with a **touch of the power you are channelling**: fire burns (3 s), cold slows (2 s), lightning jumps to one more foe within 4 blocks for half, radiation sickens, and a far hand, Quake or Flight shoves it away. Other powers (or none) add nothing. | Your rear hand goes to your heart and the lead hand is thrown open at the foe like the crack of a whip. A gold thread whips out of the palm with a wave rolling along it and pulls straight as it lands; the foe blooms in the channelled power's colour (your gold with none), a ring on the plane of the blow, chips thrown back. |
+| **Empathic Surge** (active) | You and every friend within 8 blocks (allied players and your pets) get Strength for eight seconds. | Both arms flung wide. Two heartbeats, lub and dub, ring out from your chest and across the ground; a gold thread snaps tight to each friend, a bead of light runs down it on each beat, and their chest blooms when it arrives. |
+| **Calm** (active) | Every harmful effect on you and on friends within 6 blocks is lifted. What helps is left. | A hand flat on your heart, the other palm pressed slowly down. A soft gold ring settles outward across the ground; each lifted effect rises off its body as motes in its own colour that arc into your heart, turning gold as they near. |
+| **Sense Powers** (technique) | Everyone with a power within 48 blocks (players, gifted villagers, Sylar) glows for you for eight seconds. | A hand on your heart, listening. Two heartbeats race out along the ground; as the ring passes each person it found, a ring in their power's colour flares round their chest and a thin thread of light rises off them. Only you see whom you found. |
+| **Overcharge** (technique) | Your next Echo runs at your full level. | The switching gesture held a beat longer: rings in the channelled power's colour close onto both hands and flare. |
+| **Absorb Pain** (technique) | Takes a friend's harmful effects onto you at half the time, and heals them for 4 (8 with Shared Healing). | Both hands reach out and draw in. Three gold threads tighten between you; each sickness runs down them into your heart as a bead of its own colour, while gold rises round their chest as they mend. |
 
 ### Signature: Chorus
 
@@ -96,9 +113,10 @@ Empathize and Recall keys are gone: being near someone, touching them and the me
 ./gradlew runClient --init-script tools/mimicry-preview.init.gradle
 ```
 
-stages gifted villagers, lets an attunement run, touches, switches and opens both wheels, and saves screenshots in
-`build/mimicry-preview/screenshots/`. The gameplay checks are in
-`src/gametest/java/com/jayptucker/heroesevolved/mimicry/MimicryGameTests.java`.
+stages gifted villagers, lets an attunement run, touches, switches and opens both wheels, photographs each of your own
+skills from the side and in first person, and saves screenshots in `build/mimicry-preview/screenshots/`. The gameplay
+checks are in `src/gametest/java/com/jayptucker/heroesevolved/mimicry/` (`MimicryGameTests`, `MimicSkillGameTests`,
+`PowerCompatibilityGameTests`).
 
 ## Finishers: Take It In, Echo, Borrowed Strength
 

@@ -180,6 +180,12 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **Tests that check a charged cost** must work it out with `AbilityRanks.energy`, not read the balance table
   ([AGENTS.md](../../AGENTS.md#stamina-and-balance)). `PlayerProgressionService.getLevel` is the power's tier (1 to 5);
   the unlock check uses `getPowerLevel`, and tests set it with `setPowerLevel`.
+<!-- from Between Heartbeats and the Amplification passives, November 2026 -->
+- **A mob's blow on a player scales with difficulty.** `mobAttack` is changed by `Player.hurt` before any of our hooks
+  see it, so an exact number from it depends on the test world. Use `generic()` (no attacker) for an exact check, or
+  compare two equal blows (Grounded's test: a powered foe's 10 lands at four fifths of a plain foe's 10).
+- **Time anything in a run by the run's own clock.** A spawned helper entity's `tickCount` did not advance in the
+  test world (Between Heartbeats' illusions), so a window measured on it never opened.
 
 ## Arenas and mobs
 

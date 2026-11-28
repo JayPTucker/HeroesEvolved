@@ -241,7 +241,7 @@ public final class HudGaugePreview {
             image.writeToFile(path);
             System.out.println("GAUGE_PREVIEW CAPTURE " + capture);
         } catch (Exception e) {
-            System.out.println("GAUGE_PREVIEW CAPTURE FAILED " + capture + " " + e);
+            PreviewQuiet.report("GAUGE_PREVIEW CAPTURE FAIL " + capture + " " + e);
         }
         capture = null;
     }

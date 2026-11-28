@@ -141,6 +141,12 @@ Every power got a palette of original synthesized cues in November 2026 (`sounds
   0.8 because Vorbis overshoots, and check the files with numbers and a spectrogram sheet before wiring them in.
 - **Private cues.** A stealthy move's cue goes to its user alone as a `ClientboundSoundPacket` (`PowerSounds.play(...,
   alone)`).
+- **A power with no palette is silent, and nothing used to say so.** Power Amplification was missing from
+  `generate-power-audio.py` and `PowerCue.POWERS` until November 2026, so every Supercharge played no power cue.
+  `PowerSoundsGameTests` now fails for any rollable power without a palette. A new power needs a recipe, its subtitles,
+  an entry in `PowerCue.POWERS` (and `STYLED` if it fights hand to hand), and its hold-to-charge moves in
+  `PowerSounds.CHARGES`. Run the generator for that power alone (`py -3 tools/generate-power-audio.py <power>`); it
+  re-serialises `sounds.json` and moves the subtitle block, so check the change is only the new keys.
 
 ## Reusable patterns from the Wither's theme
 

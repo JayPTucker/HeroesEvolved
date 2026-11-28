@@ -58,8 +58,8 @@ public final class UltimateGameTests {
     private static final Set<String> LETHAL = Set.of("undying", "time_loop");
     /** Defenses that answer shots: they stop, slow or drop them. */
     private static final Set<String> SHOTS = Set.of("silence_dome", "debris_halo");
-    /** Defenses that make hunters lose the caster. */
-    private static final Set<String> LOST = Set.of("blind_spot");
+    /** Defenses that make hunters lose the caster (Between Heartbeats: they turn on its illusions). */
+    private static final Set<String> LOST = Set.of("blind_spot", "phase_blur");
 
     private static final float FOE_HEALTH = 200;
 

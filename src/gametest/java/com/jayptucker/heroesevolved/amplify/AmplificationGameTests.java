@@ -609,4 +609,83 @@ public final class AmplificationGameTests {
                 h.assertTrue(listed.contains(power), "Add " + power + " to AmplificationGameTests.BOOSTED");
         h.succeed();
     }
+
+    @GameTest(template = "rewind_empty", batch = "amplify")
+    public static void doorbusterBlowsADoorOffItsHingesAndStunsWhoeverIsNear(GameTestHelper h) {
+        guarded(h, () -> {
+            ServerPlayer amp = amplifier(h, AmpSkills.DOORBUSTER);
+            BlockPos lower = h.absolutePos(new BlockPos(5, 2, 7));
+            var level = h.getLevel();
+            level.setBlock(lower, Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), 3);
+            level.setBlock(lower.above(), Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), 3);
+            LivingEntity near = pillager(h, amp, 5, 20);
+            h.assertTrue(AmpSkills.doorbuster(amp, lower), "Doorbuster takes the door");
+            h.assertTrue(level.getBlockState(lower).isAir() && level.getBlockState(lower.above()).isAir(), "The door is off its hinges");
+            h.assertTrue(near.getHealth() < 20, "A foe beside it is hurt, has " + near.getHealth());
+            var slow = near.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
+            h.assertTrue(slow != null && slow.getAmplifier() >= 4, "And stunned");
+            h.assertFalse(AmpSkills.doorbuster(amp, null), "With no door in reach it is refused");
+            near.discard();
+            cleanup(h);
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "amplify")
+    public static void oppositeCurrentHalvesLightningAndTurnsTheRestIntoCharge(GameTestHelper h) {
+        guarded(h, () -> {
+            ServerPlayer amp = amplifier(h, AmpSkills.OPPOSITE_CURRENT);
+            AmpService.addCharge(amp, -60);
+            int charge = AmpService.charge(amp);
+            float health = amp.getHealth();
+            amp.invulnerableTime = 0;
+            amp.hurt(amp.damageSources().lightningBolt(), 8);
+            h.assertTrue(Math.abs(health - amp.getHealth() - 4) < .01F, "Lightning lands at half, took " + (health - amp.getHealth()));
+            h.assertTrue(AmpService.charge(amp) > charge, "The half not taken becomes Charge, " + charge + " to " + AmpService.charge(amp));
+            ServerPlayer low = amplifier(h, AmpSkills.OPPOSITE_CURRENT);
+            AmpService.addCharge(low, -100);
+            float before = low.getHealth();
+            low.invulnerableTime = 0;
+            low.hurt(low.damageSources().lightningBolt(), 8);
+            h.assertTrue(Math.abs(before - low.getHealth() - 8) < .01F, "Below 20 Charge it lands in full, took " + (before - low.getHealth()));
+            cleanup(h);
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "rewind_empty", batch = "amplify")
+    public static void groundedTurnsAFifthOfAPoweredFoesBlowIntoCharge(GameTestHelper h) {
+        guarded(h, () -> {
+            ServerPlayer amp = amplifier(h, AmpSkills.GROUNDED);
+            AmpService.addCharge(amp, -60);
+            var gifted = EntityType.VINDICATOR.create(h.getLevel());
+            gifted.setNoAi(true);
+            gifted.setPersistenceRequired();
+            gifted.moveTo(amp.getX(), amp.getY(), amp.getZ() + 3, 180, 0);
+            h.getLevel().addFreshEntity(gifted);
+            h.assertTrue(com.jayptucker.heroesevolved.gifted.GiftedMobs.bestow(gifted, ModAbilities.PYROKINESIS_ID,
+                    com.jayptucker.heroesevolved.gifted.Rarity.RARE, true, com.jayptucker.heroesevolved.gifted.Gift.Origin.ADMIN, null, null) != null,
+                    "The vindicator carries a power");
+            // The same blow from a foe with no power first (a mob's blow scales with difficulty, so compare the two).
+            var plain = pillager(h, amp, -3, 20);
+            int before = AmpService.charge(amp);
+            float start = amp.getHealth();
+            amp.invulnerableTime = 0;
+            amp.hurt(amp.damageSources().mobAttack(plain), 10);
+            float full = start - amp.getHealth();
+            h.assertTrue(full > 0 && AmpService.charge(amp) == before, "A foe with no power is not grounded, took " + full);
+            amp.setHealth(amp.getMaxHealth());
+            int charge = AmpService.charge(amp);
+            float health = amp.getHealth();
+            amp.invulnerableTime = 0;
+            amp.hurt(amp.damageSources().mobAttack(gifted), 10);
+            float grounded = health - amp.getHealth();
+            h.assertTrue(Math.abs(grounded - full * .8F) < .01F, "A fifth of a powered foe's blow is grounded, took " + grounded + " of " + full);
+            h.assertTrue(AmpService.charge(amp) > charge, "And becomes Charge, " + charge + " to " + AmpService.charge(amp));
+            gifted.discard();
+            plain.discard();
+            cleanup(h);
+            h.succeed();
+        });
+    }
 }

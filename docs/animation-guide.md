@@ -48,7 +48,10 @@ The Flash's lightning and Daphne's blur (`client/effects/SpeedEffects.java`,
 
 - **Running** leaves a gold ribbon at waist height with a jagged white-gold bolt through it. Lightning
   crawls over the body, more of it with more Momentum.
-- **Afterimages** are the player's real skin and pose, frozen in the world and fading. They aren't sprites.
+- **Afterimages** are the player's real skin and pose, frozen in the world and fading. They aren't sprites, and never
+  figures of light. A speedster's copies (Between Heartbeats' illusions, a Mirage's runners) are the player too, in
+  their armour and holding what they hold, and leave afterimages of themselves (`SpeedIllusions`); a body vibrating too
+  fast to hold still is two faint gold copies of it flickering to either side.
 - **Cyclone** carries the real body round the ring but draws a stand-in with the player's skin, armour and cape on
   the same lap schedule every frame, leaning into the turn, with fading ghosts behind it. **The speed setting is
   visible:** faster laps, a harder lean, more ghosts further round, a longer trail that fills the body's height,
@@ -132,7 +135,7 @@ geyser) follow it, each with its own character. Not every power should: a telepa
    | Quake | `CFE6FF` wave, `FFFFFF` core, `7FA8D8` deep strand, `A8946E` dust, `2A2622` crack, `FF5A5A` strain/heart |
    | Superspeed | `FFC640` gold, `FFF4C8` hot core, `FF8C1E` amber, pale `DBE6F5` wind, warm dust, soot |
    | Space-Time | `FFD27A` gold, `E8A43C` amber (slowed), `9A7CFF` violet, `5B3FD1` deep, `F4EBFF` pale core, `C9C2FF` ice (stopped) |
-   | Invisibility (force fields) | `9CC8FF` field, `E8F4FF` edge, `3F6FD8` deep halo, `B6A2FF` sheen, `1E2A44` stress cracks (all in `ForceArt`) |
+   | Invisibility (force fields and Fade) | `9CC8FF` field, `E8F4FF` edge, `3F6FD8` deep halo, `B6A2FF` sheen, `1E2A44` stress cracks (defined once in `ForcePalette`; `ForceArt`, the Fade's refraction strokes in `InvisibilityEffects` and the cloaked body in `OpticalClient` all read it) |
    | Sylar (boss) | `C9A24A` brass, `6E5220` deep brass, `FFE7A8` gilt (every schematic); `4B2F8F`, `B9A6FF`, `EDE6FF` (his telekinesis); each stolen power in its own colour (all in `SylarArt`) |
    | Flight | `535A5A` shadow, `D2D4CE` vapor, `DCDDD5` condensation, `F6F4EC` core (all in `FlightArt`; Tempest's storm uses `DBDBD2` cloud and `EEEDE3` wind) |
    | Vibe | `07162F` void, `183B80` depth, `3096FF` blue, `90E6FF` ice, `EDFAFF` white core, `837CE8` ghost (combat echoes) (all in `VibeArt`) |
@@ -145,6 +148,11 @@ geyser) follow it, each with its own character. Not every power should: a telepa
    | Matter Assembly | `7A4513` deep amber (dark seams, soft pass), `F2A848` amber, `FFC766` honey, `FFE3A0` seam, `FFF1C8` core, `BFE8FF` ice glint (all in `AssemblyArt`; the block texture from `tools/GenerateAssemblyTextures.java`) |
    | Density (earthbending) | `2B241E` crack, `4A3A2C` mud, `7A6450` soil, `A8946E` dust, `8A8580` grey stone, `2E5E3A` deep jade, `5FA36A` jade (the stance's glow and seams), `CFEBC9` pale jade (all in `EarthArt`; `DensityArt` borrows the same constants, and the awakening and gifted mobs use them too) |
    | Induced Radioactivity | `FF4A0C` ember, `FF9330` heat, `FFF2D2` white-hot (the core running hotter), `5FAE1E`/`C4F23C` sickness, `9ADCFF`/`E6F6FF` Cherenkov blue (the Hearth, the EMP), smoke and dust for blasts (all in `RadiationArt`; the hand is `RadiationGeometry.hand`) |
+   | Empathic Mimicry | `6B4422` halo (soft pass), `E8C27A` gold thread, `FFF6E0` core, plus the colour of whatever power or sickness is involved, used only for the ring, bead, mote or bloom that names it: a borrowed power's tint from `mimicry/MimicColors` (shared with the server), a lifted effect's own `getColor` (Calm, Absorb Pain) (all in `MimicArt`) |
+   | Power Amplification | `2A0A10` shadow, `8E1424` deep, `E0263A` red (bodies in the SOFT pass so they stay red at noon), `FF6A5A` hot rim, `FFE6DE` core; `5588FF` blue and `BFEFFF` ice only where a boosted cold or electric power braids in (all in `AmpArt`) |
+   | Shapeshifting | `1F2A3D` shadow, `3E6F86` slate-teal (plate faces), `8FCFC6` sheen, `C29A5E` brass (undersides and seams), `F1ECE2` highlight (all in `ShapeArt`; `ShapeTrickArt` and `ShapeInstinctArt` borrow the same constants) |
+   | Sonic Resonance | five tones blended along each sound by `SonicArt.tone`: `FF6F91` rose, `FFB547` amber, `7BE6C4` mint, `5DA8FF` azure, `A97CFF` violet; `FFF8EE` warm core, `FFD27A` gold accent; silence is `2B2A3D` hush with `8C8AA8` hush edge, rings closing inward (all in `SonicArt`) |
+   | Telepathy | `241638` shadow, `7A4BD6` violet, `B794FF` lilac, `E6D8FF` pale, `FFF7FF` core; `FF8FC0` rose for a mind won over, `D23A5C` fear for one hurt or in danger (all in `TelepathyArt`) |
 
    Flight is also a good model of a whole power built from one shape language: every Flight set piece is drawn
    by `FlightArt` from three shared primitives (a translucent `arc` sheet with a turning lip, a broken tapered

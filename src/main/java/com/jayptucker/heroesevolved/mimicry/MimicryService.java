@@ -672,63 +672,17 @@ public final class MimicryService {
     // Skill tree
     // ------------------------------------------------------------------
 
-    public static boolean skill(AbilityUseContext c, int branch) {
-        ServerPlayer p = c.player();
-        switch (branch) {
-            case 0 -> {
-                LivingEntity target = Targeting.livingEntityInSight(p, 40, t -> ExpansionSkills.hostile(p, t));
-                if (target == null) return false;
-                target.hurt(p.damageSources().playerAttack(p), 6 + c.abilityLevel());
-                AbilityEffects.send(p.serverLevel(), Kind.BLOOD_THREAD, p.getEyePosition(), target.getEyePosition(), 1);
-            }
-            case 1 -> {
-                for (ServerPlayer friend : p.serverLevel().getEntitiesOfClass(ServerPlayer.class, p.getBoundingBox().inflate(8),
-                        other -> other == p || p.isAlliedTo(other))) friend.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 160, 0));
-            }
-            case 2 -> {
-                for (ServerPlayer friend : p.serverLevel().getEntitiesOfClass(ServerPlayer.class, p.getBoundingBox().inflate(6),
-                        other -> other == p || p.isAlliedTo(other)))
-                    for (MobEffectInstance effect : List.copyOf(friend.getActiveEffects()))
-                        if (!effect.getEffect().value().isBeneficial()) friend.removeEffect(effect.getEffect());
-            }
-            default -> { return false; }
-        }
-        return true;
-    }
+    /** The tree's three actives: Borrowed Strike, Empathic Surge and Calm ({@link MimicSkills}). */
+    public static boolean skill(AbilityUseContext c, int branch) { return MimicSkills.skill(c, branch); }
 
-    public static boolean technique(AbilityUseContext c, String mechanic) {
-        ServerPlayer p = c.player();
-        switch (mechanic) {
-            case "sense_powers" -> {
-                int found = 0;
-                for (LivingEntity other : p.serverLevel().getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(48),
-                        e -> e != p && imprintOf(p, e) != null)) {
-                    PrivateGlow.glow(p, other, 160);
-                    found++;
-                }
-                p.displayClientMessage(Component.translatable("mimicry.heroesevolved.sensed", found), true);
-                return true;
-            }
-            case "overcharge" -> {
-                OVERCHARGED.add(p.getUUID());
-                p.displayClientMessage(Component.translatable("mimicry.heroesevolved.overcharged").withStyle(ChatFormatting.GOLD), true);
-                return true;
-            }
-            case "absorb_pain" -> {
-                LivingEntity friend = Targeting.livingEntityInSight(p, 8, t -> t != p && ExpansionSkills.friendly(p, t));
-                if (friend == null) return false;
-                for (MobEffectInstance effect : List.copyOf(friend.getActiveEffects())) {
-                    if (effect.getEffect().value().isBeneficial()) continue;
-                    friend.removeEffect(effect.getEffect());
-                    p.addEffect(new MobEffectInstance(effect.getEffect(), Math.max(20, effect.getDuration() / 2), effect.getAmplifier()));
-                }
-                friend.heal(SkillTreeService.has(p, "empathic_mimicry_shared_healing") ? 8 : 4);
-                AbilityEffects.send(p.serverLevel(), Kind.BLOOD_THREAD, friend.getEyePosition(), p.getEyePosition(), 1);
-                return true;
-            }
-            default -> { return false; }
-        }
-    }
+    /** The tree's techniques: Sense Powers, Overcharge and Absorb Pain ({@link MimicSkills}). */
+    public static boolean technique(AbilityUseContext c, String mechanic) { return MimicSkills.technique(c, mechanic); }
+
+    /** Arms Overcharge: the next Echo runs at the empath's full level. */
+    static void overcharge(ServerPlayer p) { OVERCHARGED.add(p.getUUID()); }
+
+    /** Whether the next Echo is overcharged (for tests). */
+    public static boolean overcharged(ServerPlayer p) { return OVERCHARGED.contains(p.getUUID()); }
 
     // ------------------------------------------------------------------
     // Passive: empathy

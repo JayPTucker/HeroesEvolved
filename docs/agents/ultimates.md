@@ -73,3 +73,10 @@ changed.
   `caught()` now. Check `Run`'s helper names before naming your own.
 - **A piece enum entry is an ordinal on the wire.** Adding or removing `Piece` entries changes the protocol: bump it in
   `ModPayloads`.
+- **`heroShot` makes a run cinematic for its whole length,** so a Defense or Support run that opens with one already
+  halves every blow on its caster (`Ultimates.incoming`). Don't halve again in the run's own `incoming`: Between
+  Heartbeats' first draft did, and blows landed at a quarter.
+- **A run can drive bodies of its own.** Between Heartbeats keeps three `ShapeDecoy` illusions and moves, aims and
+  times them from `beat` (see [powers/superspeed.md](powers/superspeed.md)); its `tidy` removes them on any ending, and
+  anything angry at one forgets it as it goes. A Defense whose promise is "they hunt something else" is listed in
+  `UltimateGameTests.LOST`.

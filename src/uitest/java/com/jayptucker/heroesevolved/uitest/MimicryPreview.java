@@ -31,7 +31,9 @@ import java.util.function.Consumer;
 
 /**
  * Empathic Mimicry in a flat world: an attunement building to a gifted villager, touches that keep sets, a switch,
- * and the memory wheel. Run with {@code tools/mimicry-preview.init.gradle}.
+ * the memory wheel, then each of the empath's own skills from the side (and Borrowed Strike in first person): Borrowed
+ * Strike carrying fire, Empathic Surge reaching two pets, Calm lifting poison and weakness, Absorb Pain from a pet,
+ * Sense Powers finding three gifted villagers, and Overcharge. Run with {@code tools/mimicry-preview.init.gradle}.
  */
 @EventBusSubscriber(modid = "heroesevolved", value = Dist.CLIENT)
 public final class MimicryPreview {
@@ -39,23 +41,69 @@ public final class MimicryPreview {
     private static int ticks, worldTicks;
     private static String pending;
     private static Villager pyro, flyer, cryo;
+    private static net.minecraft.world.entity.LivingEntity target;
+    private static final java.util.List<net.minecraft.world.entity.Entity> ACTORS = new java.util.ArrayList<>();
 
     private static void onServer(Minecraft mc, Consumer<ServerPlayer> action) {
         var server = mc.getSingleplayerServer();
         server.execute(() -> action.accept(server.getPlayerList().getPlayer(mc.player.getUUID())));
     }
 
+    /** Into the overworld (a new player starts in the Last Day's city, another dimension), over force-loaded ground. */
     private static void place(ServerPlayer p, double x, double z, float yaw, float pitch) {
-        p.teleportTo(p.serverLevel(), x + .5, -60, z + .5, yaw, pitch);
+        var world = p.getServer().overworld();
+        world.setChunkForced((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4, true);
+        p.teleportTo(world, x + .5, -60, z + .5, yaw, pitch);
+    }
+
+    private static com.jayptucker.heroesevolved.ability.AbilityUseContext context(ServerPlayer p) {
+        return new com.jayptucker.heroesevolved.ability.AbilityUseContext(p, ModAbilities.MIMICRY_ID, 5, false);
+    }
+
+    private static <T extends net.minecraft.world.entity.Mob> T actor(ServerPlayer p, EntityType<T> type, double x, double z) {
+        T mob = type.create(p.getServer().overworld());
+        mob.setNoAi(true);
+        mob.setPersistenceRequired();
+        mob.moveTo(x + .5, -60, z + .5, 180, 0);
+        p.getServer().overworld().addFreshEntity(mob);
+        ACTORS.add(mob);
+        return mob;
+    }
+
+    private static net.minecraft.world.entity.animal.Wolf pet(ServerPlayer p, double x, double z) {
+        var wolf = actor(p, EntityType.WOLF, x, z);
+        wolf.tame(p);
+        return wolf;
+    }
+
+    private static void clear() {
+        for (var e : ACTORS) e.discard();
+        ACTORS.clear();
+    }
+
+    /** A still camera to the side (the player drawn in third person); null clears it. */
+    private static void side(Minecraft mc, double x, double y, double z, double lx, double ly, double lz) {
+        mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        com.jayptucker.heroesevolved.client.effects.TempestCamera.fix(new net.minecraft.world.phys.Vec3(x, y, z),
+                new net.minecraft.world.phys.Vec3(lx, ly, lz));
+    }
+
+    private static void cast(Minecraft mc, String name, java.util.function.Predicate<ServerPlayer> skill) {
+        onServer(mc, p -> {
+            boolean ok;
+            try { ok = skill.test(p); }
+            catch (RuntimeException e) { e.printStackTrace(); ok = false; }
+            PreviewQuiet.check("MIMIC_SKILL", ok, name);
+        });
     }
 
     private static Villager villager(ServerPlayer p, double x, double z, ResourceLocation gift) {
-        Villager v = EntityType.VILLAGER.create(p.serverLevel());
+        Villager v = EntityType.VILLAGER.create(p.getServer().overworld());
         v.setNoAi(true);
         v.setInvulnerable(true);
         v.setPersistenceRequired();
         v.moveTo(x + .5, -60, z + .5, 180, 0);
-        p.serverLevel().addFreshEntity(v);
+        p.getServer().overworld().addFreshEntity(v);
         GiftedVillagers.give(v, gift);
         return v;
     }
@@ -74,7 +122,8 @@ public final class MimicryPreview {
             rules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             mc.createWorldOpenFlows().createFreshLevel("Mimicry-" + System.currentTimeMillis(),
-                    new LevelSettings("Mimicry preview", GameType.SURVIVAL, false, Difficulty.PEACEFUL, true, rules, WorldDataConfiguration.DEFAULT),
+                    // EASY, not Peaceful: Peaceful deletes the pillager Borrowed Strike is aimed at (spawning is off).
+                    new LevelSettings("Mimicry preview", GameType.SURVIVAL, false, Difficulty.EASY, true, rules, WorldDataConfiguration.DEFAULT),
                     new WorldOptions(77L, false, false),
                     access -> access.registryOrThrow(Registries.WORLD_PRESET).getOrThrow(WorldPresets.FLAT).createWorldDimensions(), mc.screen);
         }
@@ -82,6 +131,7 @@ public final class MimicryPreview {
         if (mc.screen instanceof net.minecraft.client.gui.screens.PauseScreen) mc.setScreen(null);
         if (cleanHud) mc.getToasts().clear();
         switch (++worldTicks) {
+            case 190 -> onServer(mc, com.jayptucker.heroesevolved.story.prologue.PrologueService::skip);
             case 200 -> {
                 cleanHud = true;
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
@@ -94,6 +144,9 @@ public final class MimicryPreview {
                             p.getData(ModDataAttachments.POWER_INTRO_HISTORY).with(ModAbilities.MIMICRY_ID));
                     PlayerProgressionService.setPowerLevel(p, 15);
                     place(p, 1500, 0, 0, 8);
+                    p.removeAllEffects();
+                    System.out.println("MIMIC_PREVIEW staged in " + p.level().dimension().location() + " at " + p.blockPosition()
+                            + " on " + p.level().getBlockState(p.blockPosition().below()));
                 });
             }
             // A gifted villager ahead: the threads draw tight over two seconds, then the power is taken.
@@ -139,7 +192,109 @@ public final class MimicryPreview {
             }
             case 442 -> pending = "m5-ability-wheel-echoes.png";
             case 448 -> mc.setScreen(null);
-            case 470 -> PreviewQuiet.quit();
+            // ------------------------------------------------------------------ the empath's own skills
+            // Borrowed Strike, channelling fire: the thread whipped out of the open hand, the foe blooming orange.
+            case 470 -> onServer(mc, p -> {
+                place(p, 1620, 0, 0, 0);
+                p.removeAllEffects();
+                MimicryService.remember(p, ModAbilities.PYROKINESIS_ID, 5);
+                target = actor(p, EntityType.PILLAGER, 1621, 7);
+                target.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(400);
+                target.setHealth(400);
+            });
+            case 476 -> side(mc, 1628.5, -58.2, 3.5, 1620.5, -59.2, 3.5);
+            case 480 -> cast(mc, "borrowed strike", p -> {
+                p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.getBoundingBox().getCenter());
+                return com.jayptucker.heroesevolved.mimicry.MimicSkills.skill(context(p), 0) && target.isOnFire();
+            });
+            case 482 -> pending = "m6-lash-whip.png";
+            case 485 -> pending = "m6-lash-land.png";
+            case 490 -> pending = "m6-lash-bloom.png";
+            case 500 -> {
+                com.jayptucker.heroesevolved.client.effects.TempestCamera.fix(null, null);
+                mc.options.setCameraType(CameraType.FIRST_PERSON);
+            }
+            case 504 -> cast(mc, "borrowed strike again", p -> {
+                p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.getBoundingBox().getCenter());
+                return com.jayptucker.heroesevolved.mimicry.MimicSkills.skill(context(p), 0);
+            });
+            case 506 -> pending = "m6-lash-firstperson.png";
+            case 509 -> pending = "m6-lash-firstperson-land.png";
+            // Empathic Surge: two heartbeats ring out, threads snap to two pets.
+            case 530 -> onServer(mc, p -> {
+                clear();
+                place(p, 1650, 0, 0, 0);
+                pet(p, 1652.5, 2);
+                pet(p, 1647.5, 3);
+            });
+            case 536 -> side(mc, 1658, -56.8, 1.5, 1650.5, -59.3, 1.5);
+            case 540 -> cast(mc, "empathic surge", p -> com.jayptucker.heroesevolved.mimicry.MimicSkills.skill(context(p), 1)
+                    && p.hasEffect(net.minecraft.world.effect.MobEffects.DAMAGE_BOOST));
+            case 543 -> pending = "m7-surge-beat.png";
+            case 548 -> pending = "m7-surge-threads.png";
+            case 555 -> pending = "m7-surge-blooms.png";
+            // Calm: the ring settles out; poison and weakness rise off as motes and arc into the heart.
+            case 580 -> onServer(mc, p -> {
+                clear();
+                place(p, 1680, 0, 0, 0);
+                p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.POISON, 400, 0));
+                var wolf = pet(p, 1682.5, 2.5);
+                wolf.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 400, 0));
+                wolf.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 400, 0));
+            });
+            case 586 -> side(mc, 1688, -57, 1.5, 1680.5, -59.3, 1.5);
+            case 590 -> cast(mc, "calm", p -> com.jayptucker.heroesevolved.mimicry.MimicSkills.skill(context(p), 2)
+                    && !p.hasEffect(net.minecraft.world.effect.MobEffects.POISON));
+            case 593 -> pending = "m8-calm-ring.png";
+            case 600 -> pending = "m8-calm-motes.png";
+            case 610 -> pending = "m8-calm-settled.png";
+            // Absorb Pain: a pet's sicknesses run down the threads into the heart as beads of their own colour.
+            case 630 -> onServer(mc, p -> {
+                clear();
+                place(p, 1710, 0, 0, 0);
+                var wolf = pet(p, 1712.5, 3);
+                wolf.setHealth(10);
+                wolf.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.POISON, 400, 0));
+                wolf.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.WEAKNESS, 400, 0));
+                target = wolf;
+            });
+            case 636 -> side(mc, 1718, -57.2, 0.5, 1711.5, -59.2, 1.8);
+            case 640 -> cast(mc, "absorb pain", p -> {
+                p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.getBoundingBox().getCenter());
+                return com.jayptucker.heroesevolved.mimicry.MimicSkills.technique(context(p), "absorb_pain");
+            });
+            case 644 -> pending = "m9-absorb-threads.png";
+            case 650 -> pending = "m9-absorb-beads.png";
+            case 658 -> pending = "m9-absorb-in.png";
+            // Sense Powers: two heartbeats race out; three gifted villagers flare in their colours.
+            case 680 -> onServer(mc, p -> {
+                clear();
+                place(p, 1740, 0, 0, 0);
+                ACTORS.add(villager(p, 1746, 8, ModAbilities.PYROKINESIS_ID));
+                ACTORS.add(villager(p, 1733, 11, ModAbilities.CRYOKINESIS_ID));
+                ACTORS.add(villager(p, 1749, -5, ModAbilities.FLIGHT_ID));
+            });
+            case 686 -> side(mc, 1757, -51, -9, 1741, -60, 3);
+            case 690 -> cast(mc, "sense powers", p -> com.jayptucker.heroesevolved.mimicry.MimicSkills.technique(context(p), "sense_powers"));
+            case 697 -> pending = "m10-sense-going-out.png";
+            case 705 -> pending = "m10-sense-found.png";
+            case 716 -> pending = "m10-sense-threads.png";
+            // Overcharge: rings in the channelled power's colour close on both hands.
+            case 740 -> onServer(mc, p -> {
+                clear();
+                place(p, 1770, 0, 0, 0);
+                MimicryService.remember(p, ModAbilities.CRYOKINESIS_ID, 5);
+            });
+            case 746 -> side(mc, 1773, -58.3, 2.2, 1770.5, -58.9, .4);
+            case 750 -> cast(mc, "overcharge", p -> com.jayptucker.heroesevolved.mimicry.MimicSkills.technique(context(p), "overcharge")
+                    && MimicryService.overcharged(p));
+            case 753 -> pending = "m11-overcharge-closing.png";
+            case 759 -> pending = "m11-overcharge-flare.png";
+            case 780 -> {
+                com.jayptucker.heroesevolved.client.effects.TempestCamera.fix(null, null);
+                onServer(mc, p -> clear());
+            }
+            case 790 -> PreviewQuiet.quit();
             default -> { }
         }
     }

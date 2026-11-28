@@ -73,3 +73,36 @@ the core's standard in November 2026. What the player sees is in [docs/superspee
 - **Targetable mirages reuse `ShapeDecoy`.** `AdvancedTechniques.Mirage` keeps the owner and three speedster decoys,
   whose `runMirage` moves through swept, terrain-aware steps. They reuse the player's profile and Jade disguise
   question. `ShapeshiftTricks.burst` branches before shapeshifter confusion or damage: a struck speed copy only bursts.
+
+### Between Heartbeats: illusions that fight (November 2026)
+
+The Defense Ultimate was "every blow finds an afterimage" drawn as gold figures of light; the user wanted afterimages
+of the actual player and copies that fight. It is now: vibrate (to `SPLIT`), three illusions tear loose, they fight
+every enemy within 32 blocks for twelve seconds, and run home at `HOME` (`speed/SpeedUltimates.BetweenHeartbeats`).
+
+- **Copies are `ShapeDecoy`s in a third mode, driven by the run.** `setupIllusion(player, ticks, lane, struck)` makes a
+  speedster copy whose movement comes from the Ultimate's run each server tick (`runToward`: swept, a block up where it
+  must, settling down slopes), not from the decoy's own tick. A blow asks the run's `struck` predicate (step aside,
+  break on the third) instead of bursting. Don't write a second "copy of the player" entity: the decoy already has the
+  profile, Jade's disguise answer and the renderer.
+- **A copy is the player: dress it.** Spawn data carries the maker's entity id (`ownerId`); `ShapeDecoyRenderer.sync`
+  copies their armour and held items onto the stand-in (only when they differ) and copies the swing
+  (`swinging`, `swingTime`, `attackAnim`), which reaches clients through `swing(hand, true)`'s animate packet; the decoy's
+  client tick calls `updateSwingTime`. Mirage copies get the same, for free.
+- **Your copies are yours, like pets.** `ShapeDecoy` is an `OwnableEntity` (`getOwner` keeps the maker's body, for
+  game-test and fake players that are in no player list), so `StyleOps.isFoe`, `ExpansionSkills.hostile` and every
+  other "spare your own pets" check spare them too; `StyleOps.friends` leaves them out (shells, not friends to heal).
+- **Fight enemies, not everything.** `isFoe` is true for cows and villagers. An illusion only fights an `Enemy`, a mob
+  hunting the speedster or a friend, or whoever struck or was struck by the speedster in the last ten seconds.
+- **Anger without stealing the kill.** The blow is `hit` (the speedster's, so loot and XP are theirs), then
+  `mark.setLastHurtByMob(illusion)` so `HurtByTargetGoal` turns on the illusion and not the speedster, then
+  `setTarget` plus the brain's `ATTACK_TARGET` (as Many Faces does).
+- **Time a copy by the run's clock, never the decoy's `tickCount`.** The first dodge window read the decoy's
+  `tickCount`, which did not advance in the game-test world, so every second blow was ignored.
+- **Afterimages of a copy are the copy.** `client/effects/SpeedIllusions` keeps each speedster copy's stand-in pose
+  current, strings real afterimages along every stride faster than 0.8 blocks a tick (`SpeedAfterimages.trail`), and
+  makes illusions (and the speedster before the split) vibrate: two faint gold copies a hand's width to either side,
+  flipping side every tick (`SpeedAfterimages.blur`, three ticks' life). `SpeedAfterimages.runnerNear` asks
+  `SpeedIllusions.bodyNear` too, so `SPEED_DODGE`, `SPEED_ZIP` and `SPEED_MIRAGE` sent at a copy leave that copy's
+  afterimage. The figure-of-light helper in `SpeedArt` is gone; nothing in the kit draws a stand-in that isn't the player.
+- **`ShapeDecoy`'s tracker interval is 2** (it was 5, which made a copy running two blocks a tick jump ten at a time).

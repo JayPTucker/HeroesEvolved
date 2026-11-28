@@ -71,7 +71,7 @@ public final class FirstPersonArmGeometry {
                     ELECTRO_HAUL, ELECTRO_REEL,
                     MATTER_FORM, MATTER_FLICK, MATTER_PLANT, MATTER_RAISE, MATTER_STRIDE, MATTER_CALL,
                     SPEED_GUARD, SPEED_SPLIT, SPEED_LUNGE, SPEED_THROW, SPEED_ESCORT, SPEED_STILL,
-                    MIMIC_TOUCH, MIMIC_SHIFT,
+                    MIMIC_TOUCH, MIMIC_SHIFT, MIMIC_LASH, MIMIC_SURGE, MIMIC_CALM, MIMIC_ABSORB, MIMIC_SENSE,
                     SONIC_CRY, SONIC_SCREAM, SONIC_PLUCK, SONIC_CLENCH, SONIC_WALL, SONIC_SHOVE, SONIC_VAULT, SONIC_DIVE,
                     SONIC_GATHER, SONIC_RELEASE, SONIC_CUP, SONIC_SNAP, SONIC_HOWL, SONIC_LISTEN, SONIC_HUM, SONIC_HUSH,
                     SONIC_CONDUCT, SONIC_DOME, SONIC_SING,
@@ -682,6 +682,40 @@ public final class FirstPersonArmGeometry {
                 if (main) { spread = .38F - .2F * draw + .28F * open; height = -.52F + .06F * draw; depth = -.3F;
                     pitch = -60 - 15 * draw + 10 * open; yaw = 30 * draw - 45 * open; }
                 else { spread = .55F; height = -.66F; pitch = -50; }
+            }
+            case MIMIC_LASH -> {
+                // The lead hand drawn in low, then thrown open at the crosshair; the rear hand low at the heart's edge.
+                float lash = smooth((age - 1) / 2), back = smooth((age - 7) / 5);
+                if (main) {
+                    float out = lash * (1 - back);
+                    spread = Mth.lerp(out, .2F, .24F); height = Mth.lerp(out, -.58F, -.34F); depth = -.3F - .26F * out;
+                    pitch = Mth.lerp(out, -50, -92); yaw = Mth.lerp(out, 35, 6); roll = -side * 25 * out;
+                } else { spread = .22F; height = -.6F; depth = -.28F; pitch = -55; yaw = 40; }
+            }
+            case MIMIC_SURGE -> {
+                // Both hands flung out to the edges of the view, palms forward.
+                float open = smooth(age / 4);
+                float pulse = (Math.max(0, 1 - Math.abs(age - 4) / 3) + Math.max(0, 1 - Math.abs(age - 10) / 3)) * .03F;
+                spread = Mth.lerp(open, .45F, .74F) + pulse; height = Mth.lerp(open, -.6F, -.42F); depth = -.4F;
+                pitch = Mth.lerp(open, -50, -80); roll = side * 30 * open;
+            }
+            case MIMIC_CALM -> {
+                // The main hand held out palm down at the bottom of the view and pressed slowly lower; the other at the heart.
+                float press = smooth(age / 20);
+                if (main) { spread = .3F; height = Mth.lerp(press, -.36F, -.7F); depth = -.42F; pitch = -88; roll = -side * 85; }
+                else { spread = .22F; height = -.6F; depth = -.28F; pitch = -55; yaw = 40; }
+            }
+            case MIMIC_ABSORB -> {
+                // Both hands reach toward the crosshair, then draw back down toward the chest.
+                float reach = smooth(age / 3), pull = smooth((age - 5) / 8);
+                float out = reach * (1 - pull);
+                spread = Mth.lerp(out, .4F, .18F); height = Mth.lerp(out, -.62F, -.32F) - .1F * pull; depth = -.3F - .25F * out;
+                pitch = Mth.lerp(out, -50, -90); yaw = 20 * pull; roll = -side * 30 * out;
+            }
+            case MIMIC_SENSE -> {
+                // Both hands low and still at the edges of the view.
+                float settle = smooth(age / 5);
+                spread = .5F + .1F * settle; height = -.66F; depth = -.3F; pitch = -50 + 10 * settle; yaw = 20 * settle;
             }
             case SPEED_GUARD -> {
                 // Fists up either side of the crosshair.

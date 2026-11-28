@@ -79,7 +79,10 @@ public final class SpeedAfterimages {
         }
         PREVIOUS.keySet().retainAll(seen);
     }
-    /** The runner nearest {@code near} (within three blocks), if any. */
+    /**
+     * The runner nearest {@code near} (within three blocks), if any: a player, or a speedster's illusion or mirage copy
+     * ({@link SpeedIllusions}), so a dodge, a zip or a burst at a copy leaves an afterimage of that copy.
+     */
     private static AbstractClientPlayer runnerNear(Vec3 near) {
         if (world == null) return null;
         AbstractClientPlayer best = null;
@@ -88,7 +91,19 @@ public final class SpeedAfterimages {
             double d = p.position().distanceToSqr(near);
             if (d < bestDistance && !p.isInvisible() && !p.isSpectator()) { best = p; bestDistance = d; }
         }
-        return best;
+        AbstractClientPlayer copy = SpeedIllusions.bodyNear(near, bestDistance);
+        return copy != null ? copy : best;
+    }
+
+    /**
+     * Afterimages of {@code body} strung from {@code from} to {@code to}, facing along the way: a copy that ran there
+     * this tick (or any runner whose body you already have).
+     */
+    public static void trail(AbstractClientPlayer body, Vec3 from, Vec3 to, int count) {
+        if (world == null || body.level() != world) return;
+        Vec3 delta = to.subtract(from);
+        float yaw = delta.horizontalDistanceSqr() < 1.0E-4 ? body.yBodyRot : (float) (Mth.atan2(delta.z, delta.x) * Mth.RAD_TO_DEG) - 90;
+        for (int i = 0; i < count; i++) capture(body, world.getGameTime(), from.lerp(to, i / (double) count), yaw);
     }
 
     /** Afterimages strung along a burst of movement (or one, held in place, when {@code from} equals {@code to}). */

@@ -83,7 +83,7 @@ public final class QuakeKitPreview {
     }
 
     private static void check(boolean ok, String what) {
-        System.out.println((ok ? "QUAKE_KIT_PASS " : "QUAKE_KIT_FAIL ") + what);
+        PreviewQuiet.report((ok ? "QUAKE_KIT_PASS " : "QUAKE_KIT_FAIL ") + what);
     }
 
     private static void camera(Minecraft mc, CameraType type) { mc.options.setCameraType(type); }

@@ -262,5 +262,11 @@ public enum ArmPose {
     /** Induced Radioactivity (client/RadiationPoses). Cup: both palms round a core at the chest, trembling. Palms: both
      *  thrust along the aim, heels together. Flare: arms flung wide and up as the core lets go. Grip: a fist at a foe's
      *  collar, the other drawn back. Raise: the core lifted overhead. Point: two fingers flicked at the target. */
-    RAD_CUP, RAD_PALMS, RAD_FLARE, RAD_GRIP, RAD_RAISE, RAD_POINT
+    RAD_CUP, RAD_PALMS, RAD_FLARE, RAD_GRIP, RAD_RAISE, RAD_POINT,
+    /** Empathic Mimicry's own skills (mimicry/MimicSkills). Lash: the rear hand at the heart, the lead hand thrown open
+     *  at a foe like the crack of a whip (Borrowed Strike). Surge: both arms flung wide, palms forward, pulsing with the
+     *  heartbeat (Empathic Surge). Calm: a hand flat on the heart, the other palm pressed slowly down (Calm). Absorb:
+     *  both hands reach out and draw in to the chest (Absorb Pain). Sense: a hand on the heart, the other open low at the
+     *  side, still, listening (Sense Powers). */
+    MIMIC_LASH, MIMIC_SURGE, MIMIC_CALM, MIMIC_ABSORB, MIMIC_SENSE
 }

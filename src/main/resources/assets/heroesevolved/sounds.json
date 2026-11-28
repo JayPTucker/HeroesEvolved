@@ -212,6 +212,42 @@
       "heroesevolved:ability/vibe_collapse"
     ]
   },
+  "power.power_amplification.cast": {
+    "subtitle": "subtitles.heroesevolved.power.power_amplification.cast",
+    "sounds": [
+      "heroesevolved:power/power_amplification/cast_1",
+      "heroesevolved:power/power_amplification/cast_2",
+      "heroesevolved:power/power_amplification/cast_3"
+    ]
+  },
+  "power.power_amplification.heavy": {
+    "subtitle": "subtitles.heroesevolved.power.power_amplification.heavy",
+    "sounds": [
+      "heroesevolved:power/power_amplification/heavy_1",
+      "heroesevolved:power/power_amplification/heavy_2"
+    ]
+  },
+  "power.power_amplification.charge": {
+    "subtitle": "subtitles.heroesevolved.power.power_amplification.charge",
+    "sounds": [
+      "heroesevolved:power/power_amplification/charge_1"
+    ]
+  },
+  "power.power_amplification.impact": {
+    "subtitle": "subtitles.heroesevolved.power.power_amplification.impact",
+    "sounds": [
+      "heroesevolved:power/power_amplification/impact_1",
+      "heroesevolved:power/power_amplification/impact_2",
+      "heroesevolved:power/power_amplification/impact_3"
+    ]
+  },
+  "power.power_amplification.end": {
+    "subtitle": "subtitles.heroesevolved.power.power_amplification.end",
+    "sounds": [
+      "heroesevolved:power/power_amplification/end_1",
+      "heroesevolved:power/power_amplification/end_2"
+    ]
+  },
   "power.cryokinesis.cast": {
     "subtitle": "subtitles.heroesevolved.power.cryokinesis.cast",
     "sounds": [

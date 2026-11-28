@@ -319,9 +319,8 @@ public final class PyroPreview {
             });
             case 600 -> pending = "pyro-12-heat-mantle.png";
             case 608 -> onServer(mc, p -> {
-                if (!PyroService.hasMantle(p) || PyroService.heat(p) <= 81)
-                    throw new AssertionError("Mantle must catch shots and reclaim their Heat");
-                System.out.println("PYRO_CLIENT_MANTLE PASS heat=" + PyroService.heat(p));
+                PreviewQuiet.check("PYRO_CLIENT_MANTLE", PyroService.hasMantle(p) && PyroService.heat(p) > 81,
+                        "catches shots and reclaims their Heat (heat=" + PyroService.heat(p) + ")");
             });
             case 625 -> {
                 mc.options.setCameraType(CameraType.FIRST_PERSON);

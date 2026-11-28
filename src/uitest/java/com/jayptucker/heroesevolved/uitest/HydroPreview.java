@@ -153,7 +153,11 @@ public final class HydroPreview {
         });
     }
 
-    private static void log(String what) { System.out.println("HYDRO_PREVIEW " + what); }
+    private static void log(String what) {
+        // A check line (INPUT ... PASS/FAIL) goes in the result file, so a miss fails the run.
+        if (what.contains("PASS") || what.contains("FAIL")) PreviewQuiet.report("HYDRO_PREVIEW " + what);
+        else System.out.println("HYDRO_PREVIEW " + what);
+    }
 
     private static void learnAll(ServerPlayer p, ResourceLocation power) {
         Set<String> learned = new HashSet<>();

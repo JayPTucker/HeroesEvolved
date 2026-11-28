@@ -748,12 +748,12 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `phasing_1_1` | 2 | 20 | 2 | 0 | 8 / 0 blocks | 4 / 4.29 | within 30% | min(18,4+.6*stored); 4 before receiving blows. Stone Skin's stored damage is paid by receiving blows; its shield gets a utility reserve. (`phasing/DensitySkills#rebound`) |
 | `phasing_phase_fall` | 3 | 23 | 2 | 0 | 4 / 12 blocks | 4.5 / 4.57 | within 30% | 3+.5*tier once per UUID over the entire surf (`phasing/Earthworks#tickSurf`) |
 | `phasing_phase_lock` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Quicksand roots; no direct hit (`phasing/DensitySkills; phasing/DensityService`) |
-| `empathic_mimicry_0_1` | 2 | 21 | 1 | 0 | 2 / 0 blocks | 8 / 9.5 | within 30% | 6+tier; one Borrowed Strike (`mimicry/MimicryService#skill`) |
-| `empathic_mimicry_sense_powers` | 3 | 18 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: detects powers (`mimicry/MimicryService`) |
-| `empathic_mimicry_1_1` | 2 | 24 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Empathic Surge heals/buffs (`mimicry/MimicryService`) |
-| `empathic_mimicry_overcharge` | 3 | 17 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: strengthens a copied move, which still pays its own stamina (`mimicry/MimicryService`) |
-| `empathic_mimicry_2_1` | 2 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Calm de-aggros (`mimicry/MimicryService`) |
-| `empathic_mimicry_absorb_pain` | 3 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: takes an ally's pain (`mimicry/MimicryService`) |
+| `empathic_mimicry_0_1` | 2 | 21 | 1 | 0 | 2 / 0 blocks | 8 / 9.5 | within 30% | 6+tier; one Borrowed Strike, plus the channelled power's touch (Chorus.touch: burn, slow, sicken, shove, or half again on one foe nearby) as a conditional rider (`mimicry/MimicSkills#borrowedStrike`) |
+| `empathic_mimicry_sense_powers` | 3 | 18 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: detects powers (`mimicry/MimicSkills`) |
+| `empathic_mimicry_1_1` | 2 | 24 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Empathic Surge: Strength for friends within 8 (`mimicry/MimicSkills`) |
+| `empathic_mimicry_overcharge` | 3 | 17 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: strengthens a copied move, which still pays its own stamina (`mimicry/MimicSkills`) |
+| `empathic_mimicry_2_1` | 2 | 19 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Calm lifts harmful effects within 6 (`mimicry/MimicSkills`) |
+| `empathic_mimicry_absorb_pain` | 3 | 21 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: takes an ally's pain (`mimicry/MimicSkills`) |
 | `matter_assembly_scattershot` | 2 | 21 | 3 | 0 | 0 / 0 blocks | 4.5 / 5.83 | within 30% | five projectiles of 5+.5*tier; simultaneous equal hits respect invulnerability. tickShard does NOT reset invulnerability: ordinary close overlap deals 6, not 30, to one body. Five rays can hit different bodies. Ricochet and airborne bonuses are conditional rewards for setup. (`assembly/MatterAssemblyService#activate,firePaid,tickShard`) |
 | `matter_assembly_faultline` | 3 | 27 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Kaleidoscope: a mirror ring that holds a foe; its damage is the Shards you fire in, each paid separately (`assembly/MatterAssemblyService`) |
 | `matter_assembly_switchback` | 2 | 20 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: builds a route (`assembly/MatterAssemblyService`) |
@@ -836,7 +836,7 @@ a successful evasion; full holding time and an immediate shattering/releasing bl
 | `shapeshifting_masquerade` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Many Faces: four copies draw every hunter; friends mend and move quicker (`combat/Ultimates (Defense and Support)`) |
 | `sonic_resonance_silence_dome` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Dead Air: shots drop, foes inside hushed, weakened and slowed; 4 to those inside as it breaks (conditional) (`combat/Ultimates (Defense and Support)`) |
 | `sonic_resonance_battle_hymn` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Anthem: chords every 2 s that mend, strengthen and harden friends (`combat/Ultimates (Defense and Support)`) |
-| `superspeed_phase_blur` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Between Heartbeats: every blow and shot finds an afterimage; 3 back to each striker, 2 per afterimage as it ends (conditional) (`combat/Ultimates (Defense and Support)`) |
+| `superspeed_phase_blur` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Between Heartbeats: three illusions fight enemies within 32 for 12 s, 2 a blow (about one a second each, three blows to break one); blows on you at half (conditional) (`combat/Ultimates (Defense and Support)`) |
 | `superspeed_relay_run` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Rescue Run: every friend within 32 brought to your side, healed 6 + tier, cleansed and quickened (`combat/Ultimates (Defense and Support)`) |
 | `telekinesis_debris_halo` | 3 | 74 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Stop Everything: shots stopped ten blocks out and thrown back, foes held at arm's length (`combat/Ultimates (Defense and Support)`) |
 | `telekinesis_gathering_hand` | 3 | 79 | 1 | 0 | 0 / 0 blocks | — | utility / conditional | 0: Cradle: friends gathered under two hands that stop shots, swat foes back for 2 and halve harm (`combat/Ultimates (Defense and Support)`) |

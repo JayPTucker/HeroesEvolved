@@ -67,7 +67,7 @@ public final class SonicKitPreview {
     }
 
     private static void check(boolean ok, String what) {
-        System.out.println((ok ? "SONIC_KIT_PASS " : "SONIC_KIT_FAIL ") + what);
+        PreviewQuiet.report((ok ? "SONIC_KIT_PASS " : "SONIC_KIT_FAIL ") + what);
     }
 
     private static void camera(Minecraft mc, CameraType type) { mc.options.setCameraType(type); }

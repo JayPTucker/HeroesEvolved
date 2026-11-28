@@ -359,4 +359,56 @@ public final class SonicGameTests {
             h.succeed();
         } finally { SonicService.forget(p); }
     }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.shatter")
+    public static void shatterNoteBreaksGlassAndRingsTheFoesThere(GameTestHelper h) {
+        var p = singer(h, 3);
+        BlockPos glass = h.absolutePos(new BlockPos(3, 3, 9));
+        h.getLevel().setBlock(glass, net.minecraft.world.level.block.Blocks.GLASS.defaultBlockState(), 3);
+        var t = mob(h, EntityType.PILLAGER, p, 0, 5, false);
+        try {
+            p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(glass));
+            t.moveTo(glass.getX() + .5, p.getY(), glass.getZ() - .8, 180, 0);
+            h.assertTrue(SonicSkills.technique(p, "shatter_note"), "The snap lands on the glass");
+            h.assertTrue(h.getLevel().getBlockState(glass).isAir(), "The glass shatters");
+            h.assertTrue(Math.abs(100 - t.getHealth() - 4) < .01F, "A foe there takes 4, took " + (100 - t.getHealth()));
+            h.assertTrue(SonicService.ringing(t), "And is left Ringing");
+            h.succeed();
+        } finally { t.discard(); SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.shatter")
+    public static void resonantBreakerBreaksStoneAndStunsWhatWasRinging(GameTestHelper h) {
+        var p = singer(h, 5);
+        learn(p, "sonic_resonance_shatter_note", "sonic_resonance_resonant_breaker");
+        BlockPos stone = h.absolutePos(new BlockPos(3, 3, 9));
+        h.getLevel().setBlock(stone, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+        var t = mob(h, EntityType.PILLAGER, p, 0, 5, false);
+        try {
+            t.moveTo(stone.getX() + .5, p.getY(), stone.getZ() - .8, 180, 0);
+            SonicService.ring(p, t);
+            p.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(stone));
+            h.assertTrue(SonicSkills.technique(p, "shatter_note"), "The snap lands on the stone");
+            h.assertTrue(h.getLevel().getBlockState(stone).isAir(), "With Resonant Breaker, stone breaks too");
+            var stun = t.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
+            h.assertTrue(stun != null && stun.getAmplifier() >= 6, "A foe that was already Ringing is stunned");
+            h.succeed();
+        } finally { t.discard(); SonicService.forget(p); }
+    }
+
+    @GameTest(template = "rewind_empty", batch = "sonic.echo")
+    public static void deepEchoLeavesEveryEnemyItPassesRinging(GameTestHelper h) {
+        var p = singer(h, 5);
+        var near = mob(h, EntityType.PILLAGER, p, 4, 10, false);
+        var plain = singer(h, 5);
+        try {
+            learn(plain, "sonic_resonance_echo_map");
+            h.assertTrue(SonicSkills.technique(plain, "echo_map"), "Echo Map sweeps");
+            h.assertFalse(SonicService.ringing(near), "Without Deep Echo the sweep leaves nobody Ringing");
+            learn(p, "sonic_resonance_echo_map", "sonic_resonance_deep_echo");
+            h.assertTrue(SonicSkills.technique(p, "echo_map"), "Deep Echo sweeps");
+            h.assertTrue(SonicService.ringing(near), "An enemy 11 blocks off is left Ringing");
+            h.succeed();
+        } finally { near.discard(); SonicService.forget(p); SonicService.forget(plain); }
+    }
 }

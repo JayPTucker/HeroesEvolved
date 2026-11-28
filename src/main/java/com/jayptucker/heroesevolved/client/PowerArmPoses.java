@@ -316,6 +316,44 @@ public final class PowerArmPoses {
                         Mth.lerp(open, .05F, -.65F * inward));
                 set(rightHanded ? model.leftArm : model.rightArm, -.15F, 0, .12F * inward);
             }
+            case MIMIC_LASH -> {
+                // The rear hand at the heart; the lead hand drawn to it, then thrown open at the foe like a whip's crack.
+                float age = ClientArmPoseState.ageTicks(id);
+                float lash = smooth((age - 1) / 2F), back = smooth((age - 7) / 5F);
+                float x = Mth.lerp(lash, -1.15F, aimX), y = Mth.lerp(lash, inward * .75F, aimY);
+                set(main, Mth.lerp(back, x, -.25F), Mth.lerp(back, y, 0), Mth.lerp(lash, .05F, -.12F * inward));
+                set(rightHanded ? model.leftArm : model.rightArm, -1.05F, -inward * .62F, .05F * inward);
+            }
+            case MIMIC_SURGE -> {
+                // Both arms flung wide, palms forward, pushing out a little more on each heartbeat.
+                float age = ClientArmPoseState.ageTicks(id);
+                float open = smooth(age / 4F);
+                float pulse = (Math.max(0, 1 - Math.abs(age - 4) / 3F) + Math.max(0, 1 - Math.abs(age - 10) / 3F)) * .14F;
+                set(model.rightArm, Mth.lerp(open, -.3F, -.5F), 0, Mth.lerp(open, .1F, 1.2F + pulse));
+                set(model.leftArm, Mth.lerp(open, -.3F, -.5F), 0, Mth.lerp(open, -.1F, -1.2F - pulse));
+            }
+            case MIMIC_CALM -> {
+                // A hand flat on the heart, breathing; the other held out palm down and pressed slowly toward the ground.
+                float age = ClientArmPoseState.ageTicks(id);
+                float press = smooth(age / 20F), breathe = Mth.sin(ageInTicks * .3F) * .03F;
+                set(rightHanded ? model.leftArm : model.rightArm, -1.05F + breathe, -inward * .62F, .05F * inward);
+                set(main, Mth.lerp(press, -1.35F, -.35F), inward * .12F, -.1F * inward);
+            }
+            case MIMIC_ABSORB -> {
+                // Both hands reached out toward the friend, then drawn in to the chest.
+                float age = ClientArmPoseState.ageTicks(id);
+                float reach = smooth(age / 3F), pull = smooth((age - 5F) / 8F);
+                float x = Mth.lerp(pull, Mth.lerp(reach, -.4F, aimX), -1.1F);
+                set(model.rightArm, x, Mth.lerp(pull, aimY - .12F, -.55F), 0);
+                set(model.leftArm, x, Mth.lerp(pull, aimY + .12F, .55F), 0);
+            }
+            case MIMIC_SENSE -> {
+                // A hand on the heart; the other open, low and a little out from the side, still, listening.
+                float age = ClientArmPoseState.ageTicks(id);
+                float settle = smooth(age / 5F), sway = Mth.sin(ageInTicks * .12F) * .04F * settle;
+                set(rightHanded ? model.leftArm : model.rightArm, -1.05F, -inward * .62F, .05F * inward);
+                set(main, -.25F * settle + sway, 0, Mth.lerp(settle, 0, -.45F * inward));
+            }
             case SPEED_GUARD -> {
                 // A boxer's guard, both forearms up at the face, bouncing light on the toes.
                 float bounce = Mth.sin(ageInTicks * .9F) * .05F;

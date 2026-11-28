@@ -212,6 +212,7 @@ final class PieceArt {
             case MIMIC_ULT_ALL -> MimicArt.everything(c, a, t);
             case MIMIC_ULT_VOICES -> { }
             case MIMIC_ULT_GIFT -> MimicArt.gift(c, a, t);
+            case MIMIC_LASH, MIMIC_SURGE, MIMIC_CALM, MIMIC_ABSORB, MIMIC_SENSE, MIMIC_OVERCHARGE -> MimicArt.skill(c, a, t);
             case TELE_ULT_MIND -> TelepathyArt.mind(c, a, t);
             case TELE_ULT_FEARS, TELE_ULT_DOUBLES, TIME_ULT_COPIES -> { }
             case TELE_ULT_POP -> TelepathyArt.pop(c, a, t);

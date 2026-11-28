@@ -134,7 +134,7 @@ public final class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<com.jayptucker.heroesevolved.shapeshift.ShapeDecoy>> SHAPE_DECOY =
             ENTITY_TYPES.register("shape_decoy", id -> EntityType.Builder.<com.jayptucker.heroesevolved.shapeshift.ShapeDecoy>of(
                     com.jayptucker.heroesevolved.shapeshift.ShapeDecoy::new, MobCategory.MISC)
-                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(64).updateInterval(5).build(id.toString()));
+                    .sized(.6F, 1.8F).noSave().noSummon().clientTrackingRange(64).updateInterval(2).build(id.toString()));
 
     public static void register(IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);

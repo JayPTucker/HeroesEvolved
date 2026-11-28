@@ -37,3 +37,27 @@ became a three-phase kit in November 2026: the power of whoever you are near (Le
   people should both count (`LAST_TOUCH` stores the target as well as the time).
 - **A saved roll on an entity.** Gifted villagers roll once in `EntityJoinLevelEvent` and save `heroesevolved_gift`
   and `heroesevolved_gift_rolled` in the persistent data, so a reload never re-rolls.
+
+## The empath's own skills (November 2026)
+
+A review found Mimicry the thinnest kit: its own skills had no look at all (Borrowed Strike borrowed Regeneration's
+red `BLOOD_THREAD`; Empathic Surge, Calm, Sense Powers and Overcharge drew nothing) and only two poses of its own.
+
+- **One class, `mimicry/MimicSkills`,** holds Borrowed Strike, Empathic Surge and Calm (the branch actives) and Sense
+  Powers, Overcharge and Absorb Pain (the techniques). `MimicryService.skill`/`technique` only delegate, so callers did
+  not change. Overcharge's flag stays private to `MimicryService` (`overcharge`, `overcharged`).
+- **A borrowed touch is one function: `Chorus.touch(player, power, foe, damage, seed)`.** Fire burns, cold slows,
+  radiation sickens, a far hand (or Quake, or Flight) shoves, lightning jumps for half. A Chorus voice and Borrowed
+  Strike both call it; a new power's touch is one more case there.
+- **Hands and heart in one geometry class, `MimicGeometry`** (`hand`, `heart`, `chest`), read by the server for a
+  piece's origin and by `MimicArt` every frame, so the thread leaves the hand the player sees.
+- **Links in the seed.** Each skill sends one main piece (seed 0, or a target's id) and one piece per person it
+  touches with `MimicSkills.LINK` set in the seed and a colour (an effect's `getColor`) or a power's index in the low
+  bits; the scale carries an order (start at 1: the client clamps the scale to 0.05). `MimicArt.skill` draws them all.
+- **What only the empath should see goes to them alone** (`MimicSkills.privately`): Sense Powers' rings on the people
+  it found, like the `PrivateGlow` it sets.
+- **Fade the empath's own hands and heart near the camera** (`MimicArt.near`): rings at your own hand or heart filled
+  the view in first person.
+- **Poses:** `MIMIC_LASH`, `MIMIC_SURGE`, `MIMIC_CALM`, `MIMIC_ABSORB`, `MIMIC_SENSE` (appended to `ArmPose`), with
+  first-person geometry for each; Overcharge uses `MIMIC_SHIFT`. Tests: `mimicry/MimicSkillGameTests`; photos:
+  `tools/mimicry-preview.init.gradle` (the `m6`-`m11` shots).

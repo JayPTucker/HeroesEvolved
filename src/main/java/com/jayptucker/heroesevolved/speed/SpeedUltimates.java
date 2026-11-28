@@ -4,6 +4,9 @@ import com.jayptucker.heroesevolved.ability.ArmPose;
 import com.jayptucker.heroesevolved.combat.Ultimates;
 import com.jayptucker.heroesevolved.combat.Ultimates.Run;
 import com.jayptucker.heroesevolved.combat.Ultimates.Ultimate;
+import com.jayptucker.heroesevolved.expansion.Signatures;
+import com.jayptucker.heroesevolved.registry.ModEntities;
+import com.jayptucker.heroesevolved.shapeshift.ShapeDecoy;
 import com.jayptucker.heroesevolved.effects.AbilityEffects;
 import com.jayptucker.heroesevolved.network.AbilityEffectPayload.Kind;
 import com.jayptucker.heroesevolved.network.ScreenTintPayload;
@@ -11,19 +14,19 @@ import com.jayptucker.heroesevolved.styles.Piece;
 import com.jayptucker.heroesevolved.styles.StyleOps;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Superspeed's three Ultimates. Their beats are public: {@code SpeedArt} draws from the same numbers, so the lightning
@@ -187,15 +190,41 @@ public final class SpeedUltimates {
     // ------------------------------------------------------------------
 
     /**
-     * Twelve seconds lived between heartbeats. Every blow and every shot aimed at the speedster finds only an
-     * afterimage: they are a step to the side, and the afterimage strikes the one who swung. Shots that come near are
-     * plucked out of the air. When it ends, every afterimage left behind runs in on the nearest foe at once.
+     * Between Heartbeats. The speedster vibrates so fast that they come apart: for a breath they blur in place, then
+     * three illusions of them (their own face, armour and held items) tear loose and run. For twelve seconds the
+     * illusions fight every enemy within 32 blocks of the speedster, each picking its own, striking from one side and
+     * then another as they blur round it, and turning on themselves everything that was hunting the speedster. An illusion
+     * takes {@link #BLOWS} blows (stepping aside from each) before it breaks. The speedster, still vibrating, takes every
+     * blow at half (the Ultimate engine halves blows on any caster whose run opens on its camera). When it ends, the
+     * illusions run home into them.
      */
     public static final class BetweenHeartbeats extends Run {
-        public static final int TICKS = 240, INTRO = 22, MAX_IMAGES = 6;
-        private int images;
-        private final Map<UUID, Integer> struck = new HashMap<>();
-        private int lastDodge = -100;
+        /** Vibrating until SPLIT; the illusions fight until HOME, then run back in; it ends at TICKS. */
+        public static final int SPLIT = 16, HOME = 248, TICKS = 260, INTRO = 24;
+        /** How many illusions, how many blows each takes, and how often each one strikes. */
+        public static final int ILLUSIONS = 3, BLOWS = 3, STRIKE = 20;
+        /** Enemies this far from the speedster are fought; an illusion strikes for DAMAGE and runs up to RUN a tick. */
+        public static final double RANGE = 32, RUN = 2.2;
+        public static final float DAMAGE = 2;
+
+        private final List<Illusion> illusions = new ArrayList<>();
+
+        /** One illusion: its body, the enemy it fights, the side it comes at it from, and how many blows it has left. */
+        private final class Illusion {
+            final ShapeDecoy body;
+            final int lane;
+            LivingEntity mark;
+            double side;
+            int blows = BLOWS, next, stuck, dodged = -100;
+
+            Illusion(ShapeDecoy body, int lane) {
+                this.body = body;
+                this.lane = lane;
+                this.side = lane * Math.PI * 2 / ILLUSIONS;
+            }
+
+            boolean standing() { return !body.isRemoved() && body.level() == level; }
+        }
 
         public BetweenHeartbeats(ServerPlayer p, int tier, LivingEntity unused) { super(p, tier, POWER, "phase_blur", null); }
 
@@ -203,7 +232,7 @@ public final class SpeedUltimates {
 
         @Override protected void open() {
             cue();
-            pose(ArmPose.SPEED_GUARD, 30);
+            pose(ArmPose.SPEED_GUARD, SPLIT + 2);
             heroShot(INTRO, 0);
             piece(Piece.SPEED_ULT_HEART, player.position(), player.position(), 1, player, 0);
             sound(player.position(), SoundEvents.WARDEN_HEARTBEAT, 1.4F, .7F);
@@ -215,62 +244,237 @@ public final class SpeedUltimates {
                 piece(Piece.SPEED_ULT_HEART, player.position(), player.position(), 1, player, age / 20);
                 sound(player.position(), SoundEvents.WARDEN_HEARTBEAT, .8F, .6F);
             }
-            // Shots that come close are taken out of the air.
-            Vec3 body = player.getBoundingBox().getCenter();
-            for (Projectile shot : shots(body, 3.2)) {
-                if (shot.getDeltaMovement().dot(body.subtract(shot.position())) <= 0) continue;
-                piece(Piece.SPEED_ULT_DODGE, shot.position(), body, .4F, player, 1);
-                shot.discard();
-                sound(body, SoundEvents.ARROW_HIT, .6F, 1.8F);
+            if (age < SPLIT && age % 4 == 0) sound(player.position(), SoundEvents.BEEHIVE_WORK, .5F, 2);
+            if (age == SPLIT) split();
+            if (age > SPLIT && age < HOME) {
+                for (Illusion illusion : illusions) if (illusion.standing()) fight(illusion, age);
+                if (age % 10 == 0) draw();
             }
+            if (age == HOME) home();
         }
 
-        @Override protected void incoming(LivingIncomingDamageEvent event, LivingEntity victim) {
-            if (victim != player || event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
-            var source = event.getSource();
-            if (source.getEntity() == null && source.getDirectEntity() == null) {
-                // Fire, a fall, a blast: too wide to step round, but the step takes half of it.
-                event.setAmount(event.getAmount() * .5F);
+        /** Three illusions tear loose from the speedster and run out in three directions. */
+        private void split() {
+            pose(ArmPose.SPEED_SPLIT, 14);
+            Vec3 at = player.position();
+            for (int i = 0; i < ILLUSIONS; i++) {
+                ShapeDecoy body = ModEntities.SHAPE_DECOY.get().create(level);
+                if (body == null) continue;
+                Illusion[] self = new Illusion[1];
+                body.setupIllusion(player, TICKS - SPLIT + 20, i, by -> struck(self[0], by));
+                body.moveTo(at.x, at.y, at.z, player.getYRot(), 0);
+                body.face(player.getYRot());
+                if (!level.addFreshEntity(body)) continue;
+                self[0] = new Illusion(body, i);
+                illusions.add(self[0]);
+                double a = Math.atan2(facing.z, facing.x) + i * Math.PI * 2 / ILLUSIONS;
+                Vec3 out = new Vec3(Math.cos(a), 0, Math.sin(a)).scale(3);
+                AbilityEffects.send(level, Kind.SPEED_ZIP, at, body.runToward(out), .8F);
+            }
+            AbilityEffects.send(level, Kind.SPEED_BURST, at, at.add(0, 1, 0), 1);
+            sound(at, SoundEvents.ILLUSIONER_MIRROR_MOVE, 1.2F, 1.3F);
+            sound(at, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), .9F, 1.5F);
+            shake(at, 10, .2F, 6);
+            draw();
+        }
+
+        /** One tick of an illusion: find an enemy, run to its side, strike, and blur round to the next side. */
+        private void fight(Illusion illusion, int age) {
+            ShapeDecoy body = illusion.body;
+            if (illusion.mark == null || age % 10 == 0 || !fightable(illusion.mark)) illusion.mark = pick(illusion);
+            LivingEntity mark = illusion.mark;
+            Vec3 at = body.position();
+            if (mark == null) {
+                // Nothing to fight: guard the speedster, running a ring round them.
+                double a = age * .2 + illusion.lane * Math.PI * 2 / ILLUSIONS;
+                Vec3 spot = player.position().add(Math.cos(a) * (2.4 + illusion.lane * .3), 0, Math.sin(a) * (2.4 + illusion.lane * .3));
+                move(illusion, spot, 1.1);
                 return;
             }
-            event.setCanceled(true);
-            Vec3 from = player.position();
-            Vec3 toward = source.getDirectEntity() != null ? from.subtract(source.getDirectEntity().position()) : facing;
-            toward = toward.multiply(1, 0, 1);
-            toward = toward.lengthSqr() < 1e-4 ? side : toward.normalize();
-            Vec3 aside = new Vec3(-toward.z, 0, toward.x).scale((age / 7) % 2 == 0 ? 1.8 : -1.8);
-            if (age - lastDodge >= 2) {
-                Vec3 to = blink(from.add(aside));
-                lastDodge = age;
-                piece(Piece.SPEED_ULT_DODGE, from, to, 1, player, 0);
-                AbilityEffects.send(level, Kind.SPEED_DODGE, from, to, 1);
-                sound(from, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), .5F, 1.9F);
-                images = Math.min(MAX_IMAGES, images + 1);
+            double reach = mark.getBbWidth() / 2 + .9;
+            Vec3 spot = mark.position().add(Math.cos(illusion.side) * reach, 0, Math.sin(illusion.side) * reach);
+            double away = at.distanceTo(spot);
+            if (away > RANGE + 8) { blinkTo(illusion, mark); return; }
+            Vec3 now = move(illusion, spot, RUN);
+            illusion.stuck = now.distanceToSqr(at) < .04 && away > 2 ? illusion.stuck + 1 : 0;
+            if (illusion.stuck > 6) { blinkTo(illusion, mark); return; }
+            double flat = Math.sqrt(now.subtract(mark.position()).horizontalDistanceSqr());
+            if (age >= illusion.next && flat <= reach + .9 && Math.abs(now.y - mark.getY()) < 2.5) strike(illusion, mark, age);
+        }
+
+        /** Runs an illusion toward a spot (at most {@code speed} this tick), leaving a gold streak when it moves fast. */
+        private Vec3 move(Illusion illusion, Vec3 spot, double speed) {
+            ShapeDecoy body = illusion.body;
+            Vec3 from = body.position(), want = spot.subtract(from).multiply(1, 0, 1);
+            double d = want.length();
+            if (d < .05) return from;
+            Vec3 to = body.runToward(want.scale(Math.min(speed, d) / d));
+            if (to.distanceToSqr(from) > 1 && age % 2 == 0)
+                AbilityEffects.send(level, Kind.SPEED_TRAIL, from, to, .6F);
+            return to;
+        }
+
+        /** An illusion that can't get there (a wall, a gap, too far) is simply beside its enemy, in a flash. */
+        private void blinkTo(Illusion illusion, LivingEntity mark) {
+            ShapeDecoy body = illusion.body;
+            double reach = mark.getBbWidth() / 2 + .9;
+            for (int i = 0; i < ILLUSIONS; i++) {
+                double a = illusion.side + i * Math.PI * 2 / ILLUSIONS;
+                Vec3 spot = mark.position().add(Math.cos(a) * reach, 0, Math.sin(a) * reach);
+                if (!SpeedService.safe(body, spot)) continue;
+                Vec3 from = body.position();
+                body.teleportTo(spot.x, spot.y, spot.z);
+                illusion.side = a;
+                illusion.stuck = 0;
+                AbilityEffects.send(level, Kind.SPEED_ZIP, from, spot, .8F);
+                return;
             }
-            // The afterimage left behind strikes back at whoever swung (once a second each).
-            if (source.getEntity() instanceof LivingEntity attacker && attacker != player && attacker.distanceToSqr(from) < 36
-                    && StyleOps.isFoe(player, attacker)) {
-                int last = struck.getOrDefault(attacker.getUUID(), -100);
-                if (age - last >= 20) {
-                    struck.put(attacker.getUUID(), age);
-                    hit(attacker, 3);
-                    piece(Piece.SPEED_ULT_DODGE, from, attacker.getBoundingBox().getCenter(), .7F, player, 2);
-                }
+            illusion.mark = null;
+        }
+
+        /** A blow: the illusion swings, lands it, and draws the enemy's anger onto itself, then blurs round to strike again. */
+        private void strike(Illusion illusion, LivingEntity mark, int age) {
+            ShapeDecoy body = illusion.body;
+            Vec3 d = mark.position().subtract(body.position());
+            body.face((float) Math.toDegrees(Math.atan2(-d.x, d.z)));
+            body.swing(age / STRIKE % 2 == 0 ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND, true);
+            hit(mark, DAMAGE);
+            // The blow is the speedster's (their kill, their loot), but the anger is the illusion's.
+            mark.setLastHurtByMob(body);
+            if (mark instanceof Mob mob) turn(mob, body);
+            shove(mark, body.position(), .25, .1);
+            piece(Piece.SPEED_ULT_DODGE, body.position(), mark.getBoundingBox().getCenter(), .7F, player, 2);
+            sound(mark.position(), SoundEvents.PLAYER_ATTACK_SWEEP, .6F, 1.7F);
+            illusion.next = age + STRIKE;
+            // Round to another side for the next blow (the run there leaves afterimages).
+            illusion.side += Math.PI * 2 / 3 * (illusion.lane % 2 == 0 ? 1 : -1);
+        }
+
+        /** A blow on an illusion: it steps aside (an afterimage takes the hit) or, on its last, breaks into afterimages. */
+        private boolean struck(Illusion illusion, Entity by) {
+            if (illusion == null || !illusion.standing()) return false;
+            ShapeDecoy body = illusion.body;
+            // One step aside per blow: a flurry landing within a few ticks is the same blow (the run's clock always ticks).
+            if (age - illusion.dodged < 6) return true;
+            illusion.dodged = age;
+            Vec3 from = body.position();
+            if (--illusion.blows <= 0) {
+                breakApart(illusion);
+                return true;
+            }
+            Vec3 toward = by != null ? from.subtract(by.position()).multiply(1, 0, 1) : facing;
+            toward = toward.lengthSqr() < 1e-4 ? side : toward.normalize();
+            Vec3 aside = new Vec3(-toward.z, 0, toward.x).scale(illusion.blows % 2 == 0 ? 1.8 : -1.8);
+            Vec3 to = body.runToward(aside);
+            AbilityEffects.send(level, Kind.SPEED_DODGE, from, to, 1);
+            sound(from, SoundEvents.BREEZE_WIND_CHARGE_BURST.value(), .45F, 1.9F);
+            // It answers at once.
+            illusion.next = Math.min(illusion.next, age + 2);
+            return true;
+        }
+
+        /** The last blow: the illusion bursts into a ring of its own afterimages and is gone. */
+        private void breakApart(Illusion illusion) {
+            ShapeDecoy body = illusion.body;
+            Vec3 at = body.position();
+            AbilityEffects.send(level, Kind.SPEED_MIRAGE, at, at.add(0, 1.6, 0), 1);
+            AbilityEffects.send(level, Kind.SPEED_BURST, at, at.add(0, 1, 0), .8F);
+            sound(at, SoundEvents.ILLUSIONER_MIRROR_MOVE, .8F, 1.8F);
+            forgetTargets(body);
+            body.discard();
+        }
+
+        /** Whether an enemy is still one an illusion should fight. */
+        private boolean fightable(LivingEntity e) {
+            return e.isAlive() && !e.isRemoved() && e.level() == level && !(e instanceof ShapeDecoy)
+                    && e.position().distanceToSqr(player.position()) <= (RANGE + 4) * (RANGE + 4) && StyleOps.isFoe(player, e) && enemy(e);
+        }
+
+        /**
+         * An enemy, not just anything that isn't a friend: a monster, anything hunting the speedster or a friend, or
+         * whoever struck or was struck by the speedster lately. Villagers and cows grazing nearby are left alone.
+         */
+        private boolean enemy(LivingEntity e) {
+            if (e instanceof net.minecraft.world.entity.monster.Enemy) return true;
+            if (e instanceof Mob mob && mob.getTarget() != null && StyleOps.isFriend(player, mob.getTarget())) return true;
+            if (e instanceof Mob mob && mob.getTarget() instanceof ShapeDecoy copy && player.getUUID().equals(copy.owner())) return true;
+            if (e == player.getLastHurtByMob() && player.tickCount - player.getLastHurtByMobTimestamp() < 200) return true;
+            return e == player.getLastHurtMob() && player.tickCount - player.getLastHurtMobTimestamp() < 200;
+        }
+
+        /** The enemy an illusion should fight: one no other illusion has, if there is one; the nearest to it. */
+        private LivingEntity pick(Illusion illusion) {
+            List<LivingEntity> enemies = StyleOps.foes(player, player.position(), RANGE).stream().filter(this::fightable).toList();
+            if (enemies.isEmpty()) return null;
+            Vec3 at = illusion.body.position();
+            LivingEntity best = null, taken = null;
+            double bestD = Double.MAX_VALUE, takenD = Double.MAX_VALUE;
+            for (LivingEntity e : enemies) {
+                double d = e.distanceToSqr(at);
+                boolean claimed = illusions.stream().anyMatch(o -> o != illusion && o.standing() && o.mark == e);
+                if (!claimed && d < bestD) { best = e; bestD = d; }
+                if (claimed && d < takenD) { taken = e; takenD = d; }
+            }
+            if (illusion.mark != null && illusion.mark != best && fightable(illusion.mark)) return illusion.mark;
+            return best != null ? best : taken;
+        }
+
+        /** Everything within range hunting the speedster (or a friend) turns on the nearest illusion. */
+        private void draw() {
+            List<Illusion> up = illusions.stream().filter(Illusion::standing).toList();
+            if (up.isEmpty()) return;
+            List<LivingEntity> friends = friends(RANGE + 4);
+            for (Mob mob : level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(RANGE),
+                    m -> m.isAlive() && m.getTarget() != null && friends.contains(m.getTarget()))) {
+                Illusion near = up.stream().min(java.util.Comparator.comparingDouble(i -> i.body.distanceToSqr(mob))).orElseThrow();
+                turn(mob, near.body);
             }
         }
 
-        @Override protected void finish() {
-            List<LivingEntity> near = StyleOps.foes(player, player.position(), 8);
-            if (near.isEmpty() || images == 0) return;
-            LivingEntity mark = near.getFirst();
-            for (int i = 0; i < Math.max(1, images); i++) {
-                double a = i * Math.PI * 2 / Math.max(1, images);
-                Vec3 from = mark.position().add(Math.cos(a) * 2.2, 0, Math.sin(a) * 2.2);
-                piece(Piece.SPEED_ULT_DODGE, from, mark.getBoundingBox().getCenter(), .7F, player, 2);
-            }
-            hit(mark, 2 * images);
-            sound(mark.position(), SoundEvents.PLAYER_ATTACK_SWEEP, 1.2F, 1.5F);
+        private void turn(Mob mob, ShapeDecoy body) {
+            if (Signatures.boss(mob)) return;
+            mob.setTarget(body);
+            if (mob.getBrain().checkMemory(MemoryModuleType.ATTACK_TARGET, MemoryStatus.REGISTERED))
+                mob.getBrain().setMemory(MemoryModuleType.ATTACK_TARGET, body);
         }
+
+        /** Anything still angry at a gone illusion forgets it (and finds the next one on the next draw). */
+        private void forgetTargets(ShapeDecoy body) {
+            for (Mob mob : level.getEntitiesOfClass(Mob.class, body.getBoundingBox().inflate(RANGE + 8), m -> m.getTarget() == body)) {
+                mob.setTarget(null);
+                if (mob.getBrain().checkMemory(MemoryModuleType.ATTACK_TARGET, MemoryStatus.REGISTERED))
+                    mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+            }
+        }
+
+        /** The illusions run home and fold back into the speedster. */
+        private void home() {
+            Vec3 at = player.position();
+            for (Illusion illusion : illusions) {
+                if (!illusion.standing()) continue;
+                AbilityEffects.send(level, Kind.SPEED_ZIP, illusion.body.position(), at, .8F);
+                forgetTargets(illusion.body);
+                illusion.body.discard();
+            }
+            AbilityEffects.send(level, Kind.SPEED_BURST, at, at.add(0, 1, 0), .9F);
+            pose(ArmPose.SPEED_STILL, 12);
+            sound(at, SoundEvents.ILLUSIONER_MIRROR_MOVE, .9F, .9F);
+        }
+
+        @Override protected void tidy(boolean broken) {
+            for (Illusion illusion : illusions) {
+                if (!illusion.standing()) continue;
+                if (broken) AbilityEffects.send(level, Kind.SPEED_BURST, illusion.body.position(), illusion.body.position().add(0, 1, 0), .7F);
+                forgetTargets(illusion.body);
+                illusion.body.discard();
+            }
+        }
+
+        /** The illusions' bodies (for tests and the admin console). */
+        public List<ShapeDecoy> illusions() { return illusions.stream().map(i -> i.body).toList(); }
+
+        /** How many blows each illusion still has, in order (0 once broken). */
+        public List<Integer> blows() { return illusions.stream().map(i -> i.standing() ? i.blows : 0).toList(); }
     }
 
     // ------------------------------------------------------------------
