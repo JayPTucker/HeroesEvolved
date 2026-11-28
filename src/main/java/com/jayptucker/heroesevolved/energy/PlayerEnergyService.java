@@ -172,6 +172,7 @@ public final class PlayerEnergyService {
 
     /** Recovery waits a moment after a move. */
     public static void pause(ServerPlayer player) {
+        com.jayptucker.heroesevolved.ability.Airborne.moved(player);
         state(player).pausedUntil = player.level().getGameTime() + HeroesEvolvedConfig.COMMON.staminaRecoveryDelayTicks.get();
     }
 

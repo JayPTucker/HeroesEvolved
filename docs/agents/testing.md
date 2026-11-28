@@ -13,6 +13,11 @@ Part of the notes for coding agents: start at [AGENTS.md](../../AGENTS.md).
 - **The whole suite** is what GitHub runs on every push (`.github/workflows/build.yml`):
   `./gradlew runGameTestServer --init-script tools/rewind-gametest.init.gradle`. Every run starts from a fresh world and
   the mod's default config. Failures are in `build/rewind-gametest-world/logs/gametest`.
+- **The full suite also checks dedicated-server safety.** `rewind-gametest.init.gradle` applies
+  `tools/client-class-tracer.gradle`, which fails the run if any test path loads a client-only class (a real server has
+  none; the dev server has them all). Its log is `build/rewind-gametest-world/client-class-loads.txt`, with the stack
+  of each load. Game tests never encode packets: use the multiplayer check for payloads
+  ([servers.md](servers.md)).
 - **One or a few packages.** `./gradlew runGameTestServer --init-script tools/structure-gametest.init.gradle
   -PtestPackages=vibe,time` runs only those packages (the default is `structure`, about a minute), in a world of its own.
 - **Focused suites** with their own worlds:

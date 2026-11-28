@@ -1,0 +1,47 @@
+// Photographs the mod running next to other client mods you supply as jars (uitest/ClientModsCheck): our title
+// screen with whatever they add to it, a world with a power in use, the pause menu and the Powers screen. Written for
+// Essential (https://essential.gg), which rebuilds the title and pause menus and draws cosmetics on the player:
+//
+//     ./gradlew runClient --init-script tools/client-mods-check.init.gradle "-PclientMods=C:/path/Essential.jar" -PcheckMods=essential
+//
+// -PclientMods is a list of jar paths separated by ';', copied into the run's mods folder (nothing is downloaded);
+// -PcheckMods lists the mod ids that must load. The game directory is build/client-mods-check, and the photographs land
+// in its screenshots folder. Read the log for "heroesevolved.mixins.json" warnings too: a mixin another mod has already
+// changed fails there first. Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def preview = sourceSets.create('clientModsCheck') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            def gameDir = project.file('build/client-mods-check')
+            def jars = (findProperty('clientMods') ?: '').toString().split(';').findAll { !it.isBlank() }.collect { new File(it.trim()) }
+            neoForge {
+                mods { heroesevolved { sourceSet(preview) } }
+                runs {
+                    client {
+                        gameDirectory = gameDir
+                        programArguments.addAll('--width', '1280', '--height', '800')
+                        systemProperty('heroes.preview.clientmods', 'true')
+                        systemProperty('heroes.check.mods', (findProperty('checkMods') ?: '').toString())
+                    }
+                }
+            }
+            tasks.named('runClient') { task ->
+                task.dependsOn(tasks.named('clientModsCheckClasses'))
+                def mods = new File(gameDir, 'mods')
+                task.doFirst {
+                    mods.mkdirs()
+                    mods.listFiles()?.findAll { it.name.endsWith('.jar') }?.each { it.delete() }
+                    jars.each { jar ->
+                        if (!jar.isFile()) throw new GradleException("No such jar for -PclientMods: ${jar}")
+                        java.nio.file.Files.copy(jar.toPath(), new File(mods, jar.name).toPath())
+                    }
+                }
+            }
+            apply from: rootProject.file('tools/preview-result.gradle')
+        }
+    }
+}

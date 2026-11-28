@@ -1,0 +1,71 @@
+// The multiplayer check: a real dedicated server and a real client that joins it over the network
+// (uitest/MultiplayerCheckServer and MultiplayerCheckClient). Single-player and the game tests hand packets over as
+// objects and never encode them, so a broken codec, a packet over the size limit or a client screen that assumes the
+// server is in the same JVM only shows up on a server. Run the two halves at the same time, server first:
+//
+//     ./gradlew runServer --init-script tools/multiplayer-check.init.gradle
+//     ./gradlew runClient --init-script tools/multiplayer-check.init.gradle     (once the server logs "Done")
+//
+// The server gives the client's player every power in turn, fires each action at a few still zombies, then kicks the
+// player and stops. The server run fails if its report (build/multiplayer-check/server/multiplayer-check-server.txt)
+// has a FAIL line or if it loaded a client-only class (tools/client-class-tracer.gradle); the client run fails if it
+// was disconnected any other way. Photographs land in build/multiplayer-check/client/screenshots. -PcheckPort=N picks
+// the port (25599 by default). Never bundled into the mod JAR.
+allprojects {
+    plugins.withId('net.neoforged.moddev') {
+        afterEvaluate {
+            def check = sourceSets.create('multiplayerCheck') {
+                java.srcDir('src/uitest/java')
+                compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+                runtimeClasspath += sourceSets.main.runtimeClasspath
+            }
+            def port = (findProperty('checkPort') ?: '25599').toString()
+            def serverDir = project.file('build/multiplayer-check/server')
+            def clientDir = project.file('build/multiplayer-check/client')
+            neoForge {
+                mods { heroesevolved { sourceSet(check) } }
+                runs {
+                    server {
+                        gameDirectory = serverDir
+                        systemProperty('heroes.check.server', 'true')
+                    }
+                    client {
+                        gameDirectory = clientDir
+                        programArguments.addAll('--width', '1100', '--height', '800', '--username', 'HeroCheck')
+                        systemProperty('heroes.preview.multiplayer', 'true')
+                        systemProperty('heroes.check.port', port)
+                    }
+                }
+            }
+            tasks.named('runServer') { task ->
+                task.dependsOn(tasks.named('multiplayerCheckClasses'))
+                def report = new File(serverDir, 'multiplayer-check-server.txt')
+                task.doFirst {
+                    // A fresh flat world every run, offline so the development client can join, on its own port.
+                    new File(serverDir, 'world').deleteDir()
+                    report.delete()
+                    serverDir.mkdirs()
+                    new File(serverDir, 'eula.txt').text = 'eula=true\n'
+                    new File(serverDir, 'server.properties').text = [
+                            'online-mode=false', "server-port=${port}", 'level-type=minecraft\\:flat',
+                            'generate-structures=false', 'spawn-protection=0', 'max-tick-time=-1', 'view-distance=6',
+                            'simulation-distance=6', 'difficulty=easy', 'spawn-monsters=false', 'motd=Heroes Evolved check',
+                    ].join('\n') + '\n'
+                }
+                task.doLast { t ->
+                    if (!report.exists())
+                        throw new GradleException("The server stopped before the check finished. See ${new File(serverDir, 'logs/latest.log')}")
+                    def lines = report.readLines('UTF-8')
+                    def failures = lines.findAll { it.contains('FAIL') }
+                    if (!failures.isEmpty())
+                        throw new GradleException("The multiplayer check reported failures:\n  " + failures.join('\n  '))
+                    t.logger.lifecycle(lines.last())
+                }
+            }
+            tasks.named('runClient') { dependsOn(tasks.named('multiplayerCheckClasses')) }
+            apply from: rootProject.file('tools/preview-result.gradle')
+            ext.clientClassTracerRun = 'server'
+            apply from: rootProject.file('tools/client-class-tracer.gradle')
+        }
+    }
+}

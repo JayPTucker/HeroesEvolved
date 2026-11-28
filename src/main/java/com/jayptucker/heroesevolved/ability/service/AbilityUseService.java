@@ -54,6 +54,7 @@ public final class AbilityUseService {
     }
 
     private static void release(ServerPlayer player, Function<ResourceLocation, AbilityAction> chooser) {
+        com.jayptucker.heroesevolved.ability.Airborne.moved(player);
         PlayerAbilityService.getData(player).assignedPower()
                 .filter(entry -> entry.getValue().isUnlocked() && AbilityRegistry.ABILITIES.get(entry.getKey()) != null)
                 .ifPresent(entry -> Optional.ofNullable(chooser.apply(entry.getKey())).ifPresent(action -> {
@@ -102,6 +103,8 @@ public final class AbilityUseService {
             Function<ResourceLocation, AbilityAction> chooser,
             boolean allowOverexertion
     ) {
+        // A move can lift its user; the floating kick on servers must not count the air time (Airborne).
+        com.jayptucker.heroesevolved.ability.Airborne.moved(player);
         // Out of their body in a vision, a viber's power keys only make them appear (or fade) there.
         if (com.jayptucker.heroesevolved.vibe.VibeVisions.watching(player))
             return com.jayptucker.heroesevolved.vibe.VibeVisions.press(player) ? AbilityUseResult.SUCCESS : AbilityUseResult.CANNOT_USE;

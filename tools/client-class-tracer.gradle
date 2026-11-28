@@ -1,0 +1,63 @@
+// Makes a development server run fail the way a real dedicated server would when our code loads a client-only class.
+// Apply it from an init script, inside afterEvaluate, after naming the run it guards:
+//
+//     ext.clientClassTracerRun = 'gameTestServer'
+//     apply from: rootProject.file('tools/client-class-tracer.gradle')
+//
+// A real dedicated server ships without Minecraft's client classes, so touching one there (Minecraft, a renderer, a
+// screen, even a method whose bytecode the verifier must check against a client type) crashes it. A development server
+// still has them, so the same mistake passes every test. This attaches tools/ClientClassTracer.java as a Java agent,
+// which logs each client class the server loads and the stack that loaded it, and fails the task if any of Minecraft's
+// client classes shows up, or a NeoForge client class reached from our code. NeoForge loads a few of its own client
+// classes on every server (they ship in its jar on both sides); those pass.
+// It only touches files and providers at execution time, as the configuration cache requires.
+
+def tracerRun = neoForge.runs.getByName(ext.clientClassTracerRun as String)
+def tracerTaskName = 'run' + tracerRun.name.capitalize()
+def tracerDir = layout.buildDirectory.dir('client-class-tracer').get().asFile
+def tracerJarFile = new File(tracerDir, 'client-class-tracer.jar')
+if (!tasks.names.contains('clientClassTracerJar')) {
+    def compileTracer = tasks.register('compileClientClassTracer', JavaCompile) {
+        source(rootProject.file('tools/ClientClassTracer.java'))
+        classpath = files()
+        destinationDirectory = new File(tracerDir, 'classes')
+        javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+    }
+    tasks.register('clientClassTracerJar', Jar) {
+        from(compileTracer)
+        archiveFileName = 'client-class-tracer.jar'
+        destinationDirectory = tracerDir
+        manifest { attributes('Premain-Class': 'ClientClassTracer') }
+    }
+}
+def tracerLog = new File(tracerRun.gameDirectory.get().asFile, 'client-class-loads.txt')
+tracerRun.jvmArgument("-javaagent:${tracerJarFile.absolutePath}=${tracerLog.absolutePath}")
+
+tasks.named(tracerTaskName).configure { task ->
+    task.dependsOn('clientClassTracerJar')
+    task.doFirst { tracerLog.delete() }
+    task.doLast { t ->
+        if (!tracerLog.exists())
+            throw new GradleException("The client-class tracer wrote nothing to ${tracerLog}; the server ran without it.")
+        def entries = tracerLog.getText('UTF-8').split(/(?m)^(?=LOAD )/).findAll { it.startsWith('LOAD ') }
+        def vanillaClient = ['net/minecraft/client/', 'com/mojang/blaze3d/', 'com/mojang/realmsclient/']
+        // NeoForge's own DedicatedServer patch advertises the server on the LAN with this class, and NeoForge ships it
+        // in every server install. Loaded from vanilla's server start, never from us.
+        def shippedOnServers = ['net/minecraft/client/server/LanServerPinger']
+        def bad = entries.findAll { entry ->
+            def name = entry.substring(5, entry.indexOf('\n'))
+            def ours = entry.contains('com.jayptucker.')
+            ours || (vanillaClient.any { name.startsWith(it) } && !shippedOnServers.contains(name))
+        }
+        if (!bad.isEmpty()) {
+            def shown = bad.collect { entry ->
+                entry.readLines().findAll { !it.contains('ClientClassTracer') && !it.contains('java.instrument/') }.take(30).join('\n')
+            }
+            throw new GradleException("A real dedicated server would crash: this run loaded ${bad.size()} client-only "
+                    + "class(es) (full log: ${tracerLog}). Keep client code behind Dist.CLIENT subscribers, client "
+                    + "packages and payload handlers (docs/agents/servers.md):\n\n" + shown.join('\n\n'))
+        }
+        t.logger.lifecycle("Dedicated-server check passed: no client-only class was loaded by this server "
+                + "(${entries.size()} NeoForge client class(es) loaded by NeoForge itself).")
+    }
+}

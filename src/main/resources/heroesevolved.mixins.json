@@ -37,7 +37,8 @@
     "EnderDragonLockMixin",
     "EnderDragonPoseMixin",
     "EndFightBattleMixin",
-    "EndCrystalBattleMixin"
+    "EndCrystalBattleMixin",
+    "ServerFloatingMixin"
   ],
   "client": [
     "EnderDragonRendererPoseMixin",

@@ -52,6 +52,7 @@ so nothing is duplicated, contradicted or lost, and keep the index below complet
 | Player guidance, the Guide tab, contextual tips, civilian journals, admin controls or debug commands | [guidance-and-admin.md](docs/agents/guidance-and-admin.md), [player-guidance.md](docs/player-guidance.md) |
 | Adding or changing any item, block, entity, mob, machine, recipe or disguise; JEI or Jade themselves | [compat.md](docs/agents/compat.md) (its checklist) |
 | Spawning, replacing or special-casing a villager; Minecraft Comes Alive | [mca.md](docs/agents/mca.md). **Never `EntityType.VILLAGER.create` plus `addFreshEntity`:** use `Villagers.actor` or `Villagers.enter` |
+| Dedicated servers, hosted worlds (LAN, Essential), packets and codecs, other mods' mixins, Essential | [servers.md](docs/agents/servers.md) |
 | Writing, running or fixing game tests | [testing.md](docs/agents/testing.md) |
 | Screenshots of anything in game | [previews.md](docs/agents/previews.md) |
 
@@ -188,6 +189,11 @@ Each rule cost a bug once. The file in brackets has the story and the code to co
 - **Player-caused damage obeys PvP.** A hazard (meltdown heat, friction) is nobody's blow, so it hurts friends too. Pick
   a hit's damage type on purpose: a landing that used `playerAttack` once counted as a punch for another power's
   passive ([powers/regeneration.md](docs/agents/powers/regeneration.md)).
+- **A real dedicated server has no client classes,** but dev servers do, so the full suite traces every client class
+  the server loads and fails on ours. Client types stay in client code; single-player never encodes packets, so check
+  payload changes with the multiplayer check ([servers.md](docs/agents/servers.md)).
+- **Never `@Redirect` or `@Overwrite`;** another mod on the same call crashes the game. Use MixinExtras
+  (`@WrapOperation`, `@WrapWithCondition`, `@ModifyExpressionValue`) ([servers.md](docs/agents/servers.md)).
 - **Another mod is touched by one guarded class** (`TaczLink`, `RadioLink`, `MindVoice`; an optional mod gets one
   plugin package, `compat/jei`, `compat/jade`): every call in try/catch, a `broken` flag, and a fallback, so an update
   to that mod never crashes ours.

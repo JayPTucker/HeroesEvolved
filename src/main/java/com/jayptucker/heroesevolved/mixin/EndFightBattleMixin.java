@@ -15,6 +15,6 @@ public abstract class EndFightBattleMixin {
     private void heroes$checkpoint(CallbackInfo ci){if(EndBattle.holdNativeFight(level))ci.cancel();}
     @Inject(method="setDragonKilled",at=@At("HEAD"),cancellable=true)
     private void heroes$falseVictory(EnderDragon dragon,CallbackInfo ci){if(EndBattle.deferDragonCompletion(dragon))ci.cancel();}
-    @Redirect(method="tick",at=@At(value="INVOKE",target="Lnet/minecraft/server/level/ServerBossEvent;setVisible(Z)V"))
-    private void heroes$oneBar(ServerBossEvent bar,boolean visible){bar.setVisible(visible&&!EndBattle.hideNativeBar(level));}
+    @ModifyArg(method="tick",at=@At(value="INVOKE",target="Lnet/minecraft/server/level/ServerBossEvent;setVisible(Z)V"))
+    private boolean heroes$oneBar(boolean visible){return visible&&!EndBattle.hideNativeBar(level);}
 }

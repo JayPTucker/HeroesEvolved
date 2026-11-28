@@ -1,9 +1,9 @@
 package com.jayptucker.heroesevolved.mixin;
 
 import com.jayptucker.heroesevolved.endgame.EndBattle;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -41,6 +41,6 @@ public abstract class EndDragonBattleMixin {
     private void heroes$noSilentBite(CallbackInfo ci){if(EndBattle.managed((EnderDragon)(Object)this))ci.cancel();}
     @Inject(method="tickDeath",at=@At("HEAD"))
     private void heroes$death(CallbackInfo ci){EndBattle.dragonDeathTick((EnderDragon)(Object)this);}
-    @Redirect(method="tickDeath",at=@At(value="INVOKE",target="Lnet/minecraft/world/entity/ExperienceOrb;award(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;I)V"))
-    private void heroes$catchExperience(ServerLevel level,Vec3 at,int amount){if(!EndBattle.captureXP((EnderDragon)(Object)this,amount))ExperienceOrb.award(level,at,amount);}
+    @WrapWithCondition(method="tickDeath",at=@At(value="INVOKE",target="Lnet/minecraft/world/entity/ExperienceOrb;award(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;I)V"))
+    private boolean heroes$catchExperience(ServerLevel level,Vec3 at,int amount){return !EndBattle.captureXP((EnderDragon)(Object)this,amount);}
 }

@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.mixin;
 
 import com.jayptucker.heroesevolved.client.ClientTimeFlow;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.objectweb.asm.Opcodes;
@@ -8,7 +9,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -17,8 +17,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(LevelRenderer.class)
 public abstract class TemporalWeatherMixin {
-    @Redirect(method = "renderSnowAndRain", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;ticks:I", opcode = Opcodes.GETFIELD))
-    private int heroes$weatherTicks(LevelRenderer renderer) {
+    @ModifyExpressionValue(method = "renderSnowAndRain", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;ticks:I", opcode = Opcodes.GETFIELD))
+    private int heroes$weatherTicks(int ticks) {
         return ClientTimeFlow.weatherTicks();
     }
 

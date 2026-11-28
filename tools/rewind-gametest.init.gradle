@@ -29,6 +29,10 @@ allprojects {
             def staleConfig = project.file('build/rewind-gametest-world/config/heroesevolved-common.toml')
             doFirst { staleWorld.deleteDir(); staleConfig.delete() }
         }
+        // The test server is a development server, which still has Minecraft's client classes; a real dedicated server
+        // doesn't. Fail the run if any test path loads one (docs/agents/servers.md).
+        ext.clientClassTracerRun = 'gameTestServer'
+        apply from: rootProject.file('tools/client-class-tracer.gradle')
       }
     }
 }

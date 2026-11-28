@@ -179,6 +179,7 @@ public abstract class ComboStyle implements FightingStyles.Style {
     }
 
     protected boolean pay(ServerPlayer player, int cost) {
+        com.jayptucker.heroesevolved.ability.Airborne.moved(player);
         if (cost <= 0) return true;
         if (!PlayerEnergyService.tryConsume(player, cost)) {
             PlayerEnergyService.refused(player);

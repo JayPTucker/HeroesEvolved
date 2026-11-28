@@ -7,6 +7,9 @@ Requires [Simple Voice Chat](https://www.curseforge.com/minecraft/mc-mods/simple
 [Simple Voice Radio](https://www.curseforge.com/minecraft/mc-mods/simple-voice-radio) (with Lexiconfig) on the client
 and the server: villages call for help over the radio. See [The emergency band](docs/emergency-band.md).
 
+Works on dedicated servers, in worlds hosted for friends (Open to LAN, Essential) and alongside Essential. See
+[Playing on a server](docs/multiplayer.md) for what the server and each player need.
+
 ## Skills and progression
 
 Open the survival inventory and click **Skills**, next to the recipe book.

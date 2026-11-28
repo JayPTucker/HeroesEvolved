@@ -2,6 +2,7 @@ package com.jayptucker.heroesevolved.mixin;
 
 import com.jayptucker.heroesevolved.client.TitleMenu;
 import com.jayptucker.heroesevolved.client.sound.TitleMusic;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,7 +17,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -104,11 +104,17 @@ public abstract class TitleScreenMixin extends Screen {
         return true;
     }
 
-    @Redirect(method = "render", at = @At(value = "INVOKE",
+    // Conditions, not @Redirects: another mod that wraps or redirects the same call (Essential, FancyMenu, a menu pack)
+    // must not crash the title screen. See docs/agents/servers.md, "Other mods' mixins".
+    @WrapWithCondition(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/components/LogoRenderer;renderLogo(Lnet/minecraft/client/gui/GuiGraphics;IF)V"))
-    private void heroesEvolved$replaceLogo(LogoRenderer logo, GuiGraphics graphics, int width, float alpha) {}
+    private boolean heroesEvolved$replaceLogo(LogoRenderer logo, GuiGraphics graphics, int width, float alpha) {
+        return false;
+    }
 
-    @Redirect(method = "render", at = @At(value = "INVOKE",
+    @WrapWithCondition(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/components/SplashRenderer;render(Lnet/minecraft/client/gui/GuiGraphics;ILnet/minecraft/client/gui/Font;I)V"))
-    private void heroesEvolved$hideSplash(SplashRenderer splash, GuiGraphics graphics, int width, Font font, int color) {}
+    private boolean heroesEvolved$hideSplash(SplashRenderer splash, GuiGraphics graphics, int width, Font font, int color) {
+        return false;
+    }
 }
