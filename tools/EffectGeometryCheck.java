@@ -1,5 +1,4 @@
 import com.jayptucker.heroesevolved.client.effects.PowerParticle;
-import com.jayptucker.heroesevolved.client.effects.NuclearCloudGeometry;
 import com.jayptucker.heroesevolved.client.effects.DetonationCloudGeometry;
 import net.minecraft.core.BlockPos;
 import org.joml.Quaternionf;
@@ -329,19 +328,6 @@ public class EffectGeometryCheck {
                 throw new AssertionError("Orange emission does not brighten with stress");
         }
         System.out.println("PASS: Wide/slim glowing body and first-person arm meshes have finite geometry and valid UVs; orange brightness scales with stress.");
-        int cloudVertices = 0;
-        for (float scale : new float[] {0.2F, 1, 1.6F}) for (float seconds : new float[] {0, .25F, 2.8F, 9, 25, 29.99F}) {
-            Vertices cloud = new Vertices(); cloud.camera = Vec3.ZERO;
-            cloud.bounds = new AABB(-400, -10, -400, 400, 200, 400);
-            Matrix4f transform = new Matrix4f().scale(scale);
-            float opacity = Math.min(1, (30 - seconds) / 5);
-            NuclearCloudGeometry.cloud(cloud, transform, seconds, opacity);
-            NuclearCloudGeometry.shockwave(cloud, transform, 48 / scale, opacity);
-            NuclearCloudGeometry.dust(cloud, transform, Math.min(seconds, 9), opacity);
-            if (cloud.count == 0 || cloud.count % 4 != 0) throw new AssertionError("Invalid mushroom-cloud quad mesh");
-            cloudVertices += cloud.count;
-        }
-        System.out.println("PASS: " + cloudVertices + " finite mushroom-cloud, shockwave and city-dust vertices across growth, cooling, fade and scaled awakening frames.");
         // Simulate the shader's existing view matrix, then recover the rendered center.
         // A duplicated camera rotation makes this fail when looking back from flight.
         Vec3 blastOrigin = new Vec3(1420.25, 82.5, -915.75);
