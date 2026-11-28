@@ -6,6 +6,7 @@ story leads and discovered records.
 
 The Guide explains things a player cannot easily infer from the world: assigning learned abilities, unbound
 keys, the wheel, stamina, Mastery, fighting controls, your class's Ultimate (Fighting & rescue), carrying people,
+breaking out of ice (and why your voice chat sounds muffled while frozen),
 equipment, machine recipes and the powered
 End portal. Its instructions show your current key bindings. **Key bindings…** opens the binding list directly.
 Scroll, use the arrow buttons, or use Up/Down and Page Up/Page Down to read; Left/Right changes topic.

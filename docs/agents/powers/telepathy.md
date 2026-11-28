@@ -39,6 +39,18 @@ is in [docs/telepathy.md](../../../docs/telepathy.md).
   stretches only the last already-delivered fragment through `time/TemporalVoice` into three seconds of reverb; no new
   speech feeds the tail. Codecs, rolling buffers and tails are bounded and closed on disconnect/server stop. Category
   names, like Minecraft profile names, must fit 16 characters or a joining client disconnects on packet encoding.
+- **Changing a voice for everyone: rewrite the microphone frame.** A player frozen solid speaks from inside the ice
+  (`cryo/IcedVoice`, applied by `MindVoice.IceAudio`). `MicrophonePacket.setOpusEncodedData` replaces the bytes of the
+  very `MicPacket` Simple Voice Chat then sends to proximity and groups, and Simple Radio reads `getOpusEncodedData` at
+  priority 0, so one handler at priority 900 (after the time cancel at 1000) reaches the room, groups, radios, Far
+  Hearing and breaches at once; never re-send the voice yourself to change it. Keep the clear bytes for the rest of the
+  packet (`ICE.clear(speaker, data)`, matched by array identity) when a later handler should not hear the change
+  (in-head telepathy: ice can't muffle a thought). Ramp the effect in and out rather than switching it, keep one
+  decoder, effect and encoder per speaker, reset the codecs after a 300 ms pause, and hand the stream back to the
+  speaker's own encoding only at a pause (`process` returns false), or listeners hear a click. The server publishes
+  who is frozen once a tick (`IcedVoice.publish`, from `CryoService.tick`); the voice thread reads only that set.
+  Tests: `CryoReworkGameTests.iceMufflesAVoice...` feeds tones to the plain effect; to hear it, render a WAV through
+  `IcedVoice` from a scratch `main` on `build/classes/java/main` (it has no Minecraft imports).
 - **Sharing fast time is one invitation.** Activate the field, then right-click a nearby player (`time/TemporalSharing`);
   Superspeed needs tier 4 (Power Level 10). It grants movement in that owner's field, a veil, temporal sight and voice
   access together; ending the field releases them, while another owner's invitation remains independent. The guest's

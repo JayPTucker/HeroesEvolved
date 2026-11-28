@@ -702,6 +702,7 @@ public final class CryoService {
                         target.getBbWidth() / 2, 0.0D);
             }
         }
+        publishVoices();
 
         for (Map.Entry<UUID, Blizzard> entry : List.copyOf(BLIZZARDS.entrySet())) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
@@ -716,7 +717,16 @@ public final class CryoService {
         }
     }
 
+    /** Tells the voice chat whose mouths are in the ice ({@link IcedVoice}); it never reads entities itself. */
+    private static void publishVoices() {
+        List<UUID> inIce = new ArrayList<>();
+        for (Frozen entry : FROZEN.values())
+            if (entry.target instanceof ServerPlayer && isFrozen(entry.target)) inIce.add(entry.target.getUUID());
+        IcedVoice.publish(inIce);
+    }
+
     public static void clear() {
+        IcedVoice.clear();
         CryoKitService.clear();
         ColdDomeService.clear();
         List.copyOf(FROZEN.values()).forEach(entry -> thaw(entry, false));

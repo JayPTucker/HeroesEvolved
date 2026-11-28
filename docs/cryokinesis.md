@@ -25,6 +25,13 @@ held indefinitely, and cold-immune creatures resist the freeze.
   display and visible cracks show progress.
 - Heat thaws the ice, and a teammate can break a prison with a strike. A short thaw grace
   prevents a player being immediately locked into another freeze.
+- **A frozen player's voice is muffled.** On Simple Voice Chat their voice comes from inside the
+  ice: the bright part of speech is gone (everything above about 1 kHz), what is left sounds boxed
+  in by the shell, a little quieter and shivering. Everyone hears it that way: nearby, in a voice
+  chat group, over a Simple Radio and through Far Hearing. The ice closes over a sentence in about a
+  tenth of a second and lets it go over a third of a second after the thaw, so nothing clicks. A
+  telepathic link (Mind Link, Hive Link, Mind Network, the inner voice) still carries the words
+  clearly: the ice is round the mouth, not the mind.
 - The caster and allies are excluded from the deliberate hostile shatter burst.
 
 ## Freezing terrain

@@ -36,6 +36,13 @@ obsidian. What the player sees is in [docs/cryokinesis.md](../../../docs/cryokin
   holding the last pose. Glacier Ride keeps its actual `ServerPlayer` and ticks through `CryoRideService.tickAll`
   once per server tick; the action's release hook ends the ride, so a held key has no short lifetime.
 
+- **A frozen player's voice is muffled at the source.** `CryoService.tick` publishes the frozen players
+  (`IcedVoice.publish`, from `isFrozen`, so game-test players count); `telepathy/MindVoice` muffles their microphone
+  frames before proximity, groups, radios and Far Hearing read them. The effect (`cryo/IcedVoice`) is two 900 Hz
+  low-passes, a 310 Hz body peak, two wall reflections 2.3 and 3.7 ms back and a faint shiver, mixed in over 0.12 s
+  and out over 0.3 s. Every way of freezing a player goes through `freezeSolid`, so nothing else needs to know. See
+  "Changing a voice for everyone" in [telepathy.md](telepathy.md).
+
 ## One look (November 2026)
 
 The power had four palettes and three ways of drawing: particle streaks and vanilla snowflakes (`CryoEffects`), set

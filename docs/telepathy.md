@@ -199,6 +199,9 @@ server works out every route each tick and the voice chat thread sends each micr
   when the last link ends.
 - Relayed voices use their own channel per speaker and their own volume slider, **Telepathy**, in the
   voice chat settings. Muting a player in voice chat mutes their relayed voice too.
+- **Ice can't muffle a thought.** A player frozen solid by Cryokinesis is heard muffled by everyone,
+  in the room, in groups, over radios and through Far Hearing (it hears the real voice), but a voice
+  heard inside the head carries their words clearly.
 - **Closed groups stay private.** A speaker in a normal or isolated voice chat group isn't relayed unless
   the server sets `telepathy.hearsGroups = true`. Two players in the same group are never relayed (they
   already hear each other). `telepathy.hearsVoices = false` turns all of it off.

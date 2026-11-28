@@ -1,6 +1,7 @@
 package com.jayptucker.heroesevolved.telepathy;
 
 import com.jayptucker.heroesevolved.HeroesEvolved;
+import com.jayptucker.heroesevolved.cryo.IcedVoice;
 import com.jayptucker.heroesevolved.vibe.BreachVoiceRoutes;
 import com.jayptucker.heroesevolved.time.TemporalVoice;
 import com.jayptucker.heroesevolved.time.TemporalVoiceState;
@@ -49,6 +50,9 @@ import java.util.Arrays;
  * speaker, so the stream stays continuous), so it sounds like a thought rather than a voice in the room. A telepath
  * speaking with their inner voice has their ordinary broadcast cancelled: only the minds they reach hear them.
  *
+ * <p>A player frozen solid speaks from inside the ice: their microphone frame is muffled ({@link IcedVoice}) before
+ * proximity, groups, radios or Far Hearing read it, while a voice heard inside the head keeps the clear frame.
+ *
  * <p>This runs on the voice chat's thread and reads only the routes' snapshot. Every call is guarded: if the voice chat
  * changes and something here breaks, it logs once and telepathic voices stop, and nothing else does.
  */
@@ -64,6 +68,7 @@ public final class MindVoice implements VoicechatPlugin {
     /** Each speaker's codecs and distortion, kept while they speak into minds. */
     private static final Map<UUID, Head> HEADS = new ConcurrentHashMap<>();
     private static final TemporalAudio TEMPORAL = new TemporalAudio();
+    private static final IceAudio ICE = new IceAudio();
 
     private record Head(OpusDecoder decoder, OpusEncoder encoder, PsychicVoice voice) {
         void close() {
@@ -80,6 +85,7 @@ public final class MindVoice implements VoicechatPlugin {
         registration.registerEvent(VoicechatServerStartedEvent.class, this::started);
         registration.registerEvent(VoicechatServerStoppedEvent.class, event -> {
             TEMPORAL.stop();
+            ICE.stop();
             TemporalVoiceState.clear();
             MindVoiceRoutes.clear();
             BreachVoiceRoutes.clear();
@@ -89,6 +95,7 @@ public final class MindVoice implements VoicechatPlugin {
         });
         registration.registerEvent(PlayerDisconnectedEvent.class, event -> {
             TEMPORAL.forget(event.getPlayerUuid());
+            ICE.forget(event.getPlayerUuid());
             Head head = HEADS.remove(event.getPlayerUuid());
             if (head != null) synchronized (head) { head.close(); }
             BREACH_CHANNELS.remove(event.getPlayerUuid());
@@ -99,6 +106,8 @@ public final class MindVoice implements VoicechatPlugin {
             var sender = event.getSenderConnection();
             if (sender != null && sender.getPlayer() != null && TemporalVoiceState.frozen(sender.getPlayer().getUuid())) event.cancel();
         }, 1000);
+        // Still ahead of Simple Radio, proximity and groups, so every way a frozen mouth is heard carries the ice.
+        registration.registerEvent(MicrophonePacketEvent.class, ICE::microphone, 900);
         registration.registerEvent(MicrophonePacketEvent.class, this::microphone);
         registration.registerEvent(MicrophonePacketEvent.class, this::hologram);
         // These are separate concrete events in SVC, not a polymorphic SoundPacketEvent subscription.
@@ -115,6 +124,7 @@ public final class MindVoice implements VoicechatPlugin {
 
     private void started(VoicechatServerStartedEvent event) {
         broken = breachBroken = false;
+        ICE.failed = false;
         TEMPORAL.start(event.getVoicechat());
         try {
             VoicechatServerApi api = event.getVoicechat();
@@ -250,7 +260,8 @@ public final class MindVoice implements VoicechatPlugin {
                 if (closed) continue;
                 if (packet.isWhispering() && route.kind() == MindVoiceRoutes.Kind.FAR && route.range() > TelepathyGeometry.WHISPER_RANGE) continue;
                 if (route.inHead()) {
-                    if (thought == null) thought = distort(voice, speaker, packet.getOpusEncodedData());
+                    // A thought isn't muffled by the ice round the mouth: in-head routes take the clear frame.
+                    if (thought == null) thought = distort(voice, speaker, ICE.clear(speaker, packet.getOpusEncodedData()));
                     voice.sendStaticSoundPacketTo(to, packet.staticSoundPacketBuilder().opusEncodedData(thought)
                             .channelId(channel(HEAD_CHANNELS, speaker, "head")).category(CATEGORY).build());
                 } else {
@@ -470,6 +481,94 @@ public final class MindVoice implements VoicechatPlugin {
                 return opus;
             }
             void close() { if (!encoder.isClosed()) encoder.close(); }
+        }
+    }
+
+    /**
+     * A player frozen solid speaks from inside the ice ({@link IcedVoice}). Their microphone frame is decoded, muffled and
+     * encoded again before anyone else reads it, so proximity, groups, Simple Radio, Far Hearing and breaches all hear
+     * the ice. One codec pair and effect per speaker keeps the stream continuous; it is dropped at the first pause after
+     * the ice lets go, so the stream returns to the speaker's own encoding at a silence. The clear frame is kept for the
+     * rest of this packet's handlers, so a voice heard inside the head stays a clear thought.
+     */
+    private static final class IceAudio {
+        private static final class Shell {
+            final OpusDecoder decoder;
+            final OpusEncoder encoder;
+            final IcedVoice voice = new IcedVoice();
+            long last = Long.MIN_VALUE / 2;
+            Shell(OpusDecoder decoder, OpusEncoder encoder) { this.decoder = decoder; this.encoder = encoder; }
+            boolean closed() { return decoder.isClosed() || encoder.isClosed(); }
+            void close() {
+                if (!decoder.isClosed()) decoder.close();
+                if (!encoder.isClosed()) encoder.close();
+            }
+        }
+        /** This packet's muffled bytes and the clear ones they replaced. */
+        private record Frame(byte[] muffled, byte[] clear) {}
+        private final Map<UUID, Shell> shells = new ConcurrentHashMap<>();
+        private final Map<UUID, Frame> frames = new ConcurrentHashMap<>();
+        private volatile boolean failed;
+
+        void microphone(MicrophonePacketEvent event) {
+            if (failed || event.isCancelled()) return;
+            try {
+                VoicechatConnection sender = event.getSenderConnection();
+                if (sender == null || sender.getPlayer() == null) return;
+                UUID speaker = sender.getPlayer().getUuid();
+                frames.remove(speaker);
+                boolean frozen = IcedVoice.muffled(speaker);
+                Shell shell = shells.get(speaker);
+                if (shell == null) {
+                    if (!frozen || shells.size() >= 256) return;
+                    VoicechatServerApi voice = event.getVoicechat();
+                    shell = new Shell(voice.createDecoder(), voice.createEncoder(OpusEncoderMode.VOIP));
+                    shells.put(speaker, shell);
+                }
+                MicrophonePacket packet = event.getPacket();
+                byte[] opus = packet.getOpusEncodedData();
+                if (opus == null || opus.length == 0) return;
+                synchronized (shell) {
+                    if (shell.closed()) return;
+                    long now = System.nanoTime();
+                    // A new sentence: the speaker's encoder started afresh, and so do ours (as the listeners' decoders do).
+                    if (now - shell.last > IcedVoice.GAP) { shell.decoder.resetState(); shell.encoder.resetState(); }
+                    shell.last = now;
+                    short[] pcm = shell.decoder.decode(opus);
+                    if (pcm == null || pcm.length == 0) return;
+                    if (!shell.voice.process(pcm, frozen, now)) {
+                        shells.remove(speaker, shell);
+                        shell.close();
+                        return;
+                    }
+                    byte[] muffled = shell.encoder.encode(pcm);
+                    if (muffled == null || muffled.length == 0) return;
+                    packet.setOpusEncodedData(muffled);
+                    frames.put(speaker, new Frame(muffled, opus));
+                }
+            } catch (Throwable t) {
+                if (!failed) HeroesEvolved.LOGGER.warn("Simple Voice Chat is unable to muffle frozen voices", t);
+                failed = true;
+                stop();
+            }
+        }
+
+        /** The clear frame behind {@code current}, if this handler muffled it; otherwise {@code current}. */
+        byte[] clear(UUID speaker, byte[] current) {
+            Frame frame = frames.get(speaker);
+            return frame != null && frame.muffled == current ? frame.clear : current;
+        }
+
+        void forget(UUID player) {
+            frames.remove(player);
+            Shell shell = shells.remove(player);
+            if (shell != null) synchronized (shell) { shell.close(); }
+        }
+
+        void stop() {
+            frames.clear();
+            shells.values().forEach(shell -> { synchronized (shell) { shell.close(); } });
+            shells.clear();
         }
     }
 

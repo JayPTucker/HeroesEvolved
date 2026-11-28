@@ -623,6 +623,78 @@ public final class CryoReworkGameTests {
         });
     }
 
+    @GameTest(template="rewind_empty", batch="cryo.rework_iced_voice")
+    public static void theVoiceChatHearsAFrozenPlayerThroughIceUntilItBreaks(GameTestHelper h) {
+        ServerPlayer p = player(h, 3, true), trapped = player(h, 6, false);
+        try {
+            h.assertTrue(CryoService.freezeSolid(trapped, 60, p), "The opposing player must be encased");
+            CryoService.tick(h.getLevel().getServer());
+            h.assertTrue(IcedVoice.muffled(trapped.getUUID()) && !IcedVoice.muffled(p.getUUID()),
+                    "The encased player's voice comes from inside the ice, and nobody else's does");
+            CryoService.releaseEntity(trapped);
+            CryoService.tick(h.getLevel().getServer());
+            h.assertTrue(!IcedVoice.muffled(trapped.getUUID()), "Once the ice breaks, the voice chat hears them clearly again");
+            h.succeed();
+        } finally { clean(p, trapped); }
+    }
+
+    @GameTest(template="rewind_empty", batch="cryo.rework_iced_voice_sound")
+    public static void iceMufflesAVoiceAndLetsItGoUntouched(GameTestHelper h) {
+        h.assertTrue(toneLevel(250) > .3 && toneLevel(250) < 1.5, "A frozen voice's body still comes through (" + toneLevel(250) + ")");
+        h.assertTrue(toneLevel(3000) < .1, "but the ice stops its brightness (" + toneLevel(3000) + ")");
+        IcedVoice voice = new IcedVoice();
+        int frame = 0;
+        for (; frame < 10; frame++) voice.process(tone(3000, frame), false, frame * 20_000_000L);
+        short[] first = tone(3000, frame), clear = first.clone();
+        voice.process(first, true, frame++ * 20_000_000L);
+        h.assertTrue(level(clear, first) > .7, "Freezing mid-sentence closes the ice over the voice rather than clicking shut");
+        for (int i = 0; i < 8; i++, frame++) voice.process(tone(3000, frame), true, frame * 20_000_000L);
+        short[] held = tone(3000, frame);
+        voice.process(held, true, frame++ * 20_000_000L);
+        h.assertTrue(level(tone(3000, frame - 1), held) < .1, "Within a tenth of a second or so the voice is fully muffled");
+        for (int i = 0; i < 16; i++, frame++) voice.process(tone(3000, frame), false, frame * 20_000_000L);
+        short[] thawed = tone(3000, frame);
+        h.assertTrue(voice.process(thawed, false, frame++ * 20_000_000L) && java.util.Arrays.equals(thawed, tone(3000, frame - 1)),
+                "A third of a second after the thaw the voice is exactly as spoken, still on the re-encoded stream mid-sentence");
+        h.assertTrue(!voice.process(tone(3000, frame), false, frame * 20_000_000L + 500_000_000L),
+                "and after a pause it goes back to the speaker's own stream");
+        IcedVoice fresh = new IcedVoice();
+        short[] opening = tone(3000, 0);
+        fresh.process(opening, true, 0);
+        h.assertTrue(level(tone(3000, 0), opening) < .1, "A sentence begun inside the ice is muffled from its first word");
+        short[] silence = new short[960];
+        fresh.process(silence, true, 5_000_000_000L);
+        boolean quiet = true;
+        for (short sample : silence) quiet &= sample == 0;
+        h.assertTrue(quiet, "After a pause the last sentence's echo doesn't bleed into silence");
+        h.succeed();
+    }
+
+    private static short[] tone(double hz, int frame) {
+        short[] pcm = new short[960];
+        for (int i = 0; i < 960; i++) pcm[i] = (short) (9000 * Math.sin(2 * Math.PI * hz * (frame * 960 + i) / 48000.0));
+        return pcm;
+    }
+
+    private static double level(short[] clear, short[] heard) {
+        double in = 0, out = 0;
+        for (int i = 0; i < clear.length; i++) { in += clear[i] * (double) clear[i]; out += heard[i] * (double) heard[i]; }
+        return Math.sqrt(out / in);
+    }
+
+    /** How loud a steady tone comes through once the ice has closed over it, as a fraction of the clear tone. */
+    private static double toneLevel(double hz) {
+        IcedVoice voice = new IcedVoice();
+        double in = 0, out = 0;
+        for (int frame = 0; frame < 20; frame++) {
+            short[] pcm = tone(hz, frame), clear = pcm.clone();
+            voice.process(pcm, true, frame * 20_000_000L);
+            if (frame < 10) continue;
+            for (int i = 0; i < 960; i++) { in += clear[i] * (double) clear[i]; out += pcm[i] * (double) pcm[i]; }
+        }
+        return Math.sqrt(out / in);
+    }
+
     @GameTest(template="rewind_empty", batch="cryo.rework_heat_counter")
     public static void heatThawsAPlayerPrisonWithoutLeavingMovementLocked(GameTestHelper h) {
         ServerPlayer p = player(h, 3, true), trapped = player(h, 6, false);

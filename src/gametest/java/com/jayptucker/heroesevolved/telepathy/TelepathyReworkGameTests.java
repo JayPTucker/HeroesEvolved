@@ -482,6 +482,93 @@ public final class TelepathyReworkGameTests {
         h.succeed();
     }
 
+    @GameTest(template = "rewind_empty", batch = "telepathy.iced_voice")
+    public static void aFrozenMouthIsMuffledForEveryoneButAThoughtStaysClear(GameTestHelper h) throws Exception {
+        var real = (de.maxhenkel.voicechat.api.VoicechatServerApi) Class.forName("de.maxhenkel.voicechat.plugins.impl.VoicechatServerApiImpl")
+                .getMethod("instance").invoke(null);
+        var callbacks = new java.util.TreeMap<Integer, List<java.util.function.Consumer<?>>>(java.util.Comparator.reverseOrder());
+        new MindVoice().registerEvents(new de.maxhenkel.voicechat.api.events.EventRegistration() {
+            @Override public <T extends de.maxhenkel.voicechat.api.events.Event> void registerEvent(Class<T> type, java.util.function.Consumer<T> callback, int priority) {
+                if (type == de.maxhenkel.voicechat.api.events.MicrophonePacketEvent.class)
+                    callbacks.computeIfAbsent(priority, k -> new ArrayList<>()).add(callback);
+            }
+        });
+        h.assertTrue(callbacks.firstKey() == 1000 && callbacks.containsKey(900) && callbacks.higherKey(900) == 0,
+                "The ice muffles after the time cancel and before telepathy and Simple Radio's priority-zero listeners");
+        var ice = callbacks.get(900).getFirst();
+        Field field = MindVoice.class.getDeclaredField("ICE"); field.setAccessible(true);
+        Object audio = field.get(null);
+        var clear = audio.getClass().getDeclaredMethod("clear", java.util.UUID.class, byte[].class); clear.setAccessible(true);
+        var forget = audio.getClass().getDeclaredMethod("forget", java.util.UUID.class); forget.setAccessible(true);
+        java.util.UUID frozen = java.util.UUID.randomUUID(), free = java.util.UUID.randomUUID();
+        var source = real.createEncoder(de.maxhenkel.voicechat.api.opus.OpusEncoderMode.VOIP);
+        var listener = real.createDecoder();
+        try {
+            com.jayptucker.heroesevolved.cryo.IcedVoice.publish(List.of(frozen));
+            double spoken = 0, heard = 0;
+            byte[] last = null, lastSpoken = null;
+            for (int frame = 0; frame < 16; frame++) {
+                short[] tone = new short[960];
+                for (int i = 0; i < 960; i++) tone[i] = (short) (10_000 * Math.sin(2 * Math.PI * 3000 * (frame * 960 + i) / 48_000.0));
+                byte[] opus = source.encode(tone);
+                byte[] after = microphone(ice, frozen, opus, real);
+                h.assertTrue(after != opus && after.length > 0, "Every frame of a frozen speaker is replaced with real Opus");
+                short[] decoded = listener.decode(after);
+                if (frame >= 8) for (int i = 0; i < 960; i++) { spoken += tone[i] * (double) tone[i]; heard += decoded[i] * (double) decoded[i]; }
+                last = after; lastSpoken = opus;
+            }
+            double level = Math.sqrt(heard / spoken);
+            h.assertTrue(level < .15, "Through the real codec, the ice stops a frozen speaker's brightness (" + level + ")");
+            h.assertTrue(clear.invoke(audio, frozen, last) == lastSpoken,
+                    "The rest of the packet's handlers can still take the clear frame, so a thought isn't muffled");
+            short[] tone = new short[960];
+            for (int i = 0; i < 960; i++) tone[i] = (short) (10_000 * Math.sin(2 * Math.PI * 3000 * i / 48_000.0));
+            byte[] opus = source.encode(tone);
+            h.assertTrue(microphone(ice, free, opus, real) == opus && clear.invoke(audio, free, opus) == opus,
+                    "A speaker who isn't frozen goes through untouched");
+            h.succeed();
+        } finally {
+            com.jayptucker.heroesevolved.cryo.IcedVoice.clear();
+            forget.invoke(audio, frozen);
+            source.close();
+            listener.close();
+        }
+    }
+
+    /** One microphone packet through a voice chat callback; returns the packet's bytes afterwards. */
+    private static byte[] microphone(java.util.function.Consumer<?> callback, java.util.UUID speaker, byte[] opus,
+                                     de.maxhenkel.voicechat.api.VoicechatServerApi api) {
+        byte[][] data = { opus };
+        var player = proxy(de.maxhenkel.voicechat.api.ServerPlayer.class, (method, args) -> method.equals("getUuid") ? speaker : null);
+        var sender = proxy(de.maxhenkel.voicechat.api.VoicechatConnection.class, (method, args) -> switch (method) {
+            case "getPlayer" -> player;
+            case "isConnected" -> true;
+            default -> null;
+        });
+        var packet = proxy(de.maxhenkel.voicechat.api.packets.MicrophonePacket.class, (method, args) -> switch (method) {
+            case "getOpusEncodedData" -> data[0];
+            case "setOpusEncodedData" -> { data[0] = (byte[]) args[0]; yield null; }
+            default -> null;
+        });
+        var event = proxy(de.maxhenkel.voicechat.api.events.MicrophonePacketEvent.class, (method, args) -> switch (method) {
+            case "getSenderConnection" -> sender;
+            case "getPacket" -> packet;
+            case "getVoicechat" -> api;
+            default -> null;
+        });
+        @SuppressWarnings("unchecked") var consumer = (java.util.function.Consumer<Object>) callback;
+        consumer.accept(event);
+        return data[0];
+    }
+
+    @SuppressWarnings("unchecked") private static <T> T proxy(Class<T> type, java.util.function.BiFunction<String, Object[], Object> call) {
+        return (T) java.lang.reflect.Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] { type },
+                (instance, method, args) -> {
+                    Object result = call.apply(method.getName(), args);
+                    return result == null && method.getReturnType() == boolean.class ? false : result;
+                });
+    }
+
     @GameTest(template = "rewind_empty", batch = "telepathy.mind_network")
     public static void mindNetworkSpeaksIntoEveryDeeplyThreadedMind(GameTestHelper h) {
         Actor a = telepath(h, 2, "network"), b = telepath(h, 6, "threaded");
